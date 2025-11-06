@@ -6,39 +6,35 @@ init()
 cor = {
    "blueUP": Fore.LIGHTBLUE_EX,
    "cyan": Fore.CYAN,
-   "red": Fore.RED,
    "redUP": Fore.LIGHTRED_EX,
    "yellow": Fore.YELLOW,
    "green": Fore.GREEN,
+   "black": Fore.LIGHTBLACK_EX,
    "reset": Fore.RESET,
 }
 
-
-numJogo = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-
-simbolo_O = f"{cor['redUP']}O{cor['reset']}"
-simbolo_X = f"{cor['green']}X{cor['reset']}"
-simbolo_O = f"O"
-simbolo_X = f"X"
+simbolo_O = f"{cor['redUP']}O{cor['reset']}{cor['black']}"
+simbolo_X = f"{cor['green']}X{cor['reset']}{cor['black']}"
 
 jogo = [
     0, 1, 2, 
     3, 4, 5, 
     6, 7, 8
 ]
+
 def desenho(jogo):
-    jogo = rf"""
+    jogo = rf"""{cor['black']}
  {jogo[0]} | {jogo[1]} | {jogo[2]}
 ---|---|---
  {jogo[3]} | {jogo[4]} | {jogo[5]}
----|---|---  
+---|---|---
  {jogo[6]} | {jogo[7]} | {jogo[8]}
-"""
+{cor['reset']}"""
     return jogo
 
 vitoria = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
-    [0, 3, 6], [1, 4, 7], [2, 5, 6],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
     [0, 4, 8], [6, 4, 2]
 ]
 
@@ -50,53 +46,53 @@ def isVitoria(simbolo):
             return True
     return False
 
-def getJogadaCPU(array):
-    jogada = [i for i, x in enumerate(jogo) if x in array]
-    return random.choice(jogada)
-    
-jogoCANTO = [0, 2, 6, 8]
-jogoMEIO = [1, 3, 5, 7]
+def isEmpate():
+    return len([i for i in jogo if i not in [simbolo_O, simbolo_X]]) == 0
 
-def getCpuInteligente(round, pri): 
-    cantoDISPONIVEL = [i for i in jogoCANTO if i in numJogo]
-    
-    if round == 1 and pri == 2:
-        return jogo[random.choice(cantoDISPONIVEL)]
-    
-    if round == 2 and pri == 1:
-        for i in jogoCANTO:
-            posição = [z for z in jogo[i]]
-            if posição.count(simbolo_X) != 0:
-                return 4
-            
+def getRandomCPU():
+    aleatorio = [i for i in jogo if i not in [simbolo_O, simbolo_X]]
+    return random.choice(aleatorio)
+
+def getInteligenteCPU():
+    for combinacao in vitoria:
+        posicao = [jogo[i] for i in combinacao]
+        if posicao.count(simbolo_O) == 2 and posicao.count(simbolo_X) == 0: # BOT PARA GANHAR
+            for i in [0, 1, 2]:
+                if combinacao[i] in jogo:
+                    return combinacao[i]
     
     for combinacao in vitoria:
-        posição = [jogo[i] for i in combinacao]
-
-        if posição.count(simbolo_O) == 2 and posição.count(simbolo_X) == 0: # BOT PARA GANHAR
+        posicao = [jogo[i] for i in combinacao]            
+        if posicao.count(simbolo_X) == 2 and posicao.count(simbolo_O) == 0: # BOT PARA BLOQUEAR
             for i in [0, 1, 2]:
                 if combinacao[i] in jogo:
                     return combinacao[i]
                 
-        if posição.count(simbolo_X) == 2 and posição.count(simbolo_O) == 0: # BOT PARA BLOQUEAR
-            for i in [0, 1, 2]:
-                if combinacao[i] in jogo:
-                    return combinacao[i]
+    cantos = [0, 2, 6, 8]
+    meios = [1, 3, 5, 7]
     
-    return getJogadaCPU(numJogo)
+    cantosLivres = [i for i in cantos if jogo[i] not in [simbolo_O, simbolo_X]]
+    meiosLivres = [i for i in meios if jogo[i] not in [simbolo_O, simbolo_X]]
 
+    centro = jogo[4] not in [simbolo_O, simbolo_X]
 
+    posicaoJogo = lambda parte, simbolo: [jogo[i] for i in parte].count(simbolo)
 
+    if posicaoJogo(cantos, simbolo_X) != 0 and centro:
+        return 4
 
+    if posicaoJogo(meios, simbolo_X) != 0:
+        
+        if posicaoJogo(cantos, simbolo_O) != 0:
+            return random.choice(cantosLivres)
+        
+        elif posicaoJogo(meios, simbolo_X) != 0 and centro:
+            return 4
 
-
+    if jogo[4] == simbolo_X:
+        return random.choice(cantosLivres)
     
-    
-    
-    
-
-
-
+    return getRandomCPU()
 
 while True:
 
@@ -105,149 +101,112 @@ while True:
     3, 4, 5, 
     6, 7, 8
 ]
-    def desenho(jogo):
-        jogo = rf"""
- {jogo[0]} | {jogo[1]} | {jogo[2]}
----|---|---
- {jogo[3]} | {jogo[4]} | {jogo[5]}
----|---|---  
- {jogo[6]} | {jogo[7]} | {jogo[8]}
-"""
-        return jogo
     
+    time.sleep(0.6)
     print(
-f"""{cor['blueUP']}
-===========# JOGO DA VELHA - YEAH #===========
+f"""\n{cor['blueUP']}
+==============# JOGO DA VELHA - YEAH #==============
 
-(1) - Comece o insano jogo com um robô...
-(0) - Sair do jogo com o cu da mão de medo
+(Digite 1) - Comece o insano jogo com um robô...
+(Digite 2) - Sair do jogo (tá com medo?)
 
-==============================================
+====================================================
 {cor['reset']}""")
     
-    escolha = input(f"\n{cor['cyan']}ESCOLHA: {cor['reset']}")
+    menu_escolha = input(f"\n{cor['cyan']}ESCOLHA: {cor['reset']}")
 
-    if escolha == "1":
+    if menu_escolha == "1":
+        
+        time.sleep(0.6)
         print(
 f"""{cor['blueUP']}
-================# DIFICULDADE #================
+===================# DIFICULDADE #===================
 
-(1) - Burro -> jogo com um burro
-(0) - Inteligente -> jogue com um inteligente
+(Digite 1) - Jogue com um burro
+(Digite 2) - Jogue com um inteligente, diff de vc
 
-===============================================
+=====================================================
 {cor['reset']}""")
         
-        dificuldade = input(f"\n{cor['cyan']}ESCOLHA: {cor['reset']}")
+        difc = input(f"\n{cor['cyan']}ESCOLHA: {cor['reset']}")
 
-        if dificuldade == "1":
-            print("BURRO")
-            print(desenho(jogo))
-            primeiroJOGAR = random.randint(1, 2)
+        time.sleep(0.6)
+        if difc == "1":
+            print(f"\n{cor['blueUP']}MODO: BURRO{cor['reset']}")
+        elif difc == "2":
+            print(f"\n{cor['blueUP']}MODO: INTELIGENTE{cor['reset']}")
+        else:
+            print(f"\n{cor['yellow']}# Cara, você não consegue digitar 2? Nem me fala que cê ia apertar no 1...{cor['reset']}")
+            continue
 
-            if primeiroJOGAR == 2:
-                print("\n# O robô vai começar...")
-                jogo[getJogadaCPU()] = simbolo_O
-                print(desenho(jogo))
+        primeiroJOGAR = random.randint(1, 2)
 
-            while True:
-                try:
-                    escolhaX = int(input(f"\n{cor['cyan']}Quer marcar o seu X onde? {cor['reset']}"))
-
-                    if jogo[escolhaX] in [simbolo_O, simbolo_X]:
-                        print("\n# Já tem algo marcado ai burro")
-                        continue
-                    else:
-                        jogo[escolhaX] = simbolo_X
-                    print(desenho(jogo))
-
-                    if isVitoria(simbolo_X) == True:
-                        print("\n# VOCÊ GANHOU HAHAH mas era o burro então lol")
-                        break
-                    
-                    jogo[getJogadaCPU(numJogo)] = simbolo_O
-                    print(desenho(jogo))
-                    if isVitoria(simbolo_O) == True:
-                        print("\n# VOCÊ PERDEUKKKKKKKKKKKKKK ok")
-                        break
-
-                except IndexError:
-                    print(f"\n{cor['red']}# Digite um número entre 0 a 9 mn{cor['reset']}")
-
-        if dificuldade == "0":
-            print("INTELIGENTE")
-            print(desenho(jogo))
-            primeiroJOGAR = random.randint(1, 2)
-
-            round = 1
+        if primeiroJOGAR == 2:
+            time.sleep(0.4)
+            print(f"\n{cor['blueUP']}# O robô vai começar...{cor['reset']}")
             
-            if primeiroJOGAR == 2:
-                print("\n# O robô vai começar...")
-                jogo[getCpuInteligente(round, primeiroJOGAR)] = simbolo_O
-                print(desenho(jogo))
-                round += 1
+            if difc == "1":
+                jogo[getRandomCPU()] = simbolo_O
+            elif difc == "2":
+                jogo[getInteligenteCPU()] = simbolo_O
+            
+            time.sleep(0.6)
+            print(f"\n{cor['blueUP']}# O robô JOGOU!{cor['reset']}")
+            print(desenho(jogo))
+        
+        else:
+            print(desenho(jogo))
 
-            while True:
-                try:
-                    escolhaX = int(input(f"\n{cor['cyan']}Quer marcar o seu X onde? {cor['reset']}"))
-                    round += 1
-                except IndexError:
-                    print(f"\n{cor['red']}# Digite um número entre 0 a 9 mn{cor['reset']}")
-                    continue
+        while True:
+            try:
+                jogada = int(input(f"\n{cor['cyan']}Quer marcar o seu X onde? {cor['reset']}"))    
 
-                if jogo[escolhaX] in [simbolo_O, simbolo_X]:
-                    print("\n# Já tem algo marcado ai burro")
+                if jogo[jogada] in [simbolo_O, simbolo_X]:
+                    print(f"\n{cor['yellow']}# Já está marcado nesse espaço burro{cor['reset']}")
                     continue
                 else:
-                    jogo[escolhaX] = simbolo_X
-                print(desenho(jogo))
+                    jogo[jogada] = simbolo_X
+                    print(desenho(jogo))
+            
+            except (IndexError, ValueError):
+                print(f"\n{cor['yellow']}# Digite um número entre 0 a 9 mn{cor['reset']}")
+                continue
+            
+            if isVitoria(simbolo_X):
+                if difc == "1":
+                    print(f"\n{cor['green']}# VOCÊ GANHOU! Mas era o modo burro...{cor['reset']}")
+                elif difc == "2":
+                    print(f"\n{cor['green']}# VOCÊ GANHOU! Mas era o modo bur-... Ah, acho que eu errei em alguma coisa rs{cor['reset']}")
+                time.sleep(0.6)
+                break
 
-                if isVitoria(simbolo_X) == True:
-                    print("\n# VOCÊ GANHOU HAHAH mas era o burro então lol")
-                    break
+            if isEmpate():
+                print(f"\n{cor['yellow']}# EMPATE{cor['reset']}")
+                break
 
-                if sum(1 for x in numJogo if x in jogo) == 0:
-                    print("EMPATE")
-                    break
-                
-                jogo[getCpuInteligente(round, primeiroJOGAR)] = simbolo_O
-                round += 1
-                
-                print(desenho(jogo))
-                
-                if isVitoria(simbolo_O) == True:
-                    print("\n# VOCÊ PERDEUKKKKKKKKKKKKKK ok")
-                    break
+            if difc == "1":
+                jogo[getRandomCPU()] = simbolo_O
+            elif difc == "2":
+                jogo[getInteligenteCPU()] = simbolo_O
+            
+            time.sleep(0.6)
+            print(f"\n{cor['blueUP']}# O robô JOGOU!{cor['reset']}")
+            print(desenho(jogo))
+            
+            if isVitoria(simbolo_O):
+                print(f"\n{cor['redUP']}# VOCÊ PERDEUKKK Ok...{cor['reset']}")
+                time.sleep(0.6)
+                break
 
-                if sum(1 for x in numJogo if x in jogo) == 0:
-                    print("EMPATE")
-                    break
-
+            if isEmpate():
+                print(f"\n{cor['yellow']}# EMPATE{cor['reset']}")
+                time.sleep(0.6)
+                break
                     
-
-                
-
-
-
-
-
-
-
-
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    elif escolha == "0":
-        print("\n# Tchau ahh")
+    elif menu_escolha == "2":
+        print(f"\n{cor['yellow']}# Tchau ahh covarde{cor['reset']}")
+        time.sleep(1)
         break
 
     else:
-        print("\n# Digita certo mano kkkk 1 ou 0")
+        print(f"\n{cor['yellow']}# Digite certo mano kkkk 1 ou 2{cor['reset']}")
