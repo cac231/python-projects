@@ -83,7 +83,7 @@ def getInteligenteCPU():
 
     if posicaoJogo(meios, simbolo_X) != 0:
         
-        if posicaoJogo(cantos, simbolo_O) != 0:
+        if posicaoJogo(cantos, simbolo_O) != 0 and cantosLivres:
             return random.choice(cantosLivres)
         
         elif posicaoJogo(meios, simbolo_X) != 0 and centro:
