@@ -3,13 +3,13 @@ import math
 import random
 import pygame
 
-BLOCO = 36 # 32
-TELA_LARGURA = BLOCO * 15 # 15
-TELA_COMPRIMENTO = BLOCO * 15 # 15
+BLOCO = 36
+TELA_LARGURA = BLOCO * 15 
+TELA_COMPRIMENTO = BLOCO * 15
 
 FPS = 60
 
-VELOCIDADE = 5 # 5
+VELOCIDADE = int(5 * (BLOCO / 30))
 CIMA = (0, -VELOCIDADE)
 DIREITA = (VELOCIDADE, 0)
 BAIXO = (0, VELOCIDADE)
@@ -55,7 +55,7 @@ class Cobra:
 
 class Moeda:
    def __init__(self, posicao):
-      self.tamanho_padrao = BLOCO - 16 # 36 - 15 = 20
+      self.tamanho_padrao = BLOCO / 1.4
       self.tamanho_atual = 5
       self.fase = "crescendo"
 
@@ -67,7 +67,7 @@ class Moeda:
 
       if self.fase == "crescendo":
          self.tamanho_atual += velocidade
-         if self.tamanho_atual >= self.tamanho_padrao * 1.4: # 28
+         if self.tamanho_atual >= self.tamanho_padrao * 1.2:
             self.fase = "encolhendo"
       
       if self.fase == "encolhendo":
@@ -83,8 +83,8 @@ class Moeda:
 
 class Inimigo:
    def __init__(self, posicao):
-      self.tamanho_padrao = BLOCO - 18 # 36 - 18 = 18
-      self.tamanho_atual = [28, 26]
+      self.tamanho_padrao = BLOCO / 1.8
+      self.tamanho_atual = [30, 28]
       self.fase = "encolhendo"
 
       self.centro_xy = (posicao[0], posicao[1])
@@ -96,7 +96,7 @@ class Inimigo:
       if self.fase == "encolhendo":
          self.tamanho_atual[0] -= velocidade
          self.tamanho_atual[1] -= velocidade
-         if self.tamanho_atual[0] <= self.tamanho_padrao / 1.6:
+         if self.tamanho_atual[0] <= self.tamanho_padrao / 1.8:
             self.fase = "crescendo"
       
       if self.fase == "crescendo":
@@ -116,32 +116,43 @@ class Obstaculo:
    def __init__(self):
       self.distancia_minima = 45
 
-      self.QUANTIDADE_INIMIGOS = 6
+      self.QUANTIDADE_INIMIGOS = 10
       self.inimigos_objeto = []
       
-      self.QUANTIDADE_MOEDAS = 12
+      self.QUANTIDADE_MOEDAS = 16
       self.moedas_objeto = []
       
-      self.quantidade_posicoes = self.QUANTIDADE_MOEDAS * 4
+      self.quantidade_posicoes = (self.QUANTIDADE_MOEDAS + self.QUANTIDADE_INIMIGOS) * 1.1
       self.posicoes_feitas = []
 
    def criar_posicoes(self):
-      while len(self.posicoes_feitas) < self.quantidade_posicoes:
-         procurar = True
-         
-         while procurar:
-            procurar = False
-            
-            pos_x = random.randint(30, TELA_LARGURA - 40)
-            pos_y = random.randint(30, TELA_COMPRIMENTO - 40)
-
-            for (x, y) in self.posicoes_feitas:
-               distancia_entre_blocos = math.sqrt((x - pos_x)**2 + (y - pos_y)**2)
+         while len(self.posicoes_feitas) < self.quantidade_posicoes:
+            procurar = True
+            while procurar:
+               procurar = False
                
-               if not (distancia_entre_blocos > self.distancia_minima):
-                  procurar = True
-                  break
-         self.posicoes_feitas.append((pos_x, pos_y))      
+               pos_x = random.randint(17, TELA_LARGURA - 17)
+               pos_y = random.randint(17, TELA_COMPRIMENTO - 17)
+
+               for moeda in self.moedas_objeto:
+                  distancia_entre_blocos = math.sqrt((moeda.centro_xy[0] - pos_x)**2 + (moeda.centro_xy[1] - pos_y)**2)   
+                  if not (distancia_entre_blocos > self.distancia_minima):
+                     procurar = True
+                     break
+               
+               for inimigo in self.inimigos_objeto:
+                  distancia_entre_blocos = math.sqrt((inimigo.centro_xy[0] - pos_x)**2 + (inimigo.centro_xy[1] - pos_y)**2)   
+                  if not (distancia_entre_blocos > self.distancia_minima):
+                     procurar = True
+                     break
+               
+               for (x, y) in self.posicoes_feitas:
+                  distancia_entre_blocos = math.sqrt((x - pos_x)**2 + (y - pos_y)**2)
+                  if not (distancia_entre_blocos > self.distancia_minima):
+                     procurar = True
+                     break
+
+            self.posicoes_feitas.append((pos_x, pos_y))      
 
    def criar_objeto_obstaculo(self):
       for posicao in self.posicoes_feitas[:]:
@@ -205,10 +216,10 @@ class Jogo:
          if self.cobra.corpo.colliderect(moeda.rect):
             self.obstaculo.moedas_objeto.remove(moeda)
             print("MOEDA")
-
+            
             if random.random() < 0.8 and self.obstaculo.inimigos_objeto:
                self.obstaculo.inimigos_objeto.pop(random.randint(0, len(self.obstaculo.inimigos_objeto) - 1))
-      
+
       for inimigo in self.obstaculo.inimigos_objeto[:]:
 
          if inimigo.fase != "completo":
@@ -221,11 +232,10 @@ class Jogo:
    #TODO: Usar a função de variar tela... nao consegui. Aprimorar aleatoriedade do surgimento dos obstaculos... Aprimorar a remoção? Coloca Menu, powerups, o que vai acontecer se eu pegar 15 moedas? e se eu pegar as inimigas? aleatoriedade e divertido
    
    def atualizar(self):
-      
-      self.obstaculo.criar_posicoes()
 
+      self.obstaculo.criar_posicoes()
       self.obstaculo.criar_objeto_obstaculo()
-   
+
       self.acao_obstaculos()
    
       self.cobra.mover_cobra()
