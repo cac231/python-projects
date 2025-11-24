@@ -1,15 +1,16 @@
-import time
 import math
 import random
+import os
+os.environ['SDL_VIDEO_CENTERED'] = 'centered'
 import pygame
 
 BLOCO = 36
-TELA_LARGURA = BLOCO * 15 
+TELA_LARGURA = BLOCO * 15
 TELA_COMPRIMENTO = BLOCO * 15
 
 FPS = 60
 
-VELOCIDADE = int(5 * (BLOCO / 30))
+VELOCIDADE = 5
 CIMA = (0, -VELOCIDADE)
 DIREITA = (VELOCIDADE, 0)
 BAIXO = (0, VELOCIDADE)
@@ -17,57 +18,84 @@ ESQUERDA = (-VELOCIDADE, 0)
 
 CORES = {
    "tela_cor": (11, 20, 59),
-   "cobra_cor": (10, 200, 100),
+   "cobra_cor_ativo": (10, 200, 100),
+   "cobra_cor_safe": (110, 100, 100),
    "moeda_cor": (143, 181, 211),
    "inimigo_cor": (219, 29, 89),
 }
 
 #//
 
-class Cobra:
+class Variaveis:
    def __init__(self):
-      self.inicio_x = TELA_LARGURA / 2 - (BLOCO / 2)
-      self.inicio_y = TELA_COMPRIMENTO - 100
+      self.BLOCO = BLOCO
+      self.TELA_LARGURA = TELA_LARGURA
+      self.TELA_COMPRIMENTO = TELA_COMPRIMENTO
+      self.DISTANCIA_MINIMA = 40
+   def variaveis_tudo_atualizar(self, constante):
+      self.BLOCO *= constante
+      self.TELA_LARGURA *= constante
+      self.TELA_COMPRIMENTO *= constante
+      self.DISTANCIA_MINIMA *= constante
+
+#TODO: essa constante na distancia_minima não esta estavel. Quando aumenta muito a tela, os blocos enconstam um no outro
+
+#//
+
+class Cobra:
+   def __init__(self, variaveis_classe):
+      self.variaveis_classe = variaveis_classe
+
+      inicio_x = self.variaveis_classe.TELA_LARGURA / 2 - (self.variaveis_classe.BLOCO / 2)
+      inicio_y = self.variaveis_classe.TELA_COMPRIMENTO - 100
       
-      self.corpo = pygame.Rect(self.inicio_x, self.inicio_y, BLOCO, BLOCO)
+      self.corpo = pygame.Rect(inicio_x, inicio_y, self.variaveis_classe.BLOCO, self.variaveis_classe.BLOCO)
       self.velocidade = list(CIMA)
 
+      self.cobra_rect_atualizar(inicio_x, inicio_y)
+   def cobra_rect_atualizar(self, x, y):
+      self.pos_x = x
+      self.pos_y = y
+      self.corpo = pygame.Rect(self.pos_x, self.pos_y, self.variaveis_classe.BLOCO, self.variaveis_classe.BLOCO)
+   
    def mover_cobra(self):
       self.corpo.x += self.velocidade[0]
       self.corpo.y += self.velocidade[1]
 
-   def colidiu_borda_tela(self):
-      if (self.corpo.x + BLOCO > TELA_LARGURA or 
-          self.corpo.y + BLOCO > TELA_COMPRIMENTO or 
+   def colidiu_borda_cobra(self):
+      if (self.corpo.x + self.variaveis_classe.BLOCO > self.variaveis_classe.TELA_LARGURA or 
+          self.corpo.y + self.variaveis_classe.BLOCO > self.variaveis_classe.TELA_COMPRIMENTO or 
           self.corpo.x < 0 or 
           self.corpo.y < 0):
          return True
 
-   def direcao_cobra(self, direcao_nova):
+   def direcionar_cobra(self, direcao_nova):
       if not (self.velocidade[0] != 0 and direcao_nova[0] != 0 or
               self.velocidade[1] != 0 and direcao_nova[1] != 0):
          self.velocidade = list(direcao_nova)
 
-   def desenhar_cobra(self, tela):
-      pygame.draw.rect(tela, CORES["cobra_cor"], self.corpo)
+   def desenhar_cobra(self, tela, cor):
+      pygame.draw.rect(tela, cor, self.corpo)
    
 #//
 
 class Moeda:
-   def __init__(self, posicao):
-      self.tamanho_padrao = BLOCO / 1.4
-      self.tamanho_atual = 5
+   def __init__(self, posicao, variaveis_classe):
+      self.variaveis_classe = variaveis_classe
+
+      self.tamanho_padrao = self.variaveis_classe.BLOCO / 1.4
+      self.tamanho_atual = self.variaveis_classe.BLOCO / 7
       self.fase = "crescendo"
 
       self.centro_xy = (posicao[0], posicao[1])
       self.rect = pygame.Rect(posicao, [self.tamanho_atual, self.tamanho_atual])
 
-   def atualizar_animacao(self):
+   def animacao_moeda(self):
       velocidade = 2
 
       if self.fase == "crescendo":
          self.tamanho_atual += velocidade
-         if self.tamanho_atual >= self.tamanho_padrao * 1.2:
+         if self.tamanho_atual >= self.tamanho_padrao * 1.3: # aumentar o tamanho padrão
             self.fase = "encolhendo"
       
       if self.fase == "encolhendo":
@@ -82,21 +110,23 @@ class Moeda:
 #//
 
 class Inimigo:
-   def __init__(self, posicao):
-      self.tamanho_padrao = BLOCO / 1.8
-      self.tamanho_atual = [30, 28]
+   def __init__(self, posicao, variaveis_classe):
+      self.variaveis_classe = variaveis_classe
+
+      self.tamanho_padrao = self.variaveis_classe.BLOCO / 1.8
+      self.tamanho_atual = [self.variaveis_classe.BLOCO / 1.2, self.variaveis_classe.BLOCO / 1.28]
       self.fase = "encolhendo"
 
       self.centro_xy = (posicao[0], posicao[1])
       self.rect = pygame.Rect(posicao, self.tamanho_atual)
 
-   def atualizar_animacao(self):
-      velocidade = 1
+   def animacao_inimigo(self):
+      velocidade = 0.8
 
       if self.fase == "encolhendo":
          self.tamanho_atual[0] -= velocidade
          self.tamanho_atual[1] -= velocidade
-         if self.tamanho_atual[0] <= self.tamanho_padrao / 1.8:
+         if self.tamanho_atual[0] <= self.tamanho_padrao * 0.8: # diminuir o tamanho padrão
             self.fase = "crescendo"
       
       if self.fase == "crescendo":
@@ -113,14 +143,16 @@ class Inimigo:
 #//
 
 class Obstaculo:
-   def __init__(self):
-      self.distancia_minima = 45
+   def __init__(self, variaveis_classe):
+      self.variaveis_classe = variaveis_classe
+
+      self.distancia_minima = self.variaveis_classe.DISTANCIA_MINIMA
 
       self.QUANTIDADE_INIMIGOS = 10
-      self.inimigos_objeto = []
+      self.inimigos_objetos = []
       
-      self.QUANTIDADE_MOEDAS = 16
-      self.moedas_objeto = []
+      self.QUANTIDADE_MOEDAS = (self.QUANTIDADE_INIMIGOS // 2)
+      self.moedas_objetos = []
       
       self.quantidade_posicoes = (self.QUANTIDADE_MOEDAS + self.QUANTIDADE_INIMIGOS) * 1.1
       self.posicoes_feitas = []
@@ -131,16 +163,16 @@ class Obstaculo:
             while procurar:
                procurar = False
                
-               pos_x = random.randint(17, TELA_LARGURA - 17)
-               pos_y = random.randint(17, TELA_COMPRIMENTO - 17)
+               pos_x = random.uniform(17, self.variaveis_classe.TELA_LARGURA - 17)
+               pos_y = random.uniform(17, self.variaveis_classe.TELA_COMPRIMENTO - 17)
 
-               for moeda in self.moedas_objeto:
+               for moeda in self.moedas_objetos:
                   distancia_entre_blocos = math.sqrt((moeda.centro_xy[0] - pos_x)**2 + (moeda.centro_xy[1] - pos_y)**2)   
                   if not (distancia_entre_blocos > self.distancia_minima):
                      procurar = True
                      break
                
-               for inimigo in self.inimigos_objeto:
+               for inimigo in self.inimigos_objetos:
                   distancia_entre_blocos = math.sqrt((inimigo.centro_xy[0] - pos_x)**2 + (inimigo.centro_xy[1] - pos_y)**2)   
                   if not (distancia_entre_blocos > self.distancia_minima):
                      procurar = True
@@ -154,24 +186,24 @@ class Obstaculo:
 
             self.posicoes_feitas.append((pos_x, pos_y))      
 
-   def criar_objeto_obstaculo(self):
+   def criar_objetos_obstaculos(self):
       for posicao in self.posicoes_feitas[:]:
          
-         if len(self.moedas_objeto) < self.QUANTIDADE_MOEDAS:
-            moeda = Moeda(posicao)
-            self.moedas_objeto.append(moeda)
+         if len(self.moedas_objetos) < self.QUANTIDADE_MOEDAS:
+            moeda = Moeda(posicao, self.variaveis_classe)
+            self.moedas_objetos.append(moeda)
             self.posicoes_feitas.remove(posicao)
          
-         elif len(self.inimigos_objeto) < self.QUANTIDADE_INIMIGOS:
-            inimigo = Inimigo(posicao)
-            self.inimigos_objeto.append(inimigo)
+         elif len(self.inimigos_objetos) < self.QUANTIDADE_INIMIGOS:
+            inimigo = Inimigo(posicao, self.variaveis_classe)
+            self.inimigos_objetos.append(inimigo)
             self.posicoes_feitas.remove(posicao)
 
-   def desenhar_rect_obstaculo(self, tela):
-      for moeda in self.moedas_objeto:
+   def desenhar_obstaculos(self, tela):
+      for moeda in self.moedas_objetos:
          pygame.draw.rect(tela, CORES["moeda_cor"], moeda.rect)
       
-      for inimigo in self.inimigos_objeto:
+      for inimigo in self.inimigos_objetos:
          pygame.draw.rect(tela, CORES["inimigo_cor"], inimigo.rect)
    
 #//
@@ -180,84 +212,127 @@ class Jogo:
    def __init__(self):
       pygame.init()
 
-      self.cobra = Cobra()
-      self.obstaculo = Obstaculo()
+      self.variaveis_classe = Variaveis()
+      self.cobra = Cobra(self.variaveis_classe)
+      self.obstaculo = Obstaculo(self.variaveis_classe)
+      
+      self.moedas_pegas = 0
+      self.inimigos_pegos = 0
+      self.pode_colidir = 60 # começa com 60 frames sem colidir
       
       self.titulo = pygame.display.set_caption("A hora do Lesk!")
-      self.time = pygame.time.Clock()
+      self.tempo = pygame.time.Clock()
       self.rodando = True
 
-      self.tela = pygame.display.set_mode((TELA_LARGURA, TELA_COMPRIMENTO))
+      self.tela = pygame.display.set_mode((self.variaveis_classe.TELA_LARGURA, self.variaveis_classe.TELA_COMPRIMENTO))
+   def tela_atualizar_jogo(self):
+      self.tela = pygame.display.set_mode((self.variaveis_classe.TELA_LARGURA, self.variaveis_classe.TELA_COMPRIMENTO))
 
-   def processar_eventos(self):
+   def processar_eventos_jogo(self):
       for evento in pygame.event.get():
          if evento.type == pygame.QUIT:
             self.rodando = False
          
          elif evento.type == pygame.KEYDOWN:
-            self.processar_teclas(evento.key)
+            self.processar_teclas_jogo(evento.key)
    
-   def processar_teclas(self, tecla):
+   def processar_teclas_jogo(self, tecla):
       if tecla == pygame.K_RIGHT:
-         self.cobra.direcao_cobra(DIREITA)
+         self.cobra.direcionar_cobra(DIREITA)
       if tecla == pygame.K_UP:
-         self.cobra.direcao_cobra(CIMA)
+         self.cobra.direcionar_cobra(CIMA)
       if tecla == pygame.K_LEFT:
-         self.cobra.direcao_cobra(ESQUERDA)
+         self.cobra.direcionar_cobra(ESQUERDA)
       if tecla == pygame.K_DOWN:
-         self.cobra.direcao_cobra(BAIXO)
+         self.cobra.direcionar_cobra(BAIXO)
 
-   def acao_obstaculos(self):
-      for moeda in self.obstaculo.moedas_objeto[:]:
-         
-         if moeda.fase != "completo":
-            moeda.atualizar_animacao()
+   def animacao_obstaculos(self):
+      for moeda in self.obstaculo.moedas_objetos[:]:
+            if moeda.fase != "completo":
+               moeda.animacao_moeda()
+      for inimigo in self.obstaculo.inimigos_objetos[:]:
+            if inimigo.fase != "completo":
+               inimigo.animacao_inimigo()           
 
-         if self.cobra.corpo.colliderect(moeda.rect):
-            self.obstaculo.moedas_objeto.remove(moeda)
-            print("MOEDA")
-            
-            if random.random() < 0.8 and self.obstaculo.inimigos_objeto:
-               self.obstaculo.inimigos_objeto.pop(random.randint(0, len(self.obstaculo.inimigos_objeto) - 1))
+   def escalonar_variaveis(self, constante):
+      self.variaveis_classe.variaveis_tudo_atualizar(constante)
 
-      for inimigo in self.obstaculo.inimigos_objeto[:]:
+      x, y = self.cobra.corpo.topleft # pegar a posição x e y atual do rect da cobra
+      self.obstaculo.moedas_objetos = []
+      self.obstaculo.inimigos_objetos = []
+      self.obstaculo.posicoes_feitas = []
 
-         if inimigo.fase != "completo":
-            inimigo.atualizar_animacao()
-
-         if self.cobra.corpo.colliderect(inimigo.rect):
-            self.obstaculo.inimigos_objeto.remove(inimigo)
-            print("MORTE...")
-   
-   #TODO: Usar a função de variar tela... nao consegui. Aprimorar aleatoriedade do surgimento dos obstaculos... Aprimorar a remoção? Coloca Menu, powerups, o que vai acontecer se eu pegar 15 moedas? e se eu pegar as inimigas? aleatoriedade e divertido
-   
-   def atualizar(self):
-
+      self.cobra.cobra_rect_atualizar(x, y)
       self.obstaculo.criar_posicoes()
-      self.obstaculo.criar_objeto_obstaculo()
+      self.obstaculo.criar_objetos_obstaculos()
+      self.tela_atualizar_jogo()
 
-      self.acao_obstaculos()
+   def remover_obstaculos_aleatorios(self, remover_quantos):
+      if self.obstaculo.inimigos_objetos and self.obstaculo.moedas_objetos:
+         for x in range(remover_quantos):
+            self.obstaculo.inimigos_objetos.pop(random.randint(0, len(self.obstaculo.inimigos_objetos) - 1))
+            self.obstaculo.moedas_objetos.pop(random.randint(0, len(self.obstaculo.moedas_objetos) - 1))
+
+   def colidiu_obstaculos(self):
+      for moeda in self.obstaculo.moedas_objetos[:]:
+         if self.cobra.corpo.colliderect(moeda.rect):
+            self.obstaculo.moedas_objetos.remove(moeda)
+            self.moedas_pegas += 1
+            self.pode_colidir = 25
+            
+            if self.moedas_pegas == 5:
+               self.moedas_pegas, self.inimigos_pegos = 0, 0
+               self.escalonar_variaveis(1.1)
+               self.pode_colidir = 120
+            else:
+               self.remover_obstaculos_aleatorios((self.obstaculo.QUANTIDADE_INIMIGOS - 1) // 2)
+
+      for inimigo in self.obstaculo.inimigos_objetos[:]:
+         if self.cobra.corpo.colliderect(inimigo.rect):
+            self.obstaculo.inimigos_objetos.remove(inimigo)
+            self.inimigos_pegos += 1
+            self.pode_colidir = 25
+            
+            if self.inimigos_pegos == 2:
+               self.moedas_pegas, self.inimigos_pegos = 0, 0
+               self.escalonar_variaveis(0.9)
+               self.pode_colidir = 120
+            else:   
+               self.remover_obstaculos_aleatorios(2)
    
+   #TODO: Aprimorar aleatoriedade do surgimento dos obstaculos... Aprimorar a remoção? Coloca Menu, powerups. Aleatoriedade e divertido
+   
+   def atualizar_jogo(self):
+      self.obstaculo.criar_posicoes()
+      self.obstaculo.criar_objetos_obstaculos()
+      
+      if self.pode_colidir == 0:
+         self.colidiu_obstaculos()
+      else:
+         self.pode_colidir -= 1
+      self.animacao_obstaculos()
+      
       self.cobra.mover_cobra()
-      if self.cobra.colidiu_borda_tela():
+      if self.cobra.colidiu_borda_cobra() or (self.variaveis_classe.TELA_LARGURA < 310):
          self.rodando = False
    
-   def desenhar_tudo(self):
-      
+   def desenhar_jogo(self):
       self.tela.fill(CORES["tela_cor"])
-      self.cobra.desenhar_cobra(self.tela)
-      self.obstaculo.desenhar_rect_obstaculo(self.tela)
+      self.obstaculo.desenhar_obstaculos(self.tela)
       
-      pygame.display.flip()  
+      if self.pode_colidir == 0:
+         self.cobra.desenhar_cobra(self.tela, CORES["cobra_cor_ativo"])
+      else:
+         self.cobra.desenhar_cobra(self.tela, CORES["cobra_cor_safe"])
+
+      pygame.display.flip()
    
    def loop(self):
       while self.rodando:
-
-         self.atualizar()
-         self.desenhar_tudo()
-         self.processar_eventos()
-         self.time.tick(FPS)
-      
+         self.atualizar_jogo()
+         self.desenhar_jogo()
+         self.processar_eventos_jogo()
+         self.tempo.tick(FPS)
       pygame.quit()
 
 if __name__ == "__main__":
