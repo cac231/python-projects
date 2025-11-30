@@ -1,16 +1,27 @@
+import pygame
 import math
 import random
 import os
 os.environ['SDL_VIDEO_CENTERED'] = 'centered'
-import pygame
+import sys
+
+def pegar_caminho_recurso(nome_arquivo):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, nome_arquivo)
+    else:
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), nome_arquivo)
+
+
 
 FPS = 60
 CORES = {
-   "tela_cor": (11, 20, 59),
+   "tela_cor_menu": (0, 0, 10),
+   "tela_cor_jogo": (10, 20, 50),
    "cobra_cor_ativo": (10, 200, 100),
    "cobra_cor_safe": (110, 100, 100),
    "moeda_cor": (143, 181, 211),
    "inimigo_cor": (219, 29, 89),
+   "qui_inimigo_cor": (239, 19, 99),
 }
 
 #//
@@ -57,7 +68,7 @@ class Cobra:
    def __init__(self, VARIAVEIS):
       self.VARIAVEIS = VARIAVEIS
 
-      inicio_x = self.VARIAVEIS.atual[0][0] / 2 - (self.VARIAVEIS.atual[1] / 2)
+      inicio_x = (self.VARIAVEIS.atual[0][0] / 2) - (self.VARIAVEIS.atual[1] / 2)
       inicio_y = self.VARIAVEIS.atual[0][1] - 100
       
       self.CIMA = (0, -self.VARIAVEIS.atual[2])
@@ -116,7 +127,7 @@ class Moeda:
 
       if self.fase == "crescendo":
          self.tamanho_atual += velocidade
-         if self.tamanho_atual >= self.tamanho_padrao * 1.3: # aumentar o tamanho padrão
+         if self.tamanho_atual >= self.tamanho_padrao * 1.3: #Aumentar o tamanho padrão
             self.fase = "encolhendo"
       
       if self.fase == "encolhendo":
@@ -147,7 +158,7 @@ class Inimigo:
       if self.fase == "encolhendo":
          self.tamanho_atual[0] -= velocidade
          self.tamanho_atual[1] -= velocidade
-         if self.tamanho_atual[0] <= self.tamanho_padrao * 0.8: # diminuir o tamanho padrão
+         if self.tamanho_atual[0] <= self.tamanho_padrao * 0.8: #Diminuir o tamanho padrão
             self.fase = "crescendo"
       
       if self.fase == "crescendo":
@@ -160,6 +171,34 @@ class Inimigo:
       
       self.rect.size = (self.tamanho_atual[0], self.tamanho_atual[1])
       self.rect.center = (self.centro_xy)
+
+#//
+
+class QuicanteInimigo:
+   def __init__(self, VARIAVEIS):
+      self.VARIAVEIS = VARIAVEIS
+
+      self.qui_tamanho_padrao = self.VARIAVEIS.atual[1] / 1.7
+      self.qui_rect = pygame.Rect((400, 400), (self.qui_tamanho_padrao, self.qui_tamanho_padrao))
+
+      self.velocidade = [6, -6]
+   
+   def quicante_desenhar_inimigo(self, tela):
+      pygame.draw.rect(tela, CORES["qui_inimigo_cor"], self.qui_rect)
+   
+   def quicante_mover_inimigo(self):
+      self.qui_rect.x += self.velocidade[0]
+      self.qui_rect.y += self.velocidade[1]
+
+      if self.qui_rect.x <= 0:
+         self.velocidade[0] = -self.velocidade[0]
+      if self.qui_rect.x + self.qui_tamanho_padrao >= self.VARIAVEIS.atual[0][0]:
+         self.velocidade[0] = -self.velocidade[0]
+      
+      if self.qui_rect.y <= 0:
+         self.velocidade[1] = -self.velocidade[1]
+      if self.qui_rect.y + self.qui_tamanho_padrao >= self.VARIAVEIS.atual[0][0]:
+         self.velocidade[1] = -self.velocidade[1]
 
 #//
 
@@ -188,6 +227,8 @@ class Obstaculo:
             
             pos_x = random.randint(17, self.VARIAVEIS.atual[0][0] - 17)
             pos_y = random.randint(17, self.VARIAVEIS.atual[0][1] - 17)
+
+            #TODO: isso nao esta certo, ainda tem blocos meio na borda, ve isso ai
 
             for moeda in self.moedas_objetos:
                distancia_entre_blocos = math.sqrt((moeda.centro_xy[0] - pos_x)**2 + (moeda.centro_xy[1] - pos_y)**2)   
@@ -230,31 +271,101 @@ class Obstaculo:
    
 #//
 
+class Menu:
+   def __init__(self, VARIAVEIS):
+      self.VARIAVEIS = VARIAVEIS
+       
+      caminho_fonte = pegar_caminho_recurso("ARCADE_N.TTF")
+      self.fonte = lambda tamanho: pygame.font.Font(caminho_fonte, tamanho)
+     
+      #//
+      self.tela_meio_texto = self.VARIAVEIS.atual[0][0] // 2 + 11 #Para centrallizar a fonte que tem espaço na direita
+
+      self.titulo = self.fonte(38).render("Hora do Lesk!", 1, (250, 100, 100))
+      self.titulo_pos = self.titulo.get_rect(center=(self.tela_meio_texto, 100))
+
+      self.subTitulo = self.fonte(18).render("Feito por cac <3", 1, (200, 100, 100))
+      self.subTitulo_pos = self.subTitulo.get_rect(center=(self.tela_meio_texto, 140))
+
+      #//
+      self.tamanho_botoes = (210, 80)
+      self.tela_meio_botao = (self.VARIAVEIS.atual[0][0] // 2) - (self.tamanho_botoes[0] // 2)
+
+      self.lista_botoes = []
+      gap = 0
+      for i in range(3):
+         self.lista_botoes.append(pygame.Rect((self.tela_meio_botao, 240 + gap), self.tamanho_botoes))
+         gap += 30 + 80
+      
+      palavras_botoes = ["Jogar", "Tutorial", "Sair"]
+      self.textos_botoes = []
+      self.textos_botoes_rect_pos = []
+      for i, palavra in enumerate(palavras_botoes):
+         self.textos_botoes.append(self.fonte(20).render(palavra, 1, (220, 100, 100)))
+         self.textos_botoes_rect_pos.append(self.textos_botoes[i].get_rect(center=(self.lista_botoes[i].center)))
+
+   def desenhar_menu(self, tela):
+      tela.blit(self.titulo, self.titulo_pos)
+      tela.blit(self.subTitulo, self.subTitulo_pos)
+      
+      for botao in self.lista_botoes:
+         pygame.draw.rect(tela, (10, 10, 10), botao, 0, 10)
+         pygame.draw.rect(tela, (200, 200, 200), botao, 3, 10)
+      
+      for texto, rect_pos in zip(self.textos_botoes, self.textos_botoes_rect_pos):
+         tela.blit(texto, rect_pos)
+
+#//
+
 class Jogo:
    def __init__(self):
       pygame.init()
+      pygame.font.init()
+      self.executar_todas_classes()
 
-      self.VARIAVEIS = Variaveis()
-      self.cobra = Cobra(self.VARIAVEIS)
-      self.obstaculo = Obstaculo(self.VARIAVEIS)
+      self.RELACAO_ATUAL = "no_menu"
       
-      self.moedas_pegas = 0
-      self.inimigos_pegos = 0
-      self.pode_colidir = 60 # começa com 60 frames sem colidir
-      self.aumentar_velocidade_tempo = 0
-      
-      self.titulo = pygame.display.set_caption("A hora do Lesk!")
+      self.titulo = pygame.display.set_caption("HORA DO LESK!")
       self.tempo = pygame.time.Clock()
       self.rodando = True
 
-      self.tela = pygame.display.set_mode(self.VARIAVEIS.atual[0])
-   def tela_atualizar_jogo(self):
-      self.tela = pygame.display.set_mode(self.VARIAVEIS.atual[0])
+   def executar_todas_classes(self):
+      self.VARIAVEIS = Variaveis()
+      self.cobra = Cobra(self.VARIAVEIS)
+      self.obstaculo = Obstaculo(self.VARIAVEIS)
+      self.menu = Menu(self.VARIAVEIS)
+      self.quicante_inimigo = QuicanteInimigo(self.VARIAVEIS)
+
+      self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
+      
+      self.moedas_pegas = 0
+      self.inimigos_pegos = 0
+      self.nao_pode_colidir = 200 #Começa com 200 frames sem colidir
+      self.cronometro_freeze_jogo = 200
+      # self.aumentar_velocidade_tempo = 0
+   
+   def tela_atualizar_jogo(self, tamanho):
+      self.tela = pygame.display.set_mode(tamanho)
 
    def processar_eventos_jogo(self):
       for evento in pygame.event.get():
          if evento.type == pygame.QUIT:
             self.rodando = False
+         
+         elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+            for el in self.menu.lista_botoes:
+               posicao_mouse = evento.pos
+               if el.collidepoint(posicao_mouse):
+                  
+                  if el == self.menu.lista_botoes[0]:
+                     self.RELACAO_ATUAL = "no_jogo"
+                     self.executar_todas_classes()
+
+                  if el == self.menu.lista_botoes[1]:
+                     None
+                  
+                  if el == self.menu.lista_botoes[2]:
+                     self.rodando = False
          
          elif evento.type == pygame.KEYDOWN:
             self.processar_teclas_jogo(evento.key)
@@ -280,7 +391,7 @@ class Jogo:
    def escalonar_variaveis(self, preset_novo):
       self.VARIAVEIS.preset_tudo_atualizar(preset_novo)
 
-      x, y = self.cobra.corpo.topleft # pegar a posição x e y atual do rect da cobra
+      x, y = self.cobra.corpo.topleft #Pega a posição (x, y) atual do rect da cobra
       self.obstaculo.moedas_objetos = []
       self.obstaculo.inimigos_objetos = []
       self.obstaculo.posicoes_feitas = []
@@ -288,7 +399,7 @@ class Jogo:
       self.cobra.cobra_rect_atualizar(x, y)
       self.obstaculo.criar_posicoes()
       self.obstaculo.criar_objetos_obstaculos()
-      self.tela_atualizar_jogo()
+      self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
 
    def remover_obstaculos_aleatorios(self, remover_moedas, remover_inimigos):
       if self.obstaculo.moedas_objetos:
@@ -300,67 +411,80 @@ class Jogo:
             self.obstaculo.inimigos_objetos.pop(random.randint(0, len(self.obstaculo.inimigos_objetos) - 1))
    
    def colidiu_obstaculos(self):
+      remover_moedas = (self.obstaculo.QUANTIDADE_MOEDAS - 1) // 2
+      remover_inimigos = (self.obstaculo.QUANTIDADE_INIMIGOS - 1) // 2
       for moeda in self.obstaculo.moedas_objetos[:]:
+         
          if self.cobra.corpo.colliderect(moeda.rect):
             self.obstaculo.moedas_objetos.remove(moeda)
             self.moedas_pegas += 1
-            self.pode_colidir = 25
+            self.nao_pode_colidir = 25
             
             if self.moedas_pegas == 5:
-               self.moedas_pegas, self.inimigos_pegos = 0, 0
+               (self.moedas_pegas, self.inimigos_pegos) = (0, 0)
                self.escalonar_variaveis(-1)
-               self.pode_colidir = 140
+               self.nao_pode_colidir = 140
             else:
-               remover_moedas = (self.obstaculo.QUANTIDADE_MOEDAS - 1) // 2
-               remover_inimigos = (self.obstaculo.QUANTIDADE_INIMIGOS - 1) // 2
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
 
       for inimigo in self.obstaculo.inimigos_objetos[:]:
          if self.cobra.corpo.colliderect(inimigo.rect):
             self.obstaculo.inimigos_objetos.remove(inimigo)
             self.inimigos_pegos += 1
-            self.pode_colidir = 25
+            self.nao_pode_colidir = 25
             
             if self.inimigos_pegos == 2:
                self.moedas_pegas, self.inimigos_pegos = 0, 0
                self.escalonar_variaveis(1)
-               self.pode_colidir = 140
+               self.nao_pode_colidir = 140
             else:
-               remover_moedas = (self.obstaculo.QUANTIDADE_MOEDAS - 1) // 2
-               remover_inimigos = (self.obstaculo.QUANTIDADE_INIMIGOS - 1) // 2
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
    
    #TODO: Aprimorar aleatoriedade do surgimento dos obstaculos... Aprimorar a remoção? Coloca Menu, powerups. Aleatoriedade e divertido
    #todo: colocar essas if else, variaveis, nos respectivas funcoes, por exemplo esses negocios que pode gera um rodando = False la em cima junto com os outros enfim é isso boa sorte re rs
    
    def atualizar_jogo(self):
+
+      if self.RELACAO_ATUAL == "no_menu":
+         pass
+
       self.obstaculo.criar_posicoes()
       self.obstaculo.criar_objetos_obstaculos()
       
-      if self.pode_colidir == 0:
-         self.colidiu_obstaculos()
-      else:
-         self.pode_colidir -= 1
-      self.animacao_obstaculos()
+      if self.RELACAO_ATUAL == "no_jogo":
+         self.animacao_obstaculos()
+         
+         if self.cronometro_freeze_jogo <= 0:
+            # self.quicante_inimigo.quicante_mover_inimigo()
+            
+            if self.nao_pode_colidir == 0:
+               self.colidiu_obstaculos()
+            else:
+               self.nao_pode_colidir -= 1
+            
+            self.cobra.mover_cobra()
+            if self.cobra.colidiu_borda_cobra() or self.VARIAVEIS.indice == 11: #Deveria abrir a tela de GAME OVER
+               self.RELACAO_ATUAL = "no_menu"
+               self.executar_todas_classes()
+            
+         else:
+            self.cronometro_freeze_jogo -= 1
 
-      # if self.aumentar_velocidade_tempo == 10:
-      #    self.cobra.constante_razao *= 20
-      #    self.aumentar_velocidade_tempo = 0
-      # else:
-      #    self.aumentar_velocidade_tempo += 1
-      
-      self.cobra.mover_cobra()
-      if self.cobra.colidiu_borda_cobra() or self.VARIAVEIS.indice == 11: # deveria abrir a teal de GAME OVER
-         self.rodando = False
    
    def desenhar_jogo(self):
-      self.tela.fill(CORES["tela_cor"])
-      self.obstaculo.desenhar_obstaculos(self.tela)
-      
-      if self.pode_colidir == 0:
-         self.cobra.desenhar_cobra(self.tela, CORES["cobra_cor_ativo"])
-      else:
-         self.cobra.desenhar_cobra(self.tela, CORES["cobra_cor_safe"])
+      if self.RELACAO_ATUAL == "no_menu":
+         self.tela.fill(CORES["tela_cor_menu"])
+         self.menu.desenhar_menu(self.tela)
+
+      if self.RELACAO_ATUAL == "no_jogo":
+         self.tela.fill(CORES["tela_cor_jogo"])
+         self.obstaculo.desenhar_obstaculos(self.tela)
+         # self.quicante_inimigo.quicante_desenhar_inimigo(self.tela)
+         
+         if self.nao_pode_colidir == 0:
+            self.cobra.desenhar_cobra(self.tela, CORES["cobra_cor_ativo"])
+         else:
+            self.cobra.desenhar_cobra(self.tela, CORES["cobra_cor_safe"])
 
       pygame.display.flip()
    
