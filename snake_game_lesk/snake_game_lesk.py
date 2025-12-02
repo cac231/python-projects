@@ -4,17 +4,19 @@ import random
 import os
 os.environ['SDL_VIDEO_CENTERED'] = 'centered'
 import sys
-
 def pegar_caminho_recurso(nome_arquivo):
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS, nome_arquivo)
-    else:
-        return os.path.join(os.path.dirname(os.path.abspath(__file__)), nome_arquivo)
+      if hasattr(sys, '_MEIPASS'):
+         return os.path.join(sys._MEIPASS, nome_arquivo)
+      return os.path.join(os.path.dirname(os.path.abspath(__file__)), nome_arquivo)
 
+#//
+CAMINHO_FONTE = pegar_caminho_recurso(r"assets/ARCADE_N.TTF")
+CAMINHO_MUSICA_MENU = pegar_caminho_recurso(r"assets/musica_menu.wav")
 
+FONTE = lambda tamanho: pygame.font.Font(CAMINHO_FONTE, tamanho)
 
 FPS = 60
-CORES = {
+CORES = { 
    "tela_cor_menu": (0, 0, 10),
    "tela_cor_jogo": (10, 20, 50),
    "cobra_cor_ativo": (10, 200, 100),
@@ -26,20 +28,43 @@ CORES = {
 
 #//
 
+def criar_botoes(variaveis_classe, tamanho_tupla, quantos_botoes, pos_y, gap, string, razao=1):
+   VARIAVEIS = variaveis_classe
+
+   tamanho_botoes = (int(tamanho_tupla[0]), int(tamanho_tupla[1]))
+   tela_meio_botao = (VARIAVEIS.atual[0][0] // 2) - (tamanho_botoes[0] // 2)
+
+   lista_botoes = []
+   gapTotal = 0
+   for i in range(quantos_botoes):
+      lista_botoes.append(pygame.Rect((tela_meio_botao, pos_y + gapTotal), tamanho_botoes))
+      gapTotal += gap + tamanho_tupla[1]
+      
+   palavras_botoes = string
+   textos_botoes = []
+   textos_botoes_rect_pos = []
+   for i, palavra in enumerate(palavras_botoes):
+      textos_botoes.append(FONTE(int(20 * razao)).render(palavra, 0, (220, 100, 100)))
+      textos_botoes_rect_pos.append(textos_botoes[i].get_rect(center=(lista_botoes[i].center)))
+   
+   return lista_botoes, textos_botoes, textos_botoes_rect_pos
+
+#//
+
 class Variaveis:
    def __init__(self):
       self.variavel = { 
-         #         tela, bloco, V, distancia_minima, moedas / inimigos
-         "tela+5": [(825, 825), 55,  9, 90, 0, 15],
-         "tela+4": [(780, 780), 52, 10, 90, 3, 14],
-         "tela+3": [(735, 735), 49,  8, 82, 3, 14],
-         "tela+2": [(690, 690), 46,  7, 68, 5, 14],
-         "tela+1": [(645, 645), 43,  7, 68, 5, 14],
-         "tela0": [(600, 600), 40,  7, 68, 5, 14],
-         "tela-1": [(555, 555), 37,  7, 68, 5, 14],
-         "tela-2": [(510, 510), 34,  6, 64, 5, 14],
-         "tela-3": [(465, 465), 31,  6, 54, 5, 14],
-         "tela-4": [(420, 420), 28,  5, 48, 6, 12],
+         # tela, bloco, V, distancia_minima, moedas / inimigos
+         "tela+5": [(825, 825), 55,  8, 90, 0, 15],
+         "tela+4": [(780, 780), 52,  9, 90, 3, 14],
+         "tela+3": [(735, 735), 49,  7, 82, 3, 14],
+         "tela+2": [(690, 690), 46,  6, 68, 5, 14],
+         "tela+1": [(645, 645), 43,  6, 68, 5, 14],
+         "tela0": [(600, 600), 40,  6, 68, 5, 14],
+         "tela-1": [(555, 555), 37,  6, 68, 5, 14],
+         "tela-2": [(510, 510), 34,  5, 64, 5, 14],
+         "tela-3": [(465, 465), 31,  5, 54, 5, 14],
+         "tela-4": [(420, 420), 28,  4, 48, 6, 12],
          "tela-5": [(375, 375), 25,  4, 46, 6, 12],
          #
          "tela-morte": [(600, 600), 0, 0, 0, 0, 0],
@@ -47,12 +72,10 @@ class Variaveis:
       self.array = list(self.variavel.values())
       self.atual = self.array[5]
       self.indice = self.array.index(self.atual)
+      self.bloco_incial = self.array[5][1]
    
    def preset_tudo_atualizar(self, preset_novo_soma):
       self.indice += preset_novo_soma
-      print(self.indice)
-      print(self.indice)
-      print(self.indice, "\n")
       self.atual = self.array[self.indice]
 
 #! [0] -> Tela (x, y)
@@ -75,9 +98,10 @@ class Cobra:
       self.DIREITA = (self.VARIAVEIS.atual[2], 0)
       self.BAIXO = (0, self.VARIAVEIS.atual[2])
       self.ESQUERDA = (-self.VARIAVEIS.atual[2], 0)
+      self.constante_razao = 1
       
       self.corpo = pygame.Rect(inicio_x, inicio_y, self.VARIAVEIS.atual[1], self.VARIAVEIS.atual[1])
-      self.velocidade = list(self.CIMA)
+      self.velocidade = list(self.CIMA) 
 
       self.cobra_rect_atualizar(inicio_x, inicio_y)
    def cobra_rect_atualizar(self, x, y):
@@ -91,8 +115,8 @@ class Cobra:
       self.BAIXO = (0, self.VARIAVEIS.atual[2])
       self.ESQUERDA = (-self.VARIAVEIS.atual[2], 0)
 
-      self.corpo.x += self.velocidade[0]
-      self.corpo.y += self.velocidade[1]
+      self.corpo.x += int(self.velocidade[0] * self.constante_razao)
+      self.corpo.y += int(self.velocidade[1] * self.constante_razao)
    
    def colidiu_borda_cobra(self):
       if (self.corpo.x + self.VARIAVEIS.atual[1] > self.VARIAVEIS.atual[0][0] or 
@@ -206,18 +230,15 @@ class Obstaculo:
    def __init__(self, VARIAVEIS):
       self.VARIAVEIS = VARIAVEIS
 
-      self.QUANTIDADE_MOEDAS = self.VARIAVEIS.atual[4]
       self.moedas_objetos = []
-      
-      self.QUANTIDADE_INIMIGOS = self.VARIAVEIS.atual[5]
       self.inimigos_objetos = []
-      
-      self.quantidade_posicoes = (self.QUANTIDADE_MOEDAS + self.QUANTIDADE_INIMIGOS) * 1.1
       self.posicoes_feitas = []
 
    def criar_posicoes(self):
       self.QUANTIDADE_MOEDAS = self.VARIAVEIS.atual[4]
       self.QUANTIDADE_INIMIGOS = self.VARIAVEIS.atual[5]
+      self.quantidade_posicoes = (self.QUANTIDADE_MOEDAS + self.QUANTIDADE_INIMIGOS) * 1.1
+      
       self.distancia_minima = self.VARIAVEIS.atual[3]
       
       while len(self.posicoes_feitas) < self.quantidade_posicoes:
@@ -225,10 +246,9 @@ class Obstaculo:
          while procurar:
             procurar = False
             
-            pos_x = random.randint(17, self.VARIAVEIS.atual[0][0] - 17)
-            pos_y = random.randint(17, self.VARIAVEIS.atual[0][1] - 17)
-
-            #TODO: isso nao esta certo, ainda tem blocos meio na borda, ve isso ai
+            margem = self.VARIAVEIS.atual[1] // 2
+            pos_x = random.randint(margem, self.VARIAVEIS.atual[0][0] - margem)
+            pos_y = random.randint(margem, self.VARIAVEIS.atual[0][1] - margem)
 
             for moeda in self.moedas_objetos:
                distancia_entre_blocos = math.sqrt((moeda.centro_xy[0] - pos_x)**2 + (moeda.centro_xy[1] - pos_y)**2)   
@@ -271,39 +291,60 @@ class Obstaculo:
    
 #//
 
-class Menu:
+#TODO: PROBLEMA QUANDO EU CLICO NOS BOTOES DO PAUSE. isso aconteceu provavelmente por causa da consatnte, pois sem ela, o menu de pause fica fixo nos 600x600... ve ai
+
+class Pause:
    def __init__(self, VARIAVEIS):
       self.VARIAVEIS = VARIAVEIS
-       
-      caminho_fonte = pegar_caminho_recurso("ARCADE_N.TTF")
-      self.fonte = lambda tamanho: pygame.font.Font(caminho_fonte, tamanho)
-     
+
+      self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = [], [], []
+
+      self.criar_pause()
+   def criar_pause(self):
+      self.tela_meio_texto = self.VARIAVEIS.atual[0][0] // 2 + 11 #Para centrallizar a fonte que tem espaço na direita
+      self.razao = self.VARIAVEIS.atual[1] / self.VARIAVEIS.bloco_incial #Tela inicial e seu bloco
+
+      espaco_ate_margem = 100
+
+      self.titulo_pause = FONTE(int(35 * self.razao)).render(("Pausado!"), 0, (200, 200, 200))
+      self.titulo_pause_pos = self.titulo_pause.get_rect(center=(self.tela_meio_texto, (30 + espaco_ate_margem)))
+
+      self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = criar_botoes(self.VARIAVEIS, (380 * self.razao, 80 * self.razao), 2, (395 - espaco_ate_margem) * self.razao,  30 * self.razao, ["Sair para o menu", "Sair do jogo"], self.razao)
+      
       #//
+
+      self.overlay = pygame.Surface((self.VARIAVEIS.atual[0]))
+      self.overlay.fill((0, 0, 0))
+      self.overlay.set_alpha(210)
+      
+   def desenhar_pause(self, tela):
+      tela.blit(self.overlay, (0, 0))
+      tela.blit(self.titulo_pause, self.titulo_pause_pos)
+      
+      for botao in self.lista_botoes:
+         pygame.draw.rect(tela, (10, 10, 10), botao, 0, 10)
+         pygame.draw.rect(tela, (200, 200, 200), botao, 3, 10)
+      
+      for texto, rect_pos in zip(self.textos_botoes, self.textos_botoes_rect_pos):
+         tela.blit(texto, rect_pos)
+
+#//
+
+class Menu:
+   def __init__(self, VARIAVEIS):
+      self.VARIAVEIS = VARIAVEIS  
       self.tela_meio_texto = self.VARIAVEIS.atual[0][0] // 2 + 11 #Para centrallizar a fonte que tem espaço na direita
 
-      self.titulo = self.fonte(38).render("Hora do Lesk!", 1, (250, 100, 100))
+      self.titulo = FONTE(38).render("Hora do Lesk!", 0, (250, 100, 100))
       self.titulo_pos = self.titulo.get_rect(center=(self.tela_meio_texto, 100))
 
-      self.subTitulo = self.fonte(18).render("Feito por cac <3", 1, (200, 100, 100))
+      self.subTitulo = FONTE(18).render("Feito por cac <3", 0, (200, 100, 100))
       self.subTitulo_pos = self.subTitulo.get_rect(center=(self.tela_meio_texto, 140))
 
       #//
-      self.tamanho_botoes = (210, 80)
-      self.tela_meio_botao = (self.VARIAVEIS.atual[0][0] // 2) - (self.tamanho_botoes[0] // 2)
-
-      self.lista_botoes = []
-      gap = 0
-      for i in range(3):
-         self.lista_botoes.append(pygame.Rect((self.tela_meio_botao, 240 + gap), self.tamanho_botoes))
-         gap += 30 + 80
       
-      palavras_botoes = ["Jogar", "Tutorial", "Sair"]
-      self.textos_botoes = []
-      self.textos_botoes_rect_pos = []
-      for i, palavra in enumerate(palavras_botoes):
-         self.textos_botoes.append(self.fonte(20).render(palavra, 1, (220, 100, 100)))
-         self.textos_botoes_rect_pos.append(self.textos_botoes[i].get_rect(center=(self.lista_botoes[i].center)))
-
+      self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = criar_botoes(self.VARIAVEIS, (210, 80), 3, 240, 30, ["Jogar", "Tutorial", "Sair"])
+   
    def desenhar_menu(self, tela):
       tela.blit(self.titulo, self.titulo_pos)
       tela.blit(self.subTitulo, self.subTitulo_pos)
@@ -315,15 +356,17 @@ class Menu:
       for texto, rect_pos in zip(self.textos_botoes, self.textos_botoes_rect_pos):
          tela.blit(texto, rect_pos)
 
-#//
+#// // // // // // //
 
 class Jogo:
    def __init__(self):
       pygame.init()
-      pygame.font.init()
       self.executar_todas_classes()
 
       self.RELACAO_ATUAL = "no_menu"
+      
+      pygame.mixer.music.load(CAMINHO_MUSICA_MENU)
+      pygame.mixer.music.play(-1)
       
       self.titulo = pygame.display.set_caption("HORA DO LESK!")
       self.tempo = pygame.time.Clock()
@@ -334,6 +377,7 @@ class Jogo:
       self.cobra = Cobra(self.VARIAVEIS)
       self.obstaculo = Obstaculo(self.VARIAVEIS)
       self.menu = Menu(self.VARIAVEIS)
+      self.pause = Pause(self.VARIAVEIS)
       self.quicante_inimigo = QuicanteInimigo(self.VARIAVEIS)
 
       self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
@@ -342,43 +386,73 @@ class Jogo:
       self.inimigos_pegos = 0
       self.nao_pode_colidir = 200 #Começa com 200 frames sem colidir
       self.cronometro_freeze_jogo = 200
-      # self.aumentar_velocidade_tempo = 0
+      self.aumentar_velocidade_tempo = 0
+      self.jogo_pausado = False
    
    def tela_atualizar_jogo(self, tamanho):
       self.tela = pygame.display.set_mode(tamanho)
 
    def processar_eventos_jogo(self):
       for evento in pygame.event.get():
+         
          if evento.type == pygame.QUIT:
             self.rodando = False
          
-         elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
-            for el in self.menu.lista_botoes:
-               posicao_mouse = evento.pos
-               if el.collidepoint(posicao_mouse):
-                  
-                  if el == self.menu.lista_botoes[0]:
-                     self.RELACAO_ATUAL = "no_jogo"
-                     self.executar_todas_classes()
-
-                  if el == self.menu.lista_botoes[1]:
-                     None
-                  
-                  if el == self.menu.lista_botoes[2]:
-                     self.rodando = False
-         
          elif evento.type == pygame.KEYDOWN:
             self.processar_teclas_jogo(evento.key)
-   
+               
+         elif self.RELACAO_ATUAL == "no_menu":
+            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+               posicao_mouse = evento.pos
+               
+               for botao_menu in self.menu.lista_botoes:
+                  if botao_menu.collidepoint(posicao_mouse):
+                     
+                     if botao_menu == self.menu.lista_botoes[0]:
+                        self.RELACAO_ATUAL = "no_jogo"
+                        self.executar_todas_classes()
+
+                     if botao_menu == self.menu.lista_botoes[1]:
+                        None
+                     
+                     if botao_menu == self.menu.lista_botoes[2]:
+                        self.rodando = False
+               
+
+         elif self.jogo_pausado == True:
+            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+               posicao_mouse = evento.pos
+               
+               for botao_pause in self.pause.lista_botoes:
+                  if botao_pause.collidepoint(posicao_mouse):
+                     
+                     if botao_pause == self.pause.lista_botoes[0]:
+                        self.RELACAO_ATUAL = "no_menu"
+                        pygame.mixer.music.load(CAMINHO_MUSICA_MENU)
+                        pygame.mixer.music.play(-1)
+                        self.executar_todas_classes()
+                     
+                     if botao_pause == self.pause.lista_botoes[1]:
+                        self.rodando = False
+         
+#TODO: quando eu clico no jogo ele reincia o jogo kkkkkkkkkkkkkkkkkkkkkkkkk doideira. CORRIGIDO kkkk
+
    def processar_teclas_jogo(self, tecla):
-      if tecla == pygame.K_RIGHT:
-         self.cobra.direcionar_cobra(self.cobra.DIREITA)
-      if tecla == pygame.K_UP:
-         self.cobra.direcionar_cobra(self.cobra.CIMA)
-      if tecla == pygame.K_LEFT:
-         self.cobra.direcionar_cobra(self.cobra.ESQUERDA)
-      if tecla == pygame.K_DOWN:
-         self.cobra.direcionar_cobra(self.cobra.BAIXO)
+      if self.RELACAO_ATUAL == "no_jogo":
+         if tecla == pygame.K_RIGHT:
+            self.cobra.direcionar_cobra(self.cobra.DIREITA)
+         if tecla == pygame.K_UP:
+            self.cobra.direcionar_cobra(self.cobra.CIMA)
+         if tecla == pygame.K_LEFT:
+            self.cobra.direcionar_cobra(self.cobra.ESQUERDA)
+         if tecla == pygame.K_DOWN:
+            self.cobra.direcionar_cobra(self.cobra.BAIXO)
+         
+         if tecla == pygame.K_SPACE:
+            if self.jogo_pausado:
+               self.jogo_pausado = False
+            else:
+               self.jogo_pausado = True
 
    def animacao_obstaculos(self):
       for moeda in self.obstaculo.moedas_objetos[:]:
@@ -399,6 +473,7 @@ class Jogo:
       self.cobra.cobra_rect_atualizar(x, y)
       self.obstaculo.criar_posicoes()
       self.obstaculo.criar_objetos_obstaculos()
+      self.pause.criar_pause()
       self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
 
    def remover_obstaculos_aleatorios(self, remover_moedas, remover_inimigos):
@@ -411,6 +486,9 @@ class Jogo:
             self.obstaculo.inimigos_objetos.pop(random.randint(0, len(self.obstaculo.inimigos_objetos) - 1))
    
    def colidiu_obstaculos(self):
+      moedas_maximas = 4
+      inimigos_maximos = 3
+
       remover_moedas = (self.obstaculo.QUANTIDADE_MOEDAS - 1) // 2
       remover_inimigos = (self.obstaculo.QUANTIDADE_INIMIGOS - 1) // 2
       for moeda in self.obstaculo.moedas_objetos[:]:
@@ -420,10 +498,11 @@ class Jogo:
             self.moedas_pegas += 1
             self.nao_pode_colidir = 25
             
-            if self.moedas_pegas == 5:
+            if self.moedas_pegas == moedas_maximas:
                (self.moedas_pegas, self.inimigos_pegos) = (0, 0)
                self.escalonar_variaveis(-1)
                self.nao_pode_colidir = 140
+               self.cobra.constante_razao = 1
             else:
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
 
@@ -433,14 +512,16 @@ class Jogo:
             self.inimigos_pegos += 1
             self.nao_pode_colidir = 25
             
-            if self.inimigos_pegos == 2:
+            if self.inimigos_pegos == inimigos_maximos:
                self.moedas_pegas, self.inimigos_pegos = 0, 0
                self.escalonar_variaveis(1)
                self.nao_pode_colidir = 140
+               self.cobra.constante_razao = 1
             else:
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
    
    #TODO: Aprimorar aleatoriedade do surgimento dos obstaculos... Aprimorar a remoção? Coloca Menu, powerups. Aleatoriedade e divertido
+   
    #todo: colocar essas if else, variaveis, nos respectivas funcoes, por exemplo esses negocios que pode gera um rodando = False la em cima junto com os outros enfim é isso boa sorte re rs
    
    def atualizar_jogo(self):
@@ -454,22 +535,27 @@ class Jogo:
       if self.RELACAO_ATUAL == "no_jogo":
          self.animacao_obstaculos()
          
-         if self.cronometro_freeze_jogo <= 0:
+         if self.cronometro_freeze_jogo <= 0 and not self.jogo_pausado:
             # self.quicante_inimigo.quicante_mover_inimigo()
             
             if self.nao_pode_colidir == 0:
                self.colidiu_obstaculos()
             else:
                self.nao_pode_colidir -= 1
+
+            if self.aumentar_velocidade_tempo == 140:
+               self.cobra.constante_razao *= 1.08
+               self.aumentar_velocidade_tempo = 0
+            else:
+               self.aumentar_velocidade_tempo += 1
             
             self.cobra.mover_cobra()
-            if self.cobra.colidiu_borda_cobra() or self.VARIAVEIS.indice == 11: #Deveria abrir a tela de GAME OVER
+            if self.cobra.colidiu_borda_cobra() or self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1): #Deveria abrir a tela de GAME OVER
                self.RELACAO_ATUAL = "no_menu"
                self.executar_todas_classes()
             
          else:
             self.cronometro_freeze_jogo -= 1
-
    
    def desenhar_jogo(self):
       if self.RELACAO_ATUAL == "no_menu":
@@ -479,12 +565,15 @@ class Jogo:
       if self.RELACAO_ATUAL == "no_jogo":
          self.tela.fill(CORES["tela_cor_jogo"])
          self.obstaculo.desenhar_obstaculos(self.tela)
-         # self.quicante_inimigo.quicante_desenhar_inimigo(self.tela)
          
          if self.nao_pode_colidir == 0:
             self.cobra.desenhar_cobra(self.tela, CORES["cobra_cor_ativo"])
          else:
             self.cobra.desenhar_cobra(self.tela, CORES["cobra_cor_safe"])
+         
+         if self.jogo_pausado == True:
+            self.pause.desenhar_pause(self.tela)
+         # self.quicante_inimigo.quicante_desenhar_inimigo(self.tela)
 
       pygame.display.flip()
    
