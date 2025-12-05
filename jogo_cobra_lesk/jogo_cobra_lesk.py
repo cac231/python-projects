@@ -10,10 +10,29 @@ def pegar_caminho_recurso(nome_arquivo):
       return os.path.join(os.path.dirname(os.path.abspath(__file__)), nome_arquivo)
 
 #//
-CAMINHO_FONTE = pegar_caminho_recurso(r"assets/ARCADE_N.TTF")
-CAMINHO_MUSICA_MENU = pegar_caminho_recurso(r"assets/musica_menu.wav")
 
-FONTE = lambda tamanho: pygame.font.Font(CAMINHO_FONTE, tamanho)
+CAMINHOS = {
+   "fonte": pegar_caminho_recurso(r"assets/ARCADE_N.TTF"),
+
+   "musica_menu": pegar_caminho_recurso(r"assets/sounds/Crystal Clear Loop.mp3"),
+   "musica_jogo": pegar_caminho_recurso(r"assets/sounds/Unknown Caverns.mp3"),
+   
+   "musica_perder_jogo": pegar_caminho_recurso(r"assets/sounds/perder_jogo.wav"),
+   "musica_ganhar_jogo": pegar_caminho_recurso(r"assets/sounds/ganhar_jogo.wav"),
+
+   "efeito_moeda": pegar_caminho_recurso(r"assets/sounds/efeito_moeda.wav"),
+   "efeito_inimigo": pegar_caminho_recurso(r"assets/sounds/efeito_inimigo.wav"),
+
+   "efeito_clicar_botao": pegar_caminho_recurso(r"assets/sounds/Click.wav"),
+   "abrir_pause": pegar_caminho_recurso(r"assets/sounds/Menu_In.wav"),
+   "fechar_pause": pegar_caminho_recurso(r"assets/sounds/Menu_Out.wav"),
+
+   "aumentar_level": pegar_caminho_recurso(r"assets/sounds/aumentar_level.wav"),
+   # "diminuir_level": pegar_caminho_recurso(r"assets/sounds/diminuir_level.wav"),
+   "perigo_ultima_sala": pegar_caminho_recurso(r"assets/sounds/Alert Tone E-B 1.wav"),
+}
+
+FONTE = lambda tamanho: pygame.font.Font(CAMINHOS["fonte"], tamanho)
 
 FPS = 60
 CORES = { 
@@ -55,16 +74,16 @@ class Variaveis:
    def __init__(self):
       self.variavel = { 
          # tela, bloco, V, distancia_minima, moedas / inimigos
-         "tela+5": [(825, 825), 55,  8, 90, 0, 15],
-         "tela+4": [(780, 780), 52,  9, 90, 3, 14],
-         "tela+3": [(735, 735), 49,  7, 82, 3, 14],
-         "tela+2": [(690, 690), 46,  6, 68, 5, 14],
-         "tela+1": [(645, 645), 43,  6, 68, 5, 14],
-         "tela0": [(600, 600), 40,  6, 68, 5, 14],
-         "tela-1": [(555, 555), 37,  6, 68, 5, 14],
-         "tela-2": [(510, 510), 34,  5, 64, 5, 14],
-         "tela-3": [(465, 465), 31,  5, 54, 5, 14],
-         "tela-4": [(420, 420), 28,  4, 48, 6, 12],
+         "tela+5": [(825, 825), 55,  9, 92, 0, 16],
+         "tela+4": [(780, 780), 52, 10, 92, 2, 16],
+         "tela+3": [(735, 735), 49,  8, 86, 3, 16],
+         "tela+2": [(690, 690), 46,  7, 78, 5, 16],
+         "tela+1": [(645, 645), 43,  7, 75, 5, 15],
+         "tela0": [(600, 600), 40,  7, 72, 5, 15],
+         "tela-1": [(555, 555), 37,  7, 69, 5, 15],
+         "tela-2": [(510, 510), 34,  7, 63, 5, 14],
+         "tela-3": [(465, 465), 31,  6, 54, 5, 14],
+         "tela-4": [(420, 420), 28,  5, 48, 6, 12],
          "tela-5": [(375, 375), 25,  4, 46, 6, 12],
          #
          "tela-morte": [(600, 600), 0, 0, 0, 0, 0],
@@ -291,8 +310,6 @@ class Obstaculo:
    
 #//
 
-#TODO: PROBLEMA QUANDO EU CLICO NOS BOTOES DO PAUSE. isso aconteceu provavelmente por causa da consatnte, pois sem ela, o menu de pause fica fixo nos 600x600... ve ai
-
 class Pause:
    def __init__(self, VARIAVEIS):
       self.VARIAVEIS = VARIAVEIS
@@ -304,10 +321,13 @@ class Pause:
       self.tela_meio_texto = self.VARIAVEIS.atual[0][0] // 2 + 11 #Para centrallizar a fonte que tem espaço na direita
       self.razao = self.VARIAVEIS.atual[1] / self.VARIAVEIS.bloco_incial #Tela inicial e seu bloco
 
-      espaco_ate_margem = 100
+      espaco_ate_margem = int(self.VARIAVEIS.atual[0][1] / 6)
 
       self.titulo_pause = FONTE(int(35 * self.razao)).render(("Pausado!"), 0, (200, 200, 200))
-      self.titulo_pause_pos = self.titulo_pause.get_rect(center=(self.tela_meio_texto, (30 + espaco_ate_margem)))
+      self.titulo_pause_pos = self.titulo_pause.get_rect(center=(self.tela_meio_texto, (30 + espaco_ate_margem) * self.razao))
+
+      self.subtitulo_pause = FONTE(int(15 * self.razao)).render(("Pressione [space] para continuar"), 0, (200, 200, 200))
+      self.subtitulo_pause_pos = self.subtitulo_pause.get_rect(center=(self.tela_meio_texto, (30 + 40 + espaco_ate_margem) * self.razao))
 
       self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = criar_botoes(self.VARIAVEIS, (380 * self.razao, 80 * self.razao), 2, (395 - espaco_ate_margem) * self.razao,  30 * self.razao, ["Sair para o menu", "Sair do jogo"], self.razao)
       
@@ -315,11 +335,12 @@ class Pause:
 
       self.overlay = pygame.Surface((self.VARIAVEIS.atual[0]))
       self.overlay.fill((0, 0, 0))
-      self.overlay.set_alpha(210)
+      self.overlay.set_alpha(220)
       
    def desenhar_pause(self, tela):
       tela.blit(self.overlay, (0, 0))
       tela.blit(self.titulo_pause, self.titulo_pause_pos)
+      tela.blit(self.subtitulo_pause, self.subtitulo_pause_pos)
       
       for botao in self.lista_botoes:
          pygame.draw.rect(tela, (10, 10, 10), botao, 0, 10)
@@ -364,13 +385,30 @@ class Jogo:
       self.executar_todas_classes()
 
       self.RELACAO_ATUAL = "no_menu"
-      
-      pygame.mixer.music.load(CAMINHO_MUSICA_MENU)
-      pygame.mixer.music.play(-1)
-      
       self.titulo = pygame.display.set_caption("HORA DO LESK!")
       self.tempo = pygame.time.Clock()
       self.rodando = True
+      
+      pygame.mixer.music.load(CAMINHOS["musica_menu"])
+      self.volume_atual = 0.12
+      self.volume = pygame.mixer.music.set_volume(self.volume_atual)
+      pygame.mixer.music.play(-1)
+
+      self.EFEITOS = {
+         "musica_perder_jogo": pygame.mixer.Sound(CAMINHOS["musica_perder_jogo"]),
+         "musica_ganhar_jogo": pygame.mixer.Sound(CAMINHOS["musica_ganhar_jogo"]),
+
+         "efeito_moeda": pygame.mixer.Sound(CAMINHOS["efeito_moeda"]),
+         "efeito_inimigo": pygame.mixer.Sound(CAMINHOS["efeito_inimigo"]),
+
+         "efeito_clicar_botao": pygame.mixer.Sound(CAMINHOS["efeito_clicar_botao"]),
+         "abrir_pause": pygame.mixer.Sound(CAMINHOS["abrir_pause"]),
+         "fechar_pause": pygame.mixer.Sound(CAMINHOS["fechar_pause"]),
+
+         "aumentar_level": pygame.mixer.Sound(CAMINHOS["aumentar_level"]),
+         # "diminuir_level": pygame.mixer.Sound(CAMINHOS["diminuir_level"]),
+         "perigo_ultima_sala": pygame.mixer.Sound(CAMINHOS["perigo_ultima_sala"]),
+      }   
 
    def executar_todas_classes(self):
       self.VARIAVEIS = Variaveis()
@@ -384,9 +422,10 @@ class Jogo:
       
       self.moedas_pegas = 0
       self.inimigos_pegos = 0
-      self.nao_pode_colidir = 200 #Começa com 200 frames sem colidir
-      self.cronometro_freeze_jogo = 200
-      self.aumentar_velocidade_tempo = 0
+      self.nao_pode_colidir = 200 # 200 frames sem colidir
+      self.congelar_jogo = 200 # 200 frames tudo congelado
+      self.tempo_aumentar_velocidade = 0
+      self.tempo_musica_fade = 0
       self.jogo_pausado = False
    
    def tela_atualizar_jogo(self, tamanho):
@@ -407,14 +446,21 @@ class Jogo:
                
                for botao_menu in self.menu.lista_botoes:
                   if botao_menu.collidepoint(posicao_mouse):
+                     self.EFEITOS["efeito_clicar_botao"].play()
                      
                      if botao_menu == self.menu.lista_botoes[0]:
                         self.RELACAO_ATUAL = "no_jogo"
                         self.executar_todas_classes()
+                        
+                        pygame.mixer.music.load(CAMINHOS["musica_jogo"])
+                        self.volume = 0.10
+                        self.volume = pygame.mixer.music.set_volume(self.volume_atual)
+                        pygame.mixer.music.play(-1)
+                        
 
                      if botao_menu == self.menu.lista_botoes[1]:
-                        None
-                     
+                        pass
+
                      if botao_menu == self.menu.lista_botoes[2]:
                         self.rodando = False
                
@@ -425,12 +471,15 @@ class Jogo:
                
                for botao_pause in self.pause.lista_botoes:
                   if botao_pause.collidepoint(posicao_mouse):
-                     
+                     self.EFEITOS["efeito_clicar_botao"].play()
+
                      if botao_pause == self.pause.lista_botoes[0]:
                         self.RELACAO_ATUAL = "no_menu"
-                        pygame.mixer.music.load(CAMINHO_MUSICA_MENU)
-                        pygame.mixer.music.play(-1)
                         self.executar_todas_classes()
+                        
+                        pygame.mixer.music.load(CAMINHOS["musica_menu"])
+                        self.volume = pygame.mixer.music.set_volume(self.volume_atual)
+                        pygame.mixer.music.play(-1)
                      
                      if botao_pause == self.pause.lista_botoes[1]:
                         self.rodando = False
@@ -450,9 +499,30 @@ class Jogo:
          
          if tecla == pygame.K_SPACE:
             if self.jogo_pausado:
+               self.congelar_jogo = 30
+               self.EFEITOS["fechar_pause"].play().set_volume(0.08)
                self.jogo_pausado = False
             else:
+               self.EFEITOS["abrir_pause"].play().set_volume(0.08)
                self.jogo_pausado = True
+   
+   def diminuir_aumentar_som_smooth(self, soma):
+      if soma == -0.01:
+         if self.volume_atual > 0.02:
+            if self.tempo_musica_fade < 100:
+               self.volume_atual += soma
+               self.volume = pygame.mixer.music.set_volume(self.volume_atual)
+               self.tempo_musica_fade = 0
+            else:
+               self.tempo_musica_fade += 1
+      if soma == 0.01:
+         if self.volume_atual < 0.12:
+            if self.tempo_musica_fade < 100:
+               self.volume_atual += soma
+               self.volume = pygame.mixer.music.set_volume(self.volume_atual)
+               self.tempo_musica_fade = 0
+            else:
+               self.tempo_musica_fade += 1
 
    def animacao_obstaculos(self):
       for moeda in self.obstaculo.moedas_objetos[:]:
@@ -464,6 +534,10 @@ class Jogo:
 
    def escalonar_variaveis(self, preset_novo):
       self.VARIAVEIS.preset_tudo_atualizar(preset_novo)
+
+      if self.VARIAVEIS.indice == 10:
+         self.EFEITOS["perigo_ultima_sala"].play()
+         self.EFEITOS["perigo_ultima_sala"].set_volume(0.1)
 
       x, y = self.cobra.corpo.topleft #Pega a posição (x, y) atual do rect da cobra
       self.obstaculo.moedas_objetos = []
@@ -486,36 +560,39 @@ class Jogo:
             self.obstaculo.inimigos_objetos.pop(random.randint(0, len(self.obstaculo.inimigos_objetos) - 1))
    
    def colidiu_obstaculos(self):
-      moedas_maximas = 4
-      inimigos_maximos = 3
-
+      moedas_maximas = 5
+      inimigos_maximos = 2
       remover_moedas = (self.obstaculo.QUANTIDADE_MOEDAS - 1) // 2
       remover_inimigos = (self.obstaculo.QUANTIDADE_INIMIGOS - 1) // 2
+      
       for moeda in self.obstaculo.moedas_objetos[:]:
-         
          if self.cobra.corpo.colliderect(moeda.rect):
+            self.EFEITOS["efeito_moeda"].play()
             self.obstaculo.moedas_objetos.remove(moeda)
             self.moedas_pegas += 1
             self.nao_pode_colidir = 25
             
             if self.moedas_pegas == moedas_maximas:
+               self.EFEITOS["aumentar_level"].play()
                (self.moedas_pegas, self.inimigos_pegos) = (0, 0)
                self.escalonar_variaveis(-1)
-               self.nao_pode_colidir = 140
+               self.nao_pode_colidir = 120
                self.cobra.constante_razao = 1
             else:
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
 
       for inimigo in self.obstaculo.inimigos_objetos[:]:
          if self.cobra.corpo.colliderect(inimigo.rect):
+            self.EFEITOS["efeito_inimigo"].play()
             self.obstaculo.inimigos_objetos.remove(inimigo)
             self.inimigos_pegos += 1
             self.nao_pode_colidir = 25
             
             if self.inimigos_pegos == inimigos_maximos:
+               # self.EFEITOS["diminuir_level"].play()
                self.moedas_pegas, self.inimigos_pegos = 0, 0
                self.escalonar_variaveis(1)
-               self.nao_pode_colidir = 140
+               self.nao_pode_colidir = 120
                self.cobra.constante_razao = 1
             else:
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
@@ -535,7 +612,12 @@ class Jogo:
       if self.RELACAO_ATUAL == "no_jogo":
          self.animacao_obstaculos()
          
-         if self.cronometro_freeze_jogo <= 0 and not self.jogo_pausado:
+         if self.jogo_pausado:
+            self.diminuir_aumentar_som_smooth(-0.01)
+         else:
+            self.diminuir_aumentar_som_smooth(0.01)
+         
+         if self.congelar_jogo <= 0 and not self.jogo_pausado: # Ao iniciar o jogo ou pausar, vai congelar tudo
             # self.quicante_inimigo.quicante_mover_inimigo()
             
             if self.nao_pode_colidir == 0:
@@ -543,19 +625,21 @@ class Jogo:
             else:
                self.nao_pode_colidir -= 1
 
-            if self.aumentar_velocidade_tempo == 140:
-               self.cobra.constante_razao *= 1.08
-               self.aumentar_velocidade_tempo = 0
+            if self.tempo_aumentar_velocidade == 140:
+               self.cobra.constante_razao *= 1.05
+               self.tempo_aumentar_velocidade = 0
             else:
-               self.aumentar_velocidade_tempo += 1
+               self.tempo_aumentar_velocidade += 1
             
             self.cobra.mover_cobra()
             if self.cobra.colidiu_borda_cobra() or self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1): #Deveria abrir a tela de GAME OVER
+               self.EFEITOS["musica_perder_jogo"].play()
                self.RELACAO_ATUAL = "no_menu"
                self.executar_todas_classes()
             
-         else:
-            self.cronometro_freeze_jogo -= 1
+         elif self.congelar_jogo > 0:
+            self.congelar_jogo -= 1
+         
    
    def desenhar_jogo(self):
       if self.RELACAO_ATUAL == "no_menu":
