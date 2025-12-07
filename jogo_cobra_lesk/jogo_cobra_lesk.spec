@@ -4,7 +4,7 @@ import os
 pasta_projeto = os.path.dirname(os.path.abspath(SPEC))
 
 a = Analysis(
-    [os.path.join(pasta_projeto, 'snake_game_lesk.py')],
+    [os.path.join(pasta_projeto, 'jogo_cobra_lesk.py')],
     pathex=[pasta_projeto],
     binaries=[],
     datas=[
