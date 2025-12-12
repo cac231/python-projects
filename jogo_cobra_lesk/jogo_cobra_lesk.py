@@ -23,12 +23,12 @@ CAMINHOS = {
    "efeito_moeda": pegar_caminho_recurso(r"assets/sounds/efeito_moeda.wav"),
    "efeito_inimigo": pegar_caminho_recurso(r"assets/sounds/efeito_inimigo.wav"),
 
-   "efeito_clicar_botao": pegar_caminho_recurso(r"assets/sounds/Click.wav"),
+   "efeito_clicar_botao": pegar_caminho_recurso(r"assets/sounds/click_botao.wav"),
    "abrir_pause": pegar_caminho_recurso(r"assets/sounds/Menu_In.wav"),
    "fechar_pause": pegar_caminho_recurso(r"assets/sounds/Menu_Out.wav"),
 
    "aumentar_level": pegar_caminho_recurso(r"assets/sounds/aumentar_level.wav"),
-   # "diminuir_level": pegar_caminho_recurso(r"assets/sounds/diminuir_level.wav"),
+   "diminuir_level": pegar_caminho_recurso(r"assets/sounds/diminuir_level.wav"),
    "perigo_ultima_sala": pegar_caminho_recurso(r"assets/sounds/Alert Tone E-B 1.wav"),
 }
 
@@ -129,7 +129,7 @@ class Cobra:
       self.DIREITA = (self.VARIAVEIS.atual[2], 0)
       self.BAIXO = (0, self.VARIAVEIS.atual[2])
       self.ESQUERDA = (-self.VARIAVEIS.atual[2], 0)
-      self.constante_razao = 1
+      self.constante_razao_velocidade = 1
       
       self.corpo = pygame.Rect(inicio_x, inicio_y, self.VARIAVEIS.atual[1], self.VARIAVEIS.atual[1])
       self.velocidade = list(self.CIMA) 
@@ -146,8 +146,8 @@ class Cobra:
       self.BAIXO = (0, self.VARIAVEIS.atual[2])
       self.ESQUERDA = (-self.VARIAVEIS.atual[2], 0)
 
-      self.corpo.x += int(self.velocidade[0] * self.constante_razao)
-      self.corpo.y += int(self.velocidade[1] * self.constante_razao)
+      self.corpo.x += int(self.velocidade[0] * self.constante_razao_velocidade)
+      self.corpo.y += int(self.velocidade[1] * self.constante_razao_velocidade)
    
    def colidiu_borda_cobra(self):
       if (self.corpo.x + self.VARIAVEIS.atual[1] > self.VARIAVEIS.atual[0][0] or 
@@ -346,7 +346,7 @@ class Pause:
 
       self.criar_pause()
    def criar_pause(self):
-      self.tela_x_meio = self.VARIAVEIS.atual[0][0] // 2 + 11 #Para centrallizar a fonte que tem espaço na direita
+      self.tela_x_meio = self.VARIAVEIS.atual[0][0] // 2 + 11 #Para centralizar a fonte que tem espaço na direita
       self.razao = self.VARIAVEIS.atual[1] / self.VARIAVEIS.bloco_incial #Tela inicial e seu bloco
 
       espaco_ate_margem = int(self.VARIAVEIS.atual[0][1] / 6)
@@ -361,10 +361,14 @@ class Pause:
          center=(self.tela_x_meio, (30 + 40 + espaco_ate_margem) * self.razao)
          )
 
-      self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = criar_botoes(self.VARIAVEIS, (380 * self.razao, 80 * self.razao), 2, (395 - espaco_ate_margem) * self.razao,  30 * self.razao, ["Sair para o menu", "Sair do jogo"], self.razao)
+      self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = criar_botoes(self.VARIAVEIS, 
+                                                                                        (380 * self.razao, 80 * self.razao), 
+                                                                                        2, 
+                                                                                        (395 - espaco_ate_margem) * self.razao,  
+                                                                                        30 * self.razao, 
+                                                                                        ["Sair para o menu", "Sair do jogo"], 
+                                                                                        self.razao)
       
-      #//
-
       self.overlay = pygame.Surface((self.VARIAVEIS.atual[0]))
       self.overlay.fill((0, 0, 0))
       self.overlay.set_alpha(220)
@@ -396,7 +400,12 @@ class Menu:
 
       #//
       
-      self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = criar_botoes(self.VARIAVEIS, (210, 80), 3, 240, 30, ["Jogar", "Tutorial", "Sair"])
+      self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = criar_botoes(self.VARIAVEIS, 
+                                                                                        (210, 80), 
+                                                                                        3, 
+                                                                                        240, 
+                                                                                        30, 
+                                                                                        ["Jogar", "Tutorial", "Sair"])
    
    def desenhar_menu(self, tela):
       tela.blit(self.titulo, self.titulo_pos)
@@ -467,7 +476,7 @@ class Jogo:
          "fechar_pause": pygame.mixer.Sound(CAMINHOS["fechar_pause"]),
 
          "aumentar_level": pygame.mixer.Sound(CAMINHOS["aumentar_level"]),
-         # "diminuir_level": pygame.mixer.Sound(CAMINHOS["diminuir_level"]),
+         "diminuir_level": pygame.mixer.Sound(CAMINHOS["diminuir_level"]),
          "perigo_ultima_sala": pygame.mixer.Sound(CAMINHOS["perigo_ultima_sala"]),
       }   
 
@@ -478,7 +487,7 @@ class Jogo:
       self.menu = Menu(self.VARIAVEIS)
       self.pause = Pause(self.VARIAVEIS)
       self.texto_aviso = Aviso(self.VARIAVEIS)
-      self.game_over = GameOver(self.VARIAVEIS)
+      self.gameOver = GameOver(self.VARIAVEIS)
       self.quicante_inimigo = QuicanteInimigo(self.VARIAVEIS)
 
       self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
@@ -490,7 +499,7 @@ class Jogo:
       self.tempo_aumentar_velocidade = 0
       self.tempo_musica_fade = 0
       self.colidiu_aviso_booleano()
-      self.duracao_aviso = 0
+      self.duracao_pegou_aviso = 0
       self.intervalo_gameover_texto = 0
       self.motivo_da_morte = None
       self.jogo_pausado = False
@@ -517,19 +526,18 @@ class Jogo:
                      
                      if botao_menu == self.menu.lista_botoes[0]:
                         self.RELACAO_ATUAL = "no_jogo"
-                        self.executar_todas_classes()
                         
                         pygame.mixer.music.load(CAMINHOS["musica_jogo"])
-                        self.volume = 0.10
+                        self.volume_atual = 0.10
                         self.volume = pygame.mixer.music.set_volume(self.volume_atual)
                         pygame.mixer.music.play(-1)
-
+                        self.executar_todas_classes()
+                     
                      if botao_menu == self.menu.lista_botoes[1]:
                         pass
 
                      if botao_menu == self.menu.lista_botoes[2]:
                         self.rodando = False
-               
 
          elif self.jogo_pausado == True:
             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
@@ -541,27 +549,28 @@ class Jogo:
 
                      if botao_pause == self.pause.lista_botoes[0]:
                         self.RELACAO_ATUAL = "no_menu"
-                        self.executar_todas_classes() #Ao executar, vai voltar a tela de 600x600
                         
                         pygame.mixer.music.load(CAMINHOS["musica_menu"])
-                        self.volume = 0.12
+                        self.volume_atual = 0.12
                         self.volume = pygame.mixer.music.set_volume(self.volume_atual)
                         pygame.mixer.music.play(-1)
-                     
+                        self.executar_todas_classes() #Ao executar, vai voltar a tela de 600x600
+                        #TODO: talvez seja melhor apenas eu mudar a array principal da tela?? DEPOIS PADRONIZE o uso dessa funcao que executa TODAS as classes, para uma melhor organização e eficiência
+
                      if botao_pause == self.pause.lista_botoes[1]:
                         self.rodando = False
          
 #TODO: quando eu clico no jogo ele reincia o jogo kkkkkkkkkkkkkkkkkkkkkkkkk doideira. CORRIGIDO kkkk
 
    def processar_teclas_jogo(self, tecla):
-      if self.RELACAO_ATUAL == "no_game_over":
+      if self.RELACAO_ATUAL == "no_gameover":
          if tecla == pygame.K_SPACE:
             self.RELACAO_ATUAL = "no_menu"
             self.intervalo_gameover_texto = 0
             self.motivo_da_morte = None
             
             pygame.mixer.music.load(CAMINHOS["musica_menu"])
-            self.volume = 0.12
+            self.volume_atual = 0.12
             self.volume = pygame.mixer.music.set_volume(self.volume_atual)
             pygame.mixer.music.play(-1)
 
@@ -586,7 +595,7 @@ class Jogo:
    
    def diminuir_aumentar_som_smooth(self, soma):
       if soma == -0.01:
-         if self.volume_atual > 0.02:
+         if self.volume_atual > 0.035:
             if self.tempo_musica_fade < 100:
                self.volume_atual += soma
                self.volume = pygame.mixer.music.set_volume(self.volume_atual)
@@ -594,7 +603,7 @@ class Jogo:
             else:
                self.tempo_musica_fade += 1
       if soma == 0.01:
-         if self.volume_atual < 0.10: #Voluem maximo da música em jogo
+         if self.volume_atual < 0.10: #Volume maximo da música em jogo
             if self.tempo_musica_fade < 100:
                self.volume_atual += soma
                self.volume = pygame.mixer.music.set_volume(self.volume_atual)
@@ -610,7 +619,7 @@ class Jogo:
             if inimigo.fase != "completo":
                inimigo.animacao_inimigo()           
 
-   def escalonar_variaveis(self, preset_novo):
+   def escalonar_acionar_variaveis(self, preset_novo):
       self.VARIAVEIS.preset_tudo_atualizar(preset_novo)
 
       if self.VARIAVEIS.indice == 10:
@@ -643,6 +652,23 @@ class Jogo:
       self.aviso_aumentou_nivel = up
       self.aviso_diminuiu_nivel = down
    
+   def pegou_moeda_inimigo_maximo(self, escala_variaveis):
+      self.duracao_pegou_aviso = 0
+      self.escalonar_acionar_variaveis(escala_variaveis)
+      (self.moedas_pegas, self.inimigos_pegos) = (0, 0)
+      self.nao_pode_colidir = 120
+      self.cobra.constante_razao_velocidade = 1
+
+   def pegou_moeda_inimigo_apenas(self, obstaculo):
+      self.duracao_pegou_aviso = 0
+      self.nao_pode_colidir = 25
+      if obstaculo in self.obstaculo.moedas_objetos:
+         self.moedas_pegas += 1
+         self.obstaculo.moedas_objetos.remove(obstaculo)
+      if obstaculo in self.obstaculo.inimigos_objetos:
+         self.inimigos_pegos += 1
+         self.obstaculo.inimigos_objetos.remove(obstaculo)
+
    def colidiu_obstaculos(self):
       moedas_maximas = 5
       inimigos_maximos = 2
@@ -651,45 +677,29 @@ class Jogo:
       
       for moeda in self.obstaculo.moedas_objetos[:]:
          if self.cobra.corpo.colliderect(moeda.rect):
+            
             self.EFEITOS["efeito_moeda"].play()
             self.colidiu_aviso_booleano(moeda=True)
-            self.duracao_aviso = 0
-            
-            self.obstaculo.moedas_objetos.remove(moeda)
-            self.moedas_pegas += 1
-            self.nao_pode_colidir = 25
+            self.pegou_moeda_inimigo_apenas(obstaculo=moeda)
             
             if self.moedas_pegas == moedas_maximas:
                self.EFEITOS["aumentar_level"].play()
                self.colidiu_aviso_booleano(up=True)
-               self.duracao_aviso = 0
-               
-               (self.moedas_pegas, self.inimigos_pegos) = (0, 0)
-               self.escalonar_variaveis(-1)
-               self.nao_pode_colidir = 120
-               self.cobra.constante_razao = 1
+               self.pegou_moeda_inimigo_maximo(escala_variaveis=(-1))
             else:
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
 
       for inimigo in self.obstaculo.inimigos_objetos[:]:
          if self.cobra.corpo.colliderect(inimigo.rect):
+            
             self.EFEITOS["efeito_inimigo"].play()
             self.colidiu_aviso_booleano(inimigo=True)
-            self.duracao_aviso = 0
-            
-            self.obstaculo.inimigos_objetos.remove(inimigo)
-            self.inimigos_pegos += 1
-            self.nao_pode_colidir = 25
+            self.pegou_moeda_inimigo_apenas(obstaculo=inimigo)
             
             if self.inimigos_pegos == inimigos_maximos:
-               # self.EFEITOS["diminuir_level"].play()
+               self.EFEITOS["diminuir_level"].play()
                self.colidiu_aviso_booleano(down=True)
-               self.duracao_aviso = 0
-               
-               self.moedas_pegas, self.inimigos_pegos = 0, 0
-               self.escalonar_variaveis(1)
-               self.nao_pode_colidir = 120
-               self.cobra.constante_razao = 1
+               self.pegou_moeda_inimigo_maximo(escala_variaveis=(1))
             else:
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
    
@@ -698,7 +708,6 @@ class Jogo:
    #todo: colocar essas if else, variaveis, nos respectivas funcoes, por exemplo esses negocios que pode gera um rodando = False la em cima junto com os outros enfim é isso boa sorte re rs
    
    def atualizar_jogo(self):
-
       if self.RELACAO_ATUAL == "no_menu":
          pass
 
@@ -713,8 +722,19 @@ class Jogo:
          else:
             self.diminuir_aumentar_som_smooth(0.01)
          
-         if self.congelar_jogo <= 0 and not self.jogo_pausado: #Ao iniciar o jogo ou pausar, vai congelar tudo
-            # self.quicante_inimigo.quicante_mover_inimigo()
+         if self.congelar_jogo <= 0 and not self.jogo_pausado: #Ao iniciar o jogo ou pausar -> vai congelar tudo
+            
+            self.cobra.mover_cobra()
+
+            if self.cobra.colidiu_borda_cobra() or (self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1)):
+               self.EFEITOS["musica_perder_jogo"].play()
+               self.RELACAO_ATUAL = "no_gameover"
+               self.VARIAVEIS.atual = self.VARIAVEIS.array[5]
+               
+               if self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1):
+                  self.motivo_da_morte = "ultima_fase"
+               else:
+                  self.motivo_da_morte = "colidiu"
             
             if self.nao_pode_colidir == 0:
                self.colidiu_obstaculos()
@@ -722,65 +742,52 @@ class Jogo:
                self.nao_pode_colidir -= 1
 
             if self.tempo_aumentar_velocidade == 140:
-               self.cobra.constante_razao *= 1.05
+               self.cobra.constante_razao_velocidade *= 1.05
                self.tempo_aumentar_velocidade = 0
             else:
                self.tempo_aumentar_velocidade += 1
             
-            self.cobra.mover_cobra()
-            if self.cobra.colidiu_borda_cobra():
-               self.EFEITOS["musica_perder_jogo"].play()
-               self.RELACAO_ATUAL = "no_game_over"
-               self.executar_todas_classes()
-               self.motivo_da_morte = "colidiu"
-           
-            if self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1):
-               self.EFEITOS["musica_perder_jogo"].play()
-               self.RELACAO_ATUAL = "no_game_over"
-               self.executar_todas_classes()
-               self.motivo_da_morte = "ultima_fase"
+            # self.quicante_inimigo.quicante_mover_inimigo()
             
          elif self.congelar_jogo > 0:
             self.congelar_jogo -= 1
-         
    
    def desenhar_jogo(self):
       if self.RELACAO_ATUAL == "no_menu":
          self.tela.fill(CORES["tela_cor_menu"])
          self.menu.desenhar_menu(self.tela)
       
-      if self.RELACAO_ATUAL == "no_game_over":
+      if self.RELACAO_ATUAL == "no_gameover":
          pygame.mixer.music.stop()
          self.tela.fill(CORES["tela_cor_menu"])
-         self.game_over.desenhar_gameover(self.tela)
+         self.gameOver.desenhar_gameover(self.tela)
          
-         if self.motivo_da_morte != None:
-            if self.intervalo_gameover_texto > 185:
-               if self.motivo_da_morte == "colidiu":
-                  self.game_over.desenhar_comentario_gameover(self.tela, "Colidiu com a tela?", "Cuidado hehe...")
-               if self.motivo_da_morte == "ultima_fase":
-                  self.game_over.desenhar_comentario_gameover(self.tela, "Chegou na fase final?", "Seja mais veloz!")
-            if self.intervalo_gameover_texto > 300:
-               self.game_over.desenhar_space_gameover(self.tela)
-            else:
-               self.intervalo_gameover_texto += 1
+         if self.intervalo_gameover_texto > 168:
+            if self.motivo_da_morte == "colidiu":
+               self.gameOver.desenhar_comentario_gameover(self.tela, "Colidiu com a tela?", "Cuidado hehe...")
+            if self.motivo_da_morte == "ultima_fase":
+               self.gameOver.desenhar_comentario_gameover(self.tela, "Chegou na fase final?", "Seja mais veloz!")
+         if self.intervalo_gameover_texto > 310:
+            self.gameOver.desenhar_space_gameover(self.tela)
+         else:
+            self.intervalo_gameover_texto += 1
 
       if self.RELACAO_ATUAL == "no_jogo":
          self.tela.fill(CORES["tela_cor_jogo"])
          
-         if self.duracao_aviso < 35:
+         if self.duracao_pegou_aviso < 35:
             if self.aviso_acertou_moeda == True:
-               self.texto_aviso.criar_desenhar_avisos(self.tela, "MOEDA!", (100, 125, 170))
+               self.texto_aviso.criar_desenhar_avisos(self.tela, "moeda!", (110, 110, 140))
             if self.aviso_acertou_inimigo == True:
-               self.texto_aviso.criar_desenhar_avisos(self.tela, "INIMIGO!", (170, 100, 110))
+               self.texto_aviso.criar_desenhar_avisos(self.tela, "inimigo!", (140, 110, 110))
             if self.aviso_aumentou_nivel == True:
-               self.texto_aviso.criar_desenhar_avisos(self.tela, "BOA!", (100, 125, 220))
+               self.texto_aviso.criar_desenhar_avisos(self.tela, "BOA!", (110, 110, 250))
             if self.aviso_diminuiu_nivel == True:
-               self.texto_aviso.criar_desenhar_avisos(self.tela, "CUIDADO!", (220, 100, 110))
-            self.duracao_aviso += 1
+               self.texto_aviso.criar_desenhar_avisos(self.tela, "CUIDADO!", (250, 110, 110))
+            self.duracao_pegou_aviso += 1
          else:
             self.colidiu_aviso_booleano()
-            self.duracao_aviso = 0
+            self.duracao_pegou_aviso = 0
          
          self.obstaculo.desenhar_obstaculos(self.tela)
          
@@ -791,10 +798,10 @@ class Jogo:
          
          if self.jogo_pausado == True:
             self.pause.desenhar_pause(self.tela)
-         # self.quicante_inimigo.quicante_desenhar_inimigo(self.tela)
-      
-
-
+         
+         if None:
+            pass
+            self.quicante_inimigo.quicante_desenhar_inimigo(self.tela)
 
       pygame.display.flip()
    
