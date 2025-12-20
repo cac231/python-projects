@@ -39,8 +39,9 @@ CORES = {
    "tela_cor_menu": (0, 0, 10),
    "tela_cor_jogo": (10, 20, 50),
    "cobra_cor_ativo": (10, 200, 100),
-   "cobra_cor_safe": (110, 100, 100),
+   "cobra_cor_safe": (70, 70, 80),
    "moeda_cor": (143, 181, 211),
+   "moeda_vitoria_objeto_cor": (245, 255, 95),
    "inimigo_cor": (219, 29, 89),
    "qui_inimigo_cor": (239, 19, 99),
 }
@@ -51,6 +52,8 @@ CORES = {
 #TODO: Usar a bola quicante na sala final, esperar 10 segundos, aparecer a moeda dourada e vencer o jogo. 
 #TODO: 1/2 FEITO::: Por fim, colocar as telas de gameOVER e de vitoria. Ela vai aparecer por sei la 5 segudos e vai desaparecendo fade lentamente com o menu prinicpal de fundo, fazendo uma transição legal
 
+#TODO: COLOCAR uma velocidade extra que vai aumentar ao decorrer do jogo todo, porque so tem de quanto tempo a pessoa fica na sala, mas quero uma do jogo todo, pra ter mais chance da pessoa chegar na ultima sala. E quando chegar na ultima sala, essa velocidae extra é resetada
+
 #TODO: Deixar o jogo justo e divertido, e aleatorio? precisa ver isso. 
 #TODO: FAZER O TUTORIAL, mas é melhor fazer isso quando a mecanica do jogo estiver 100% pronta. 
 #TODO: Organizar o code em si e otimizar de certa forma. 
@@ -59,26 +62,33 @@ CORES = {
 
 #//
 
-def criar_botoes(variaveis_classe, tamanho_tupla, quantos_botoes, pos_y, gap, string, razao=1):
+def criar_botoes(variaveis_classe, *, tamanho_botoes, quantos_botoes, pos_y, gap, frases, razao=1):
    VARIAVEIS = variaveis_classe
 
-   tamanho_botoes = (int(tamanho_tupla[0]), int(tamanho_tupla[1]))
+   tamanho_botoes = (int(tamanho_botoes[0]), int(tamanho_botoes[1]))
    tela_meio_botao = (VARIAVEIS.atual[0][0] // 2) - (tamanho_botoes[0] // 2)
 
    lista_botoes = []
    gapTotal = 0
    for i in range(quantos_botoes):
       lista_botoes.append(pygame.Rect((tela_meio_botao, pos_y + gapTotal), tamanho_botoes))
-      gapTotal += gap + tamanho_tupla[1]
+      gapTotal += gap + tamanho_botoes[1]
       
-   palavras_botoes = string
-   textos_botoes = []
-   textos_botoes_rect_pos = []
+   palavras_botoes = frases
+   texto_botoes = []
+   texto_botoes_rect_pos = []
    for i, palavra in enumerate(palavras_botoes):
-      textos_botoes.append(FONTE(int(20 * razao)).render(palavra, 0, (220, 100, 100)))
-      textos_botoes_rect_pos.append(textos_botoes[i].get_rect(center=(lista_botoes[i].center)))
+      texto_botoes.append(FONTE(int(20 * razao)).render(palavra, 0, (220, 100, 100)))
+      texto_botoes_rect_pos.append(texto_botoes[i].get_rect(center=(lista_botoes[i].center)))
    
-   return lista_botoes, textos_botoes, textos_botoes_rect_pos
+   return lista_botoes, texto_botoes, texto_botoes_rect_pos
+
+def centralizar_texto_corretamente(texto_surface, pos_x, pos_y):
+   rect_todo = texto_surface.get_rect()
+   rect_apenas_texto = texto_surface.get_bounding_rect()
+   espaço_extra = rect_todo.width - rect_apenas_texto.width
+   rect_todo.center = (pos_x + (espaço_extra//2), pos_y)
+   return rect_todo
 
 #//
 
@@ -86,24 +96,26 @@ class Variaveis:
    def __init__(self):
       self.variavel = { 
          # tela, bloco, V, distancia_minima, moedas / inimigos
-         "tela+5": [(825, 825), 55,  9, 92, 0, 16],
-         "tela+4": [(780, 780), 52, 10, 92, 2, 16],
-         "tela+3": [(735, 735), 49,  8, 86, 3, 16],
-         "tela+2": [(690, 690), 46,  7, 78, 5, 16],
-         "tela+1": [(645, 645), 43,  7, 75, 5, 15],
-         "tela0": [(600, 600), 40,  7, 72, 5, 15],
-         "tela-1": [(555, 555), 37,  7, 69, 5, 15],
+         "tela-vitoria": [(600, 600), 0, 0, 0, 0, 0],
+
+         "tela+5": [(825, 825), 55, 11, 95, 0, 21],
+         "tela+4": [(780, 780), 52, 10, 92, 2, 17],
+         "tela+3": [(735, 735), 49,  9, 86, 3, 17],
+         "tela+2": [(690, 690), 46,  8, 81, 4, 17],
+         "tela+1": [(645, 645), 43,  8, 74, 6, 15],
+         "tela0": [(600, 600), 40,  7, 72, 6, 15],
+         "tela-1": [(555, 555), 37,  7, 68, 6, 15],
          "tela-2": [(510, 510), 34,  7, 63, 5, 14],
          "tela-3": [(465, 465), 31,  6, 54, 5, 14],
          "tela-4": [(420, 420), 28,  5, 48, 6, 12],
-         "tela-5": [(375, 375), 25,  4, 46, 6, 12],
+         "tela-5": [(375, 375), 25,  5, 46, 6, 12],
          
          "tela-morte": [(600, 600), 0, 0, 0, 0, 0],
       }
       self.array = list(self.variavel.values())
-      self.atual = self.array[5]
+      self.atual = self.array[6]
       self.indice = self.array.index(self.atual)
-      self.bloco_incial = self.array[5][1]
+      self.bloco_inicial = self.array[6][1]
    
    def preset_tudo_atualizar(self, preset_novo_soma):
       self.indice += preset_novo_soma
@@ -167,7 +179,7 @@ class Cobra:
 #//
 
 class Moeda:
-   def __init__(self, posicao, VARIAVEIS):
+   def __init__(self, VARIAVEIS, posicao):
       self.VARIAVEIS = VARIAVEIS
 
       self.tamanho_padrao = self.VARIAVEIS.atual[1] / 1.6
@@ -182,7 +194,7 @@ class Moeda:
 
       if self.fase == "crescendo":
          self.tamanho_atual += velocidade
-         if self.tamanho_atual >= self.tamanho_padrao * 1.3: #Aumentar o tamanho padrão
+         if self.tamanho_atual >= self.tamanho_padrao * 1.3: # Aumentar o tamanho padrão
             self.fase = "encolhendo"
       
       if self.fase == "encolhendo":
@@ -197,7 +209,7 @@ class Moeda:
 #//
 
 class Inimigo:
-   def __init__(self, posicao, VARIAVEIS):
+   def __init__(self, VARIAVEIS, posicao):
       self.VARIAVEIS = VARIAVEIS
 
       self.tamanho_padrao = self.VARIAVEIS.atual[1] / 2
@@ -230,30 +242,28 @@ class Inimigo:
 #//
 
 class QuicanteInimigo:
-   def __init__(self, VARIAVEIS):
+   def __init__(self, VARIAVEIS, pos):
       self.VARIAVEIS = VARIAVEIS
+   
+      self.qui_tamanho_padrao = self.VARIAVEIS.atual[1] // 1.7
+      self.rect = pygame.Rect(pos, (self.qui_tamanho_padrao, self.qui_tamanho_padrao))
 
-      self.qui_tamanho_padrao = self.VARIAVEIS.atual[1] / 1.7
-      self.qui_rect = pygame.Rect((400, 400), (self.qui_tamanho_padrao, self.qui_tamanho_padrao))
-
-      self.velocidade = [6, -6]
+      velocidade = 4
+      self.velocidade_x = random.choice([-velocidade, velocidade]) * (random.random() + 1)
+      self.velocidade_y = random.choice([-velocidade, velocidade]) * (random.random() + 1)
    
    def quicante_desenhar_inimigo(self, tela):
-      pygame.draw.rect(tela, CORES["qui_inimigo_cor"], self.qui_rect)
+      pygame.draw.rect(tela, CORES["qui_inimigo_cor"], self.rect)
    
    def quicante_mover_inimigo(self):
-      self.qui_rect.x += self.velocidade[0]
-      self.qui_rect.y += self.velocidade[1]
+      self.rect.x += self.velocidade_x
+      self.rect.y += self.velocidade_y
 
-      if self.qui_rect.x <= 0:
-         self.velocidade[0] = -self.velocidade[0]
-      if self.qui_rect.x + self.qui_tamanho_padrao >= self.VARIAVEIS.atual[0][0]:
-         self.velocidade[0] = -self.velocidade[0]
+      if self.rect.x <= 0 or self.rect.x + self.qui_tamanho_padrao >= self.VARIAVEIS.atual[0][0]:
+         self.velocidade_x *= -1
       
-      if self.qui_rect.y <= 0:
-         self.velocidade[1] = -self.velocidade[1]
-      if self.qui_rect.y + self.qui_tamanho_padrao >= self.VARIAVEIS.atual[0][0]:
-         self.velocidade[1] = -self.velocidade[1]
+      if self.rect.y <= 0 or self.rect.y + self.qui_tamanho_padrao >= self.VARIAVEIS.atual[0][1]:
+         self.velocidade_y *= -1
 
 #//
 
@@ -263,16 +273,17 @@ class Obstaculo:
 
       self.moedas_objetos = []
       self.inimigos_objetos = []
+      self.moeda_vitoria_objeto = []
       self.posicoes_feitas = []
 
    def criar_posicoes(self):
       self.QUANTIDADE_MOEDAS = self.VARIAVEIS.atual[4]
       self.QUANTIDADE_INIMIGOS = self.VARIAVEIS.atual[5]
-      self.quantidade_posicoes = (self.QUANTIDADE_MOEDAS + self.QUANTIDADE_INIMIGOS) * 1.1
+      self.QUANTIDADE_POSICOES = int((self.QUANTIDADE_MOEDAS + self.QUANTIDADE_INIMIGOS) + 2)
       
       self.distancia_minima = self.VARIAVEIS.atual[3]
       
-      while len(self.posicoes_feitas) < self.quantidade_posicoes:
+      while len(self.posicoes_feitas) < self.QUANTIDADE_POSICOES:
          procurar = True
          while procurar:
             procurar = False
@@ -304,15 +315,15 @@ class Obstaculo:
       for posicao in self.posicoes_feitas[:]:
          
          if len(self.moedas_objetos) < self.QUANTIDADE_MOEDAS:
-            moeda = Moeda(posicao, self.VARIAVEIS)
+            moeda = Moeda(self.VARIAVEIS, posicao)
             self.moedas_objetos.append(moeda)
             self.posicoes_feitas.remove(posicao)
          
          elif len(self.inimigos_objetos) < self.QUANTIDADE_INIMIGOS:
-            inimigo = Inimigo(posicao, self.VARIAVEIS)
+            inimigo = Inimigo(self.VARIAVEIS, posicao)
             self.inimigos_objetos.append(inimigo)
             self.posicoes_feitas.remove(posicao)
-
+   
    def desenhar_obstaculos(self, tela):
       for moeda in self.moedas_objetos:
          pygame.draw.rect(tela, CORES["moeda_cor"], moeda.rect)
@@ -320,21 +331,41 @@ class Obstaculo:
       for inimigo in self.inimigos_objetos:
          pygame.draw.rect(tela, CORES["inimigo_cor"], inimigo.rect)
    
+   def criar_vitoria_moeda(self):
+      if len(self.moeda_vitoria_objeto) < 1:
+         for posicao in self.posicoes_feitas[:]:
+            moeda_vitoria = Moeda(self.VARIAVEIS, posicao)
+            self.moeda_vitoria_objeto.append(moeda_vitoria)
+            self.posicoes_feitas.remove(posicao)
+   def desenhar_vitoria_moeda(self, tela):
+      pygame.draw.rect(tela, CORES["moeda_vitoria_objeto_cor"], self.moeda_vitoria_objeto[0].rect)
+
+   
 #//
 
 class Aviso:
    def __init__(self, VARIAVEIS):
       self.VARIAVEIS = VARIAVEIS
 
-   def criar_desenhar_avisos(self, tela, texto, fonte):
-      self.tela_x_meio = self.VARIAVEIS.atual[0][0] // 2 + 11
-      self.razao = self.VARIAVEIS.atual[1] / self.VARIAVEIS.bloco_incial #Tela inicial e seu bloco
+   def criar_desenho_avisos(self, tela, texto, cor):
+      self.pos_x_meio = self.VARIAVEIS.atual[0][0] // 2
+      self.pos_y_meio = self.VARIAVEIS.atual[0][1] // 2
+      self.razao = self.VARIAVEIS.atual[1] / self.VARIAVEIS.bloco_inicial # Bloco inicial e bloco atual da tela
       
-      self.titulo_aviso = FONTE(int(60 * self.razao)).render((texto), 0, fonte)
-      self.titulo_aviso.set_alpha(100) 
-      self.titulo_aviso_pos = self.titulo_aviso.get_rect(center=(self.tela_x_meio, self.VARIAVEIS.atual[0][1] // 2 ))
+      self.tituloAviso = FONTE(int(60 * self.razao)).render((texto), 0, cor)
+      self.tituloAviso.set_alpha(100) 
+      self.tituloAviso_pos = centralizar_texto_corretamente(self.tituloAviso, self.pos_x_meio, self.pos_y_meio)
 
-      tela.blit(self.titulo_aviso, self.titulo_aviso_pos)
+      tela.blit(self.tituloAviso, self.tituloAviso_pos)
+   
+   def criar_desenho_contagem(self, tela, texto, cor):
+      self.pos_x_meio = self.VARIAVEIS.atual[0][0] // 2
+      self.pos_y_meio = self.VARIAVEIS.atual[0][1] - 200
+      
+      self.tituloContagem = FONTE(250).render((texto), 0, cor)
+      self.tituloContagem_pos = centralizar_texto_corretamente(self.tituloContagem, self.pos_x_meio, self.pos_y_meio)
+
+      tela.blit(self.tituloContagem, self.tituloContagem_pos)
 
 #//
 
@@ -342,32 +373,28 @@ class Pause:
    def __init__(self, VARIAVEIS):
       self.VARIAVEIS = VARIAVEIS
 
-      self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = [], [], []
+      self.lista_botoes, self.texto_botoes, self.texto_botoes_pos = [], [], []
 
       self.criar_pause()
    def criar_pause(self):
-      self.tela_x_meio = self.VARIAVEIS.atual[0][0] // 2 + 11 #Para centralizar a fonte que tem espaço na direita
-      self.razao = self.VARIAVEIS.atual[1] / self.VARIAVEIS.bloco_incial #Tela inicial e seu bloco
+      self.pos_x_meio = self.VARIAVEIS.atual[0][0] // 2
+      self.razao = self.VARIAVEIS.atual[1] / self.VARIAVEIS.bloco_inicial # Bloco inicial e bloco atual da tela
 
       espaco_ate_margem = int(self.VARIAVEIS.atual[0][1] / 6)
 
-      self.titulo_pause = FONTE(int(35 * self.razao)).render(("Pausado!"), 0, (200, 200, 200))
-      self.titulo_pause_pos = self.titulo_pause.get_rect(
-         center=(self.tela_x_meio, (30 + espaco_ate_margem) * self.razao)
-         )
+      self.tituloPause = FONTE(int(35 * self.razao)).render(("Pausado!"), 0, (200, 200, 200))
+      self.tituloPause_pos = centralizar_texto_corretamente(self.tituloPause, self.pos_x_meio, (30 + espaco_ate_margem) * self.razao)
 
-      self.subtitulo_pause = FONTE(int(15 * self.razao)).render(("Pressione [space] para continuar"), 0, (200, 200, 200))
-      self.subtitulo_pause_pos = self.subtitulo_pause.get_rect(
-         center=(self.tela_x_meio, (30 + 40 + espaco_ate_margem) * self.razao)
-         )
+      self.subTituloPause = FONTE(int(15 * self.razao)).render(("Pressione [space] para continuar"), 0, (200, 200, 200))
+      self.subTituloPause_pos = centralizar_texto_corretamente(self.subTituloPause, self.pos_x_meio, (30 + 40 + espaco_ate_margem) * self.razao)
 
-      self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = criar_botoes(self.VARIAVEIS, 
-                                                                                        (380 * self.razao, 80 * self.razao), 
-                                                                                        2, 
-                                                                                        (395 - espaco_ate_margem) * self.razao,  
-                                                                                        30 * self.razao, 
-                                                                                        ["Sair para o menu", "Sair do jogo"], 
-                                                                                        self.razao)
+      self.lista_botoes, self.texto_botoes, self.texto_botoes_pos = criar_botoes(self.VARIAVEIS, 
+                                                                        tamanho_botoes = (380 * self.razao, 80 * self.razao), 
+                                                                        quantos_botoes = 2, 
+                                                                                 pos_y = (395 - espaco_ate_margem) * self.razao,  
+                                                                                   gap = 30 * self.razao, 
+                                                                                frases = ["Sair para o menu", "Sair do jogo"], 
+                                                                                 razao = self.razao)
       
       self.overlay = pygame.Surface((self.VARIAVEIS.atual[0]))
       self.overlay.fill((0, 0, 0))
@@ -375,82 +402,83 @@ class Pause:
       
    def desenhar_pause(self, tela):
       tela.blit(self.overlay, (0, 0))
-      tela.blit(self.titulo_pause, self.titulo_pause_pos)
-      tela.blit(self.subtitulo_pause, self.subtitulo_pause_pos)
+      tela.blit(self.tituloPause, self.tituloPause_pos)
+      tela.blit(self.subTituloPause, self.subTituloPause_pos)
       
       for botao in self.lista_botoes:
          pygame.draw.rect(tela, (10, 10, 10), botao, 0, 10)
          pygame.draw.rect(tela, (200, 200, 200), botao, 3, 10)
       
-      for texto, rect_pos in zip(self.textos_botoes, self.textos_botoes_rect_pos):
-         tela.blit(texto, rect_pos)
+      for texto, texto_pos in zip(self.texto_botoes, self.texto_botoes_pos):
+         tela.blit(texto, texto_pos)
 
 #//
 
 class Menu:
    def __init__(self, VARIAVEIS):
       self.VARIAVEIS = VARIAVEIS  
-      self.tela_x_meio = self.VARIAVEIS.atual[0][0] // 2 + 11 #Para centrallizar a fonte que tem espaço na direita
+      self.pos_x_meio = self.VARIAVEIS.atual[0][0] // 2
 
       self.titulo = FONTE(38).render("Hora do Lesk!", 0, (250, 100, 100))
-      self.titulo_pos = self.titulo.get_rect(center=(self.tela_x_meio, 100))
+      self.titulo_pos = centralizar_texto_corretamente(self.titulo, self.pos_x_meio, 100)
 
       self.subTitulo = FONTE(18).render("Feito por cac <3", 0, (200, 100, 100))
-      self.subTitulo_pos = self.subTitulo.get_rect(center=(self.tela_x_meio, 140))
+      self.subTitulo_pos = centralizar_texto_corretamente(self.subTitulo, self.pos_x_meio, 100 + 40)
 
       #//
       
-      self.lista_botoes, self.textos_botoes, self.textos_botoes_rect_pos = criar_botoes(self.VARIAVEIS, 
-                                                                                        (210, 80), 
-                                                                                        3, 
-                                                                                        240, 
-                                                                                        30, 
-                                                                                        ["Jogar", "Tutorial", "Sair"])
-   
+      self.lista_botoes, self.texto_botoes, self.texto_botoes_pos = criar_botoes(self.VARIAVEIS, 
+                                                                        tamanho_botoes = (210, 80), 
+                                                                        quantos_botoes = 3, 
+                                                                                 pos_y = 240, 
+                                                                                   gap = 30, 
+                                                                                frases = ["Jogar", "Tutorial", "Sair"])
+
    def desenhar_menu(self, tela):
       tela.blit(self.titulo, self.titulo_pos)
       tela.blit(self.subTitulo, self.subTitulo_pos)
       
-      for botao in self.lista_botoes:
-         pygame.draw.rect(tela, (10, 10, 10), botao, 0, 10)
+      for botao in self.lista_botoes: # Criar borda colorida nos botões
+         pygame.draw.rect(tela, (10, 10, 10), botao, 0, 10) 
          pygame.draw.rect(tela, (200, 200, 200), botao, 3, 10)
       
-      for texto, rect_pos in zip(self.textos_botoes, self.textos_botoes_rect_pos):
-         tela.blit(texto, rect_pos)
+      for texto, texto_pos in zip(self.texto_botoes, self.texto_botoes_pos):
+         tela.blit(texto, texto_pos)
 
 #//
 
 class GameOver:
    def __init__(self, VARIAVEIS):
       self.VARIAVEIS = VARIAVEIS
-
-      self.tela_x_meio = self.VARIAVEIS.atual[0][0] // 2 + 4
-
-      self.titulo_gameover = FONTE(50).render("GAME OVER", 0, (250, 100, 100))
-      self.titulo_gameover_pos = self.titulo_gameover.get_rect(center=(self.tela_x_meio, self.VARIAVEIS.atual[0][1] // 2 - 10))
    
    def desenhar_gameover(self, tela):
-      tela.blit(self.titulo_gameover, self.titulo_gameover_pos)
+      self.pos_x_meio = self.VARIAVEIS.atual[0][0] // 2
+
+      self.tituloGameover = FONTE(50).render("GAME OVER", 0, (250, 100, 100))
+      self.tituloGameover_pos = centralizar_texto_corretamente(self.tituloGameover, self.pos_x_meio, self.VARIAVEIS.atual[0][1] // 2 - 10)
+      
+      tela.blit(self.tituloGameover, self.tituloGameover_pos)
    
    def desenhar_comentario_gameover(self, tela, frase1, frase2):
-      self.comentario_morte1 = FONTE(15).render(frase1, 0, (250, 100, 100))
-      self.comentario_morte_pos1 = self.comentario_morte1.get_rect(center=(self.tela_x_meio, self.VARIAVEIS.atual[0][1] // 2 + 30))
+      self.comentarioMorte_1 = FONTE(15).render(frase1, 0, (250, 100, 100))
+      self.comentarioMorte_1_pos = centralizar_texto_corretamente(self.comentarioMorte_1, self.pos_x_meio, self.VARIAVEIS.atual[0][1] // 2 + 30)
       
-      self.comentario_morte2 = FONTE(15).render(frase2, 0, (250, 100, 100))
-      self.comentario_morte_pos2 = self.comentario_morte2.get_rect(center=(self.tela_x_meio, self.VARIAVEIS.atual[0][1] // 2 + 48))
+      self.comentarioMorte_2 = FONTE(15).render(frase2, 0, (250, 100, 100))
+      self.comentarioMorte_2_pos = centralizar_texto_corretamente(self.comentarioMorte_2, self.pos_x_meio, self.VARIAVEIS.atual[0][1] // 2 + 52)
       
-      tela.blit(self.comentario_morte1, self.comentario_morte_pos1)
-      tela.blit(self.comentario_morte2, self.comentario_morte_pos2)
+      tela.blit(self.comentarioMorte_1, self.comentarioMorte_1_pos)
+      tela.blit(self.comentarioMorte_2, self.comentarioMorte_2_pos)
    
    def desenhar_space_gameover(self, tela):
-      self.espaco_morte = FONTE(15).render("Pressione [space] para voltar ao menu", 0, (250, 100, 100))
-      self.espaco_morte_pos = self.espaco_morte.get_rect(center=(self.tela_x_meio - 2, self.VARIAVEIS.atual[0][1] - 20)) #Ajusta a posição
-      tela.blit(self.espaco_morte, self.espaco_morte_pos)
+      self.espacoMorte = FONTE(15).render("Pressione [space] para voltar ao menu", 0, (250, 100, 100))
+      self.espacoMorte_pos = centralizar_texto_corretamente(self.espacoMorte, self.pos_x_meio - 2, self.VARIAVEIS.atual[0][1] - 20)
+      tela.blit(self.espacoMorte, self.espacoMorte_pos)
 
 #// // // // // // //
 
 class Jogo:
    def __init__(self):
+      pygame.mixer.init(44100, -16, 2, 2048)
       pygame.init()
       self.executar_todas_classes()
 
@@ -460,7 +488,7 @@ class Jogo:
       self.rodando = True
       
       pygame.mixer.music.load(CAMINHOS["musica_menu"])
-      self.volume_atual = 0.12
+      self.volume_atual = 0
       self.volume = pygame.mixer.music.set_volume(self.volume_atual)
       pygame.mixer.music.play(-1)
 
@@ -486,23 +514,27 @@ class Jogo:
       self.obstaculo = Obstaculo(self.VARIAVEIS)
       self.menu = Menu(self.VARIAVEIS)
       self.pause = Pause(self.VARIAVEIS)
-      self.texto_aviso = Aviso(self.VARIAVEIS)
+      self.textoAviso = Aviso(self.VARIAVEIS)
       self.gameOver = GameOver(self.VARIAVEIS)
-      self.quicante_inimigo = QuicanteInimigo(self.VARIAVEIS)
 
       self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
       
       self.moedas_pegas = 0
       self.inimigos_pegos = 0
-      self.nao_pode_colidir = 200 # 200 frames sem colidir
-      self.congelar_jogo = 200 # 200 frames tudo congelado
-      self.tempo_aumentar_velocidade = 0
+      self.nao_pode_colidir = 200 # Começa a partida com 200 frames sem colidir
+      self.congelar_jogo = 200 # Começa a partida com 200 frames tudo congelado
+      self.tempo_aumentar_velocidade_porFase = 0
       self.tempo_musica_fade = 0
       self.colidiu_aviso_booleano()
       self.duracao_pegou_aviso = 0
+      
+      self.fase_final_contagem = -self.nao_pode_colidir
+      self.fase_final_variavel = 0
+      
       self.intervalo_gameover_texto = 0
       self.motivo_da_morte = None
       self.jogo_pausado = False
+      self.lista_dois_quicantes = []
    
    def tela_atualizar_jogo(self, tamanho):
       self.tela = pygame.display.set_mode(tamanho)
@@ -531,7 +563,6 @@ class Jogo:
                         self.volume_atual = 0.10
                         self.volume = pygame.mixer.music.set_volume(self.volume_atual)
                         pygame.mixer.music.play(-1)
-                        self.executar_todas_classes()
                      
                      if botao_menu == self.menu.lista_botoes[1]:
                         pass
@@ -554,20 +585,16 @@ class Jogo:
                         self.volume_atual = 0.12
                         self.volume = pygame.mixer.music.set_volume(self.volume_atual)
                         pygame.mixer.music.play(-1)
-                        self.executar_todas_classes() #Ao executar, vai voltar a tela de 600x600
-                        #TODO: talvez seja melhor apenas eu mudar a array principal da tela?? DEPOIS PADRONIZE o uso dessa funcao que executa TODAS as classes, para uma melhor organização e eficiência
-
+                        self.executar_todas_classes()
+                     
                      if botao_pause == self.pause.lista_botoes[1]:
                         self.rodando = False
-         
-#TODO: quando eu clico no jogo ele reincia o jogo kkkkkkkkkkkkkkkkkkkkkkkkk doideira. CORRIGIDO kkkk
 
    def processar_teclas_jogo(self, tecla):
       if self.RELACAO_ATUAL == "no_gameover":
          if tecla == pygame.K_SPACE:
             self.RELACAO_ATUAL = "no_menu"
-            self.intervalo_gameover_texto = 0
-            self.motivo_da_morte = None
+            self.executar_todas_classes()
             
             pygame.mixer.music.load(CAMINHOS["musica_menu"])
             self.volume_atual = 0.12
@@ -593,23 +620,25 @@ class Jogo:
                self.EFEITOS["abrir_pause"].play().set_volume(0.08)
                self.jogo_pausado = True
    
-   def diminuir_aumentar_som_smooth(self, soma):
+   def diminuir_aumentar_som_smooth(self, soma, *, duracao=0, vol_min=0.035, vol_max=0.10):
       if soma == -0.01:
-         if self.volume_atual > 0.035:
-            if self.tempo_musica_fade < 100:
+         if self.volume_atual > vol_min:
+            if self.tempo_musica_fade > duracao:
                self.volume_atual += soma
                self.volume = pygame.mixer.music.set_volume(self.volume_atual)
                self.tempo_musica_fade = 0
             else:
                self.tempo_musica_fade += 1
       if soma == 0.01:
-         if self.volume_atual < 0.10: #Volume maximo da música em jogo
-            if self.tempo_musica_fade < 100:
+         if self.volume_atual < vol_max: #Volume maximo da música em jogo
+            if self.tempo_musica_fade > duracao:
                self.volume_atual += soma
                self.volume = pygame.mixer.music.set_volume(self.volume_atual)
                self.tempo_musica_fade = 0
             else:
                self.tempo_musica_fade += 1
+
+   #//
 
    def animacao_obstaculos(self):
       for moeda in self.obstaculo.moedas_objetos[:]:
@@ -617,16 +646,22 @@ class Jogo:
                moeda.animacao_moeda()
       for inimigo in self.obstaculo.inimigos_objetos[:]:
             if inimigo.fase != "completo":
-               inimigo.animacao_inimigo()           
+               inimigo.animacao_inimigo()          
+      
+      if self.fase_final_variavel == 9:
+         if self.obstaculo.moeda_vitoria_objeto[0].fase != "completo":
+             self.obstaculo.moeda_vitoria_objeto[0].animacao_moeda()
 
    def escalonar_acionar_variaveis(self, preset_novo):
       self.VARIAVEIS.preset_tudo_atualizar(preset_novo)
 
-      if self.VARIAVEIS.indice == 10:
+      if self.VARIAVEIS.indice == 11:
          self.EFEITOS["perigo_ultima_sala"].play()
          self.EFEITOS["perigo_ultima_sala"].set_volume(0.5)
+      
+      self.lista_dois_quicantes = [] # Sempre reseta a lista dos quicantes
 
-      x, y = self.cobra.corpo.topleft #Pega a posição (x, y) atual do rect da cobra
+      x, y = self.cobra.corpo.topleft # Pega a posição (x, y) atual da cobra.rect
       self.obstaculo.moedas_objetos = []
       self.obstaculo.inimigos_objetos = []
       self.obstaculo.posicoes_feitas = []
@@ -656,28 +691,37 @@ class Jogo:
       self.duracao_pegou_aviso = 0
       self.escalonar_acionar_variaveis(escala_variaveis)
       (self.moedas_pegas, self.inimigos_pegos) = (0, 0)
-      self.nao_pode_colidir = 120
       self.cobra.constante_razao_velocidade = 1
+      if self.VARIAVEIS.indice == 1:
+         self.nao_pode_colidir = 160 + 40
+         self.fase_final_contagem, self.fase_final_variavel = -self.nao_pode_colidir, 0 # resetando a contagem da fase final
+      else:
+         self.nao_pode_colidir = 160
 
    def pegou_moeda_inimigo_apenas(self, obstaculo):
       self.duracao_pegou_aviso = 0
-      self.nao_pode_colidir = 25
-      if obstaculo in self.obstaculo.moedas_objetos:
+      self.nao_pode_colidir = 30
+      
+      if obstaculo in self.obstaculo.moedas_objetos[:]:
          self.moedas_pegas += 1
          self.obstaculo.moedas_objetos.remove(obstaculo)
-      if obstaculo in self.obstaculo.inimigos_objetos:
+      
+      if obstaculo in self.obstaculo.inimigos_objetos[:]:
          self.inimigos_pegos += 1
          self.obstaculo.inimigos_objetos.remove(obstaculo)
+      
+      if obstaculo in self.lista_dois_quicantes[:]:
+         self.inimigos_pegos += 1
+         self.lista_dois_quicantes.remove(obstaculo)
 
    def colidiu_obstaculos(self):
       moedas_maximas = 5
-      inimigos_maximos = 2
+      inimigos_maximos = 4
       remover_moedas = (self.obstaculo.QUANTIDADE_MOEDAS - 1) // 2
       remover_inimigos = (self.obstaculo.QUANTIDADE_INIMIGOS - 1) // 2
       
       for moeda in self.obstaculo.moedas_objetos[:]:
          if self.cobra.corpo.colliderect(moeda.rect):
-            
             self.EFEITOS["efeito_moeda"].play()
             self.colidiu_aviso_booleano(moeda=True)
             self.pegou_moeda_inimigo_apenas(obstaculo=moeda)
@@ -691,7 +735,6 @@ class Jogo:
 
       for inimigo in self.obstaculo.inimigos_objetos[:]:
          if self.cobra.corpo.colliderect(inimigo.rect):
-            
             self.EFEITOS["efeito_inimigo"].play()
             self.colidiu_aviso_booleano(inimigo=True)
             self.pegou_moeda_inimigo_apenas(obstaculo=inimigo)
@@ -702,56 +745,130 @@ class Jogo:
                self.pegou_moeda_inimigo_maximo(escala_variaveis=(1))
             else:
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
+      
+      if self.VARIAVEIS.indice == 1:
+         if self.fase_final_variavel == 9:
+            if self.cobra.corpo.colliderect(self.obstaculo.moeda_vitoria_objeto[0].rect):
+               print("pegou o bloco amarelo!!!!")
+
+         for quicante in self.lista_dois_quicantes[:]:
+            if self.cobra.corpo.colliderect(quicante.rect):
+               self.EFEITOS["efeito_inimigo"].play()
+               self.colidiu_aviso_booleano(inimigo=True)
+               self.pegou_moeda_inimigo_apenas(obstaculo=quicante)
+            
+            if self.inimigos_pegos == inimigos_maximos:
+               self.EFEITOS["diminuir_level"].play()
+               self.colidiu_aviso_booleano(down=True)
+               self.pegou_moeda_inimigo_maximo(escala_variaveis=(1))
    
-   #TODO: Aprimorar aleatoriedade do surgimento dos obstaculos... Aprimorar a remoção? Coloca Menu, powerups. Aleatoriedade e divertido
+   def criar_quicante(self):
+      margem = self.VARIAVEIS.atual[1] // 2
+      pos_x = random.randint(margem, self.VARIAVEIS.atual[0][0] - margem)
+      pos_y = random.randint(margem, self.VARIAVEIS.atual[0][1] - margem)  
+      self.lista_dois_quicantes.append(QuicanteInimigo(self.VARIAVEIS, (pos_x, pos_y))) 
    
-   #todo: colocar essas if else, variaveis, nos respectivas funcoes, por exemplo esses negocios que pode gera um rodando = False la em cima junto com os outros enfim é isso boa sorte re rs
-   
+   #//
+
+   def perdeu_jogo(self):
+      if self.cobra.colidiu_borda_cobra() or (self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1)):
+         self.EFEITOS["musica_perder_jogo"].play()
+         self.RELACAO_ATUAL = "no_gameover"
+         self.VARIAVEIS.atual = self.VARIAVEIS.array[6] # Atualizar o tamanho da tela
+         self.tela_atualizar_jogo(self.VARIAVEIS.atual[0]) # Atualizar o tamanho da tela
+         if self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1):
+            self.motivo_da_morte = "ultima_fase"
+         else:
+            self.motivo_da_morte = "colidiu"
+
    def atualizar_jogo(self):
       if self.RELACAO_ATUAL == "no_menu":
-         pass
+         self.diminuir_aumentar_som_smooth(0.01, duracao=10, vol_max=0.12)
 
       self.obstaculo.criar_posicoes()
       self.obstaculo.criar_objetos_obstaculos()
       
       if self.RELACAO_ATUAL == "no_jogo":
+         
+         if self.fase_final_variavel == 9:
+            self.obstaculo.criar_vitoria_moeda()
+         
          self.animacao_obstaculos()
          
          if self.jogo_pausado:
-            self.diminuir_aumentar_som_smooth(-0.01)
+            self.diminuir_aumentar_som_smooth(-0.01, vol_min=0.035)
          else:
-            self.diminuir_aumentar_som_smooth(0.01)
+            self.diminuir_aumentar_som_smooth(0.01, vol_max=0.10)
          
-         if self.congelar_jogo <= 0 and not self.jogo_pausado: #Ao iniciar o jogo ou pausar -> vai congelar tudo
-            
+         if self.congelar_jogo <= 0 and not self.jogo_pausado: # Ao iniciar o jogo ou pausar -> vai congelar tudo
             self.cobra.mover_cobra()
 
-            if self.cobra.colidiu_borda_cobra() or (self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1)):
-               self.EFEITOS["musica_perder_jogo"].play()
-               self.RELACAO_ATUAL = "no_gameover"
-               self.VARIAVEIS.atual = self.VARIAVEIS.array[5]
-               
-               if self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1):
-                  self.motivo_da_morte = "ultima_fase"
-               else:
-                  self.motivo_da_morte = "colidiu"
+            self.perdeu_jogo()
             
-            if self.nao_pode_colidir == 0:
+            if self.nao_pode_colidir <= 0:
                self.colidiu_obstaculos()
             else:
                self.nao_pode_colidir -= 1
 
-            if self.tempo_aumentar_velocidade == 140:
-               self.cobra.constante_razao_velocidade *= 1.05
-               self.tempo_aumentar_velocidade = 0
+            if self.tempo_aumentar_velocidade_porFase == 140:
+               self.cobra.constante_razao_velocidade *= 1.04
+               self.tempo_aumentar_velocidade_porFase = 0
             else:
-               self.tempo_aumentar_velocidade += 1
+               self.tempo_aumentar_velocidade_porFase += 1
             
-            # self.quicante_inimigo.quicante_mover_inimigo()
+            if self.VARIAVEIS.indice == 1:
+               if len(self.lista_dois_quicantes) < 3:
+                  self.criar_quicante()
+               
+               for quicante in self.lista_dois_quicantes[:]:
+                  quicante.quicante_mover_inimigo()
+               
+               # if self.fase_final_variavel == 9:
+               #    self.obstaculo.criar_moeda_vitoria_objeto = True
             
          elif self.congelar_jogo > 0:
             self.congelar_jogo -= 1
    
+   #//
+
+   def desenhar_frase_gameover(self, tela):
+      if self.intervalo_gameover_texto > 168:
+         if self.motivo_da_morte == "colidiu":
+            self.gameOver.desenhar_comentario_gameover(tela, "Colidiu com a tela?", "Cuidado hehe...")
+         if self.motivo_da_morte == "ultima_fase":
+            self.gameOver.desenhar_comentario_gameover(tela, "Chegou na fase final?", "Seja mais veloz!")
+      
+      if self.intervalo_gameover_texto > 310:
+         self.gameOver.desenhar_space_gameover(tela)
+      else:
+         self.intervalo_gameover_texto += 1      
+   
+   def desenhar_avisos_logica(self, tela):
+      if self.duracao_pegou_aviso < 35:
+         if self.aviso_acertou_moeda == True:
+            self.textoAviso.criar_desenho_avisos(tela, "moeda!", (110, 110, 140))
+         if self.aviso_acertou_inimigo == True:
+            self.textoAviso.criar_desenho_avisos(tela, "inimigo!", (140, 110, 110))
+         if self.aviso_aumentou_nivel == True:
+            self.textoAviso.criar_desenho_avisos(tela, "BOA!", (110, 110, 250))
+         if self.aviso_diminuiu_nivel == True:
+            self.textoAviso.criar_desenho_avisos(tela, "CUIDADO!", (250, 110, 110))
+         self.duracao_pegou_aviso += 1
+      else:
+         self.colidiu_aviso_booleano()
+         self.duracao_pegou_aviso = 0      
+      
+      if self.VARIAVEIS.indice == 1:
+         numeros = [str(i) for i in range(1, 11)]
+         tempo = 60
+         if self.fase_final_contagem < (tempo * (self.fase_final_variavel+1)):
+            self.textoAviso.criar_desenho_contagem(tela, numeros[self.fase_final_variavel], (0, 10, 40))
+            self.fase_final_contagem += 1
+         elif self.fase_final_variavel < 9:
+            self.fase_final_variavel += 1
+         elif self.fase_final_variavel == 9:
+            self.textoAviso.criar_desenho_contagem(tela, "10", (0, 10, 40))
+
    def desenhar_jogo(self):
       if self.RELACAO_ATUAL == "no_menu":
          self.tela.fill(CORES["tela_cor_menu"])
@@ -761,33 +878,12 @@ class Jogo:
          pygame.mixer.music.stop()
          self.tela.fill(CORES["tela_cor_menu"])
          self.gameOver.desenhar_gameover(self.tela)
-         
-         if self.intervalo_gameover_texto > 168:
-            if self.motivo_da_morte == "colidiu":
-               self.gameOver.desenhar_comentario_gameover(self.tela, "Colidiu com a tela?", "Cuidado hehe...")
-            if self.motivo_da_morte == "ultima_fase":
-               self.gameOver.desenhar_comentario_gameover(self.tela, "Chegou na fase final?", "Seja mais veloz!")
-         if self.intervalo_gameover_texto > 310:
-            self.gameOver.desenhar_space_gameover(self.tela)
-         else:
-            self.intervalo_gameover_texto += 1
+         self.desenhar_frase_gameover(self.tela)
 
       if self.RELACAO_ATUAL == "no_jogo":
          self.tela.fill(CORES["tela_cor_jogo"])
-         
-         if self.duracao_pegou_aviso < 35:
-            if self.aviso_acertou_moeda == True:
-               self.texto_aviso.criar_desenhar_avisos(self.tela, "moeda!", (110, 110, 140))
-            if self.aviso_acertou_inimigo == True:
-               self.texto_aviso.criar_desenhar_avisos(self.tela, "inimigo!", (140, 110, 110))
-            if self.aviso_aumentou_nivel == True:
-               self.texto_aviso.criar_desenhar_avisos(self.tela, "BOA!", (110, 110, 250))
-            if self.aviso_diminuiu_nivel == True:
-               self.texto_aviso.criar_desenhar_avisos(self.tela, "CUIDADO!", (250, 110, 110))
-            self.duracao_pegou_aviso += 1
-         else:
-            self.colidiu_aviso_booleano()
-            self.duracao_pegou_aviso = 0
+
+         self.desenhar_avisos_logica(self.tela)
          
          self.obstaculo.desenhar_obstaculos(self.tela)
          
@@ -796,12 +892,15 @@ class Jogo:
          else:
             self.cobra.desenhar_cobra(self.tela, CORES["cobra_cor_safe"])
          
+         if self.VARIAVEIS.indice == 1:
+            for quicante in self.lista_dois_quicantes[:]:
+               quicante.quicante_desenhar_inimigo(self.tela)
+            if self.fase_final_variavel == 9:
+               self.obstaculo.criar_vitoria_moeda()
+               self.obstaculo.desenhar_vitoria_moeda(self.tela)
+         
          if self.jogo_pausado == True:
             self.pause.desenhar_pause(self.tela)
-         
-         if None:
-            pass
-            self.quicante_inimigo.quicante_desenhar_inimigo(self.tela)
 
       pygame.display.flip()
    
