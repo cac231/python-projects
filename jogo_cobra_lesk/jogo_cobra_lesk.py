@@ -14,25 +14,36 @@ def pegar_caminho_recurso(nome_arquivo):
 
 CAMINHOS = {
    "fonte": pegar_caminho_recurso(r"assets/ARCADE_N.TTF"),
+   
+   "musica_menu": pegar_caminho_recurso(r"assets/sounds/music/Crystal Clear Loop.mp3"),
+   "musica_jogo": pegar_caminho_recurso(r"assets/sounds/music/Unknown Caverns.mp3"),
 
-   "musica_menu": pegar_caminho_recurso(r"assets/sounds/Crystal Clear Loop.mp3"),
-   "musica_jogo": pegar_caminho_recurso(r"assets/sounds/Unknown Caverns.mp3"),
+   "clicar_botao": pegar_caminho_recurso(r"assets/sounds/_clicar_botao.wav"),
+   "comecando_partida_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/_comecando_partida_MINHAVOZ.wav"),
+   "voltando_para_menu_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/_voltando_para_menu_MINHAVOZ.wav"),
    
    "musica_perder_jogo": pegar_caminho_recurso(r"assets/sounds/perder_jogo.wav"),
+   "perder_jogo_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/perder_jogo_MINHAVOZ.wav"),
    "musica_ganhar_jogo": pegar_caminho_recurso(r"assets/sounds/ganhar_jogo.wav"),
+   "ganhar_jogo_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/ganhar_jogo_MINHAVOZ.wav"),
 
-   "efeito_moeda": pegar_caminho_recurso(r"assets/sounds/efeito_moeda.wav"),
-   "efeito_inimigo": pegar_caminho_recurso(r"assets/sounds/efeito_inimigo.wav"),
-
-   "efeito_clicar_botao": pegar_caminho_recurso(r"assets/sounds/click_botao.wav"),
-   "abrir_pause": pegar_caminho_recurso(r"assets/sounds/menu_In.wav"),
-   "fechar_pause": pegar_caminho_recurso(r"assets/sounds/menu_Out.wav"),
-
-   "aumentar_level": pegar_caminho_recurso(r"assets/sounds/aumentar_level.wav"),
-   "diminuir_level": pegar_caminho_recurso(r"assets/sounds/diminuir_level.wav"),
+   "pegar_moeda": pegar_caminho_recurso(r"assets/sounds/pegar_moeda.wav"),
+   "pegar_moeda_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/pegar_moeda_MINHAVOZ.wav"),
+   "pegar_inimigo": pegar_caminho_recurso(r"assets/sounds/pegar_inimigo.wav"),
    
-   "perigo_ultima_sala": pegar_caminho_recurso(r"assets/sounds/Alert Tone E-B 1.wav"),
+   "pausar": pegar_caminho_recurso(r"assets/sounds/pausar.wav"),
+   "pausar_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/pausar_MINHAVOZ.wav"),
+   "despausar": pegar_caminho_recurso(r"assets/sounds/despausar.wav"),
+   "despausar_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/despausar_MINHAVOZ.wav"),
+
+   "aumentar_fase": pegar_caminho_recurso(r"assets/sounds/aumentar_fase.wav"),
+   "aumentar_fase_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/aumentar_fase_MINHAVOZ.wav"),
+   "diminuir_fase": pegar_caminho_recurso(r"assets/sounds/diminuir_fase.wav"),
+   "diminuir_fase_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/diminuir_fase_MINHAVOZ.wav"),
+   
+   "alertar_ultima_sala": pegar_caminho_recurso(r"assets/sounds/alertar_ultima_sala.wav"),
    "alertar_vitoria_sala": pegar_caminho_recurso(r"assets/sounds/alertar_vitoria_sala.wav"),
+   "alertar_vitoria_sala_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/alertar_vitoria_sala_MINHAVOZ.wav"),
 }
 
 FONTE = lambda tamanho: pygame.font.Font(CAMINHOS["fonte"], tamanho)
@@ -73,7 +84,6 @@ CORES = {
    "diminuiu_obstaculoAviso": (250, 100, 100),
 }
 
-
 #TODO: PROTNO!    Colocar decoração... EM PROCESSO, resetar quando mudar de tamanho
 
 #TODO: PRONTO   ? organizar as cores?
@@ -89,18 +99,25 @@ CORES = {
 #TODO: FIZ A TELA DE VITORIA - MAS, não implementei o "fade", usei o mesmo do GameOver de clicar no espaço, e além disso não coloquei AINDA os créditos...
 
 
-
 #TODO: tirei os "bumps" no final dos efeitos sonoros. Mas não sei se eu devo trocar o efeito de pegar moeda... e de aumentar nivel, mas estou mais de muda o da moeda, mas não sei, enfim, tirei os bumps
 
 #TODO: BUG tem como ganhar e perder... eu encostei no bloco da vitoria, acionou o som da vitoria mas apareceu a tela de GameOver, não se se eu peguei o inimigo antes ou depois de ter pego o bloco amarelo
+###
+#TODO: CORRIGIDO o bug de cima... eu coloquei pra a cobra aparecer no meio inves da posicao anterior, assim nao sendo possivel ele continuar na posicao que a tela nao exista quando for diminuir a tela... ela ficava fora e dava que colidiu com o exterior. E alem disso eu coloquei condiçao se o obstaculo esta na lista antes de remove-lo
 
 #TODO: ? Colocar uma velocidade extra que vai aumentar ao decorrer o jogo TODO. Talvez não seja necessário pois ja diminuir a quantidade de salas e com isso aumentei a possibilidade de chegar na fase final de perder...
 
+#TODO: FEITO: Adicionar a minha voz junto com os efetios sonoros, com moeda, vitória, boas-vindas... use Audacity para modicar a voz e ficar 8-bit style
 
 
-#TODO: Adicionar a minha voz junto com os efetios sonoros, com moeda, vitória, boas-vindas... use Audacity para modicar a voz e ficar 8-bit style
+#TODO: fazer som AO sair do JOGO!!!!!!!
+
 
 #TODO: FAZER O TUTORIAL: Melhor fazer isso quando a mecánica do jogo estiver 100% pronta
+
+#TODO: FAZER OS CRÉDTIOS QUANDO GANHAR
+
+#TODO corrigir bugs...
 
 #TODO: Organizar o código e otimizar, principalmente as listas... 
 
@@ -152,7 +169,7 @@ class Variaveis:
 
          "tela+5": [(825, 825), 55, 11, 95, 0, 22],
          "tela+4": [(780, 780), 52, 10, 94, 2, 18],
-         "tela+3": [(735, 735), 49, 10, 92, 3, 17],
+         "tela+3": [(735, 735), 49, 10, 90, 3, 17],
          "tela+2": [(690, 690), 46,  9, 80, 4, 17],
          "tela+1": [(645, 645), 43,  8, 78, 6, 15],
          "tela0": [(600, 600), 40, 7, 72, 6, 15],
@@ -166,6 +183,7 @@ class Variaveis:
       self.array = list(self.variavel.values())
       self.atual = self.array[fase_boot]
       self.atual_inicio = self.array[6]
+      
       self.indice = self.array.index(self.atual)
       self.bloco_inicial = self.array[6][1]
    
@@ -603,23 +621,33 @@ class Jogo:
       self.rodando = True
 
       self.EFEITOS = {
-         "musica_perder_jogo": pygame.mixer.Sound(CAMINHOS["musica_perder_jogo"]),
-         "musica_ganhar_jogo": pygame.mixer.Sound(CAMINHOS["musica_ganhar_jogo"]),
-
-         "efeito_moeda": pygame.mixer.Sound(CAMINHOS["efeito_moeda"]),
-         "efeito_inimigo": pygame.mixer.Sound(CAMINHOS["efeito_inimigo"]),
-
-         "efeito_clicar_botao": pygame.mixer.Sound(CAMINHOS["efeito_clicar_botao"]),
-         "abrir_pause": pygame.mixer.Sound(CAMINHOS["abrir_pause"]),
-         "fechar_pause": pygame.mixer.Sound(CAMINHOS["fechar_pause"]),
-
-         "aumentar_level": pygame.mixer.Sound(CAMINHOS["aumentar_level"]),
-         "diminuir_level": pygame.mixer.Sound(CAMINHOS["diminuir_level"]),
+         "clicar_botao": pygame.mixer.Sound(CAMINHOS["clicar_botao"]),
+         "comecando_partida_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["comecando_partida_MINHAVOZ"]),
+         "voltando_para_menu_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["voltando_para_menu_MINHAVOZ"]),
          
-         "perigo_ultima_sala": pygame.mixer.Sound(CAMINHOS["perigo_ultima_sala"]),
-         "alertar_vitoria_sala": pygame.mixer.Sound(CAMINHOS["alertar_vitoria_sala"]),
+         "musica_perder_jogo": pygame.mixer.Sound(CAMINHOS["musica_perder_jogo"]),
+         "perder_jogo_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["perder_jogo_MINHAVOZ"]),
+         "musica_ganhar_jogo": pygame.mixer.Sound(CAMINHOS["musica_ganhar_jogo"]),
+         "ganhar_jogo_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["ganhar_jogo_MINHAVOZ"]),
 
-      }   
+         "pegar_moeda": pygame.mixer.Sound(CAMINHOS["pegar_moeda"]),
+         "pegar_moeda_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["pegar_moeda_MINHAVOZ"]),
+         "pegar_inimigo": pygame.mixer.Sound(CAMINHOS["pegar_inimigo"]),
+
+         "pausar": pygame.mixer.Sound(CAMINHOS["pausar"]),
+         "pausar_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["pausar_MINHAVOZ"]),
+         "despausar": pygame.mixer.Sound(CAMINHOS["despausar"]),
+         "despausar_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["despausar_MINHAVOZ"]),
+
+         "aumentar_fase": pygame.mixer.Sound(CAMINHOS["aumentar_fase"]),
+         "aumentar_fase_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["aumentar_fase_MINHAVOZ"]),
+         "diminuir_fase": pygame.mixer.Sound(CAMINHOS["diminuir_fase"]),
+         "diminuir_fase_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["diminuir_fase_MINHAVOZ"]),
+         
+         "alertar_ultima_sala": pygame.mixer.Sound(CAMINHOS["alertar_ultima_sala"]),
+         "alertar_vitoria_sala": pygame.mixer.Sound(CAMINHOS["alertar_vitoria_sala"]),
+         "alertar_vitoria_sala_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["alertar_vitoria_sala_MINHAVOZ"]),
+      }
 
    def executar_todas_classes(self):
       self.VARIAVEIS = Variaveis()
@@ -677,9 +705,10 @@ class Jogo:
                
                for botao_menu in self.menu.lista_botoes:
                   if botao_menu.collidepoint(posicao_mouse):
-                     self.EFEITOS["efeito_clicar_botao"].play()
+                     self.EFEITOS["clicar_botao"].play()
                      
                      if botao_menu == self.menu.lista_botoes[0]:
+                        self.EFEITOS["comecando_partida_MINHAVOZ"].play()
                         self.RELACAO_ATUAL = "no_jogo"
                         self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
                         self.acionar_musica_volume(CAMINHOS["musica_jogo"], 0.08)
@@ -696,9 +725,10 @@ class Jogo:
                
                for botao_pause in self.pause.lista_botoes:
                   if botao_pause.collidepoint(posicao_mouse):
-                     self.EFEITOS["efeito_clicar_botao"].play()
+                     self.EFEITOS["clicar_botao"].play()
 
                      if botao_pause == self.pause.lista_botoes[0]:
+                        self.EFEITOS["voltando_para_menu_MINHAVOZ"].play()
                         self.RELACAO_ATUAL = "no_menu"
                         self.acionar_musica_volume(CAMINHOS["musica_menu"], 0.12)
                         self.executar_todas_classes()
@@ -709,6 +739,7 @@ class Jogo:
    def processar_teclas_jogo(self, tecla):
       if self.RELACAO_ATUAL in ("na_vitoria", "no_gameover"):
          if tecla == pygame.K_SPACE:
+            self.EFEITOS["voltando_para_menu_MINHAVOZ"].play()
             self.RELACAO_ATUAL = "no_menu"
             self.acionar_musica_volume(CAMINHOS["musica_menu"], 0.12)
             self.executar_todas_classes()
@@ -726,12 +757,14 @@ class Jogo:
          if tecla == pygame.K_SPACE:
             if self.jogo_pausado:
                self.congelar_jogo_por = 30
-               self.EFEITOS["fechar_pause"].set_volume(0.08) 
-               self.EFEITOS["fechar_pause"].play()
+               self.EFEITOS["despausar"].set_volume(0.08) 
+               self.EFEITOS["despausar"].play()
+               self.EFEITOS["despausar_MINHAVOZ"].play()
                self.jogo_pausado = False
             else:
-               self.EFEITOS["abrir_pause"].set_volume(0.08)
-               self.EFEITOS["abrir_pause"].play()
+               self.EFEITOS["pausar"].set_volume(0.08)
+               self.EFEITOS["pausar"].play()
+               self.EFEITOS["pausar_MINHAVOZ"].play()
                self.jogo_pausado = True
    
    def diminuir_aumentar_som_smooth(self, soma, *, duracao=0, vol_min=0, vol_max=0):
@@ -770,11 +803,12 @@ class Jogo:
       self.VARIAVEIS.preset_tudo_atualizar(preset_novo)
 
       if self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 2): # Se chegou na fase antes do GameOver
-         self.EFEITOS["perigo_ultima_sala"].set_volume(0.5)
-         self.EFEITOS["perigo_ultima_sala"].play()
+         self.EFEITOS["alertar_ultima_sala"].set_volume(0.5)
+         self.EFEITOS["alertar_ultima_sala"].play()
       
       if self.VARIAVEIS.indice == 1:
          self.EFEITOS["alertar_vitoria_sala"].play()
+         self.EFEITOS["alertar_vitoria_sala_MINHAVOZ"].play()
       
       x, y = self.cobra.corpo.topleft # Pega a posição (x, y) atual da cobra.rect
       self.obstaculo.moedas_objetos = []
@@ -784,11 +818,11 @@ class Jogo:
 
       self.decoracao.resetar_decoracao()
 
-      self.cobra.cobra_rect_atualizar(x, y)
       self.obstaculo.criar_posicoes()
       self.obstaculo.criar_objetos_obstaculos()
       self.pause.criar_pause()
       self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
+      self.cobra.cobra_rect_atualizar(self.VARIAVEIS.atual[0][0] // 2, self.VARIAVEIS.atual[0][1] // 2)
 
    def remover_obstaculos_aleatorios(self, remover_moedas, remover_inimigos):
       if self.obstaculo.moedas_objetos:
@@ -810,83 +844,88 @@ class Jogo:
    def pegou_obstaculo_MAX(self, escala_variaveis):
       self.escalonar_acionar_variaveis(escala_variaveis)
       
+      tempo_sem_colidir_base = 160
+      acrescimo = 200
       if self.VARIAVEIS.indice == 1:
-         acrescimo = 40
-         self.nao_pode_colidir_por = 160 + acrescimo
+         self.nao_pode_colidir_por = tempo_sem_colidir_base + acrescimo
          self.fase_final_contagem = -self.nao_pode_colidir_por # resetando a contagem da fase final
          self.fase_final_variavel = 0     
       else:
-         self.nao_pode_colidir_por = 160
+         self.nao_pode_colidir_por = tempo_sem_colidir_base
       
-      self.duracao_obstaculo_aviso = 55
+      self.duracao_obstaculo_aviso = 70
       (self.moedas_pegas, self.inimigos_pegos) = (0, 0)
       self.cobra.constante_razao_velocidade = 1
 
    def pegou_obstaculo_APENAS(self, obstaculo, tipo):
       if tipo == "moeda":
+         print("DEBUG: pegou moeda")
          self.moedas_pegas += 1
-         self.obstaculo.moedas_objetos.remove(obstaculo)
+         if obstaculo in self.obstaculo.moedas_objetos[:]:
+            self.obstaculo.moedas_objetos.remove(obstaculo)
       
       if tipo == "inimigo_ou_quicante":
+         print("DEBUG: inimigo/quicante pega")
          self.inimigos_pegos += 1
          if obstaculo in self.lista_dois_quicantes[:]:
             self.lista_dois_quicantes.remove(obstaculo)
-         else:
+         elif obstaculo in self.obstaculo.inimigos_objetos[:]:
             self.obstaculo.inimigos_objetos.remove(obstaculo)
       
-      self.nao_pode_colidir_por = 30
+      self.nao_pode_colidir_por = 35
       self.duracao_obstaculo_aviso = 35
    
-   def colidiu_obstaculo_moeda(self, moedas_maximas, remover_moedas, remover_inimigos):
-      for moeda in self.obstaculo.moedas_objetos[:]:
-         if self.cobra.corpo.colliderect(moeda.rect):
-            
-            self.pegou_obstaculo_APENAS(obstaculo=moeda, tipo="moeda")
+   def colidiu_obstaculo_moeda(self, moeda_objeto, moedas_maximas, remover_moedas, remover_inimigos):
+            self.pegou_obstaculo_APENAS(obstaculo=moeda_objeto, tipo="moeda")
             
             if self.moedas_pegas == moedas_maximas:
-               self.EFEITOS["aumentar_level"].play()
                self.colidiu_aviso_booleano(up=True)
                self.pegou_obstaculo_MAX(escala_variaveis=(-1))
+               self.EFEITOS["aumentar_fase"].play()
+               self.EFEITOS["aumentar_fase_MINHAVOZ"].play()
             else:
-               self.EFEITOS["efeito_moeda"].play()
                self.colidiu_aviso_booleano(moeda=True)
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
+               self.EFEITOS["pegar_moeda"].play()
+               self.EFEITOS["pegar_moeda_MINHAVOZ"].play()
    
-   def colidiu_obstaculo_inimigo(self, inimigos_maximos, remover_moedas, remover_inimigos):
-      juncao_inimigo_quicante = self.obstaculo.inimigos_objetos[:] + self.lista_dois_quicantes[:]
-      for inimigo_quicante in juncao_inimigo_quicante:
-         if self.cobra.corpo.colliderect(inimigo_quicante.rect):
-
-            self.pegou_obstaculo_APENAS(obstaculo=inimigo_quicante, tipo="inimigo_ou_quicante")
+   def colidiu_obstaculo_inimigo(self, inimigo_quicante_objeto, inimigos_maximos, remover_moedas, remover_inimigos):
+            self.pegou_obstaculo_APENAS(obstaculo=inimigo_quicante_objeto, tipo="inimigo_ou_quicante")
             
             if self.inimigos_pegos == inimigos_maximos:
-               self.EFEITOS["diminuir_level"].play()
                self.colidiu_aviso_booleano(down=True)
                if self.VARIAVEIS.indice in ((len(self.VARIAVEIS.array) - 3), (len(self.VARIAVEIS.array) - 2)):
                   self.pegou_obstaculo_MAX(escala_variaveis=(1))
                else:
                   self.pegou_obstaculo_MAX(escala_variaveis=(2))
+               if not self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1):
+                  self.EFEITOS["diminuir_fase"].play()
+                  self.EFEITOS["diminuir_fase_MINHAVOZ"].play()
             else:
-               self.EFEITOS["efeito_inimigo"].play()
                self.colidiu_aviso_booleano(inimigo=True)
                self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
+               self.EFEITOS["pegar_inimigo"].play()
 
    def colidiu_obstaculos(self):
       moedas_maximas = 5
-      inimigos_maximos = 4
+      inimigos_maximos = 6
       remover_moedas = (self.obstaculo.QUANTIDADE_MOEDAS - 1) // 2
       remover_inimigos = (self.obstaculo.QUANTIDADE_INIMIGOS - 1) // 2
       
       if self.VARIAVEIS.indice == 1 and self.fase_final_variavel == 9:
             if self.cobra.corpo.colliderect(self.obstaculo.moeda_vitoria_objeto[0].rect):
                self.pegou_obstaculo_MAX(escala_variaveis=(-1))
-               self.executar_todas_classes()
+               print("DEBUG: moeda vitoria pega")
       
       if self.nao_pode_colidir_por == 0:
-         self.colidiu_obstaculo_moeda(moedas_maximas, remover_moedas, remover_inimigos)
+         for moeda in self.obstaculo.moedas_objetos[:]:
+            if self.cobra.corpo.colliderect(moeda.rect):
+               self.colidiu_obstaculo_moeda(moeda, moedas_maximas, remover_moedas, remover_inimigos)
       
-      if self.nao_pode_colidir_por == 0:
-         self.colidiu_obstaculo_inimigo(inimigos_maximos, remover_moedas, remover_inimigos)
+         juncao_inimigo_quicante = self.obstaculo.inimigos_objetos[:] + self.lista_dois_quicantes[:]
+         for inimigo_quicante in juncao_inimigo_quicante:
+            if self.cobra.corpo.colliderect(inimigo_quicante.rect):
+               self.colidiu_obstaculo_inimigo(inimigo_quicante, inimigos_maximos, remover_moedas, remover_inimigos)
       else:
          self.nao_pode_colidir_por -= 1
    
@@ -900,13 +939,17 @@ class Jogo:
    
    def ganhou_jogo(self):
       if self.VARIAVEIS.indice == 0:
+         print("DEBUG: indice 0 GANHOU JOGO")
          self.EFEITOS["musica_ganhar_jogo"].play()
+         self.EFEITOS["ganhar_jogo_MINHAVOZ"].play()
          self.RELACAO_ATUAL = "na_vitoria"
          self.tela_atualizar_jogo(self.VARIAVEIS.atual_inicio[0]) # Atualizar o tamanho da tela     
 
    def perdeu_jogo(self):
       if self.cobra.colidiu_borda_cobra() or self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1): # Se chegou na fase "tela-morte"
+         print("DEBUG: indice ultimo PERDEU JOGO")
          self.EFEITOS["musica_perder_jogo"].play()
+         self.EFEITOS["perder_jogo_MINHAVOZ"].play()
          self.RELACAO_ATUAL = "no_gameover"
          self.tela_atualizar_jogo(self.VARIAVEIS.atual_inicio[0]) # Atualizar o tamanho da tela
          if self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1):
