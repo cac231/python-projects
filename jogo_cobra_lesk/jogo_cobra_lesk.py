@@ -1,9 +1,14 @@
 import pygame
+import os
+import sys
+import ctypes
+import pywinstyles
 import math
 import random
-import os
+
 os.environ['SDL_VIDEO_CENTERED'] = 'centered'
-import sys
+myappid = 'jogo.HoraDoLesk.version1.0' 
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 def pegar_caminho_recurso(nome_arquivo):
       if hasattr(sys, '_MEIPASS'):
@@ -14,11 +19,21 @@ def pegar_caminho_recurso(nome_arquivo):
 
 CAMINHOS = {
    "fonte": pegar_caminho_recurso(r"assets/ARCADE_N.TTF"),
+
+   "imagem_icon": pegar_caminho_recurso(r"assets/images/icon/icon_png.png"),
+
+   "tutorial_1": pegar_caminho_recurso(r"assets/images/jogo_0001.png"),
+   "tutorial_2": pegar_caminho_recurso(r"assets/images/jogo_0002.png"),
+   "tutorial_3": pegar_caminho_recurso(r"assets/images/jogo_0003.png"),
+   "tutorial_4": pegar_caminho_recurso(r"assets/images/jogo_0004.png"),
    
    "musica_menu": pegar_caminho_recurso(r"assets/sounds/music/Crystal Clear Loop.mp3"),
+   "musica_tutorial": pegar_caminho_recurso(r"assets/sounds/music/Curiosity (Black).mp3"),
    "musica_jogo": pegar_caminho_recurso(r"assets/sounds/music/Unknown Caverns.mp3"),
+   "musica_creditos": pegar_caminho_recurso(r"assets/sounds/music/Think About It.mp3"),
 
    "clicar_botao": pegar_caminho_recurso(r"assets/sounds/_clicar_botao.wav"),
+   "sair_do_jogo": pegar_caminho_recurso(r"assets/sounds/_sair_do_jogo.wav"),
    "comecando_partida_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/_comecando_partida_MINHAVOZ.wav"),
    "voltando_para_menu_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/_voltando_para_menu_MINHAVOZ.wav"),
    
@@ -46,9 +61,15 @@ CAMINHOS = {
    "alertar_vitoria_sala_MINHAVOZ": pegar_caminho_recurso(r"assets/sounds/my_voice/alertar_vitoria_sala_MINHAVOZ.wav"),
 }
 
+ARRAY_TUTORIAL = [
+   CAMINHOS["tutorial_1"],
+   CAMINHOS["tutorial_2"],
+   CAMINHOS["tutorial_3"],
+   CAMINHOS["tutorial_4"]
+   ]
+
 FONTE = lambda tamanho: pygame.font.Font(CAMINHOS["fonte"], tamanho)
 
-FPS = 60
 CORES = { 
    "tela_menu": (0, 0, 10),
    "tela_jogo": (5, 15, 40),
@@ -66,14 +87,21 @@ CORES = {
    "texto_espaco_vitoriaMorte": (100, 100, 100),
    "texto_vitoria": (250, 250, 100),
    "texto_morte": (250, 100, 100),
+
+   "texto_titulo_credito": (250, 250, 100),
+   "texto_estatisticas_tempo_de_jogo": (210, 200, 165), #RGB
+   "texto_estatisticas_moedas": (140, 180, 210),
+   "texto_estatisticas_inimigos": (220, 30, 90),
+   "texto_outros_creditos": (240, 240, 180),
    
    "cobra_ativo": (10, 200, 100),
    "cobra_safe": (70, 70, 80),
    
-   "moeda": (143, 181, 211),
-   "inimigo": (219, 29, 89),
-   "moedaVitoria": (245, 255, 95),
-   "inimigoQuicante": (239, 19, 99),
+   "moeda": (140, 180, 210),
+   "moedaVitoria": (250, 250, 100),
+   
+   "inimigo": (220, 30, 90),
+   "inimigoQuicante": (215, 20, 100),
 
    "decoracaoEstrela": (110, 100, 130),
    "contagemAviso": (10, 0, 35),
@@ -83,6 +111,8 @@ CORES = {
    "aumentou_obstaculoAviso": (100, 100, 250),
    "diminuiu_obstaculoAviso": (250, 100, 100),
 }
+
+#//
 
 #TODO: PROTNO!    Colocar decoração... EM PROCESSO, resetar quando mudar de tamanho
 
@@ -98,7 +128,6 @@ CORES = {
 
 #TODO: FIZ A TELA DE VITORIA - MAS, não implementei o "fade", usei o mesmo do GameOver de clicar no espaço, e além disso não coloquei AINDA os créditos...
 
-
 #TODO: tirei os "bumps" no final dos efeitos sonoros. Mas não sei se eu devo trocar o efeito de pegar moeda... e de aumentar nivel, mas estou mais de muda o da moeda, mas não sei, enfim, tirei os bumps
 
 #TODO: BUG tem como ganhar e perder... eu encostei no bloco da vitoria, acionou o som da vitoria mas apareceu a tela de GameOver, não se se eu peguei o inimigo antes ou depois de ter pego o bloco amarelo
@@ -109,16 +138,32 @@ CORES = {
 
 #TODO: FEITO: Adicionar a minha voz junto com os efetios sonoros, com moeda, vitória, boas-vindas... use Audacity para modicar a voz e ficar 8-bit style
 
+#TODO: FEITO fazer som AO sair do JOGO!!!!!!!
 
-#TODO: fazer som AO sair do JOGO!!!!!!!
+#TODO: FEITO  FAZER O TUTORIAL: Melhor fazer isso quando a mecánica do jogo estiver 100% pronta
+
+#TODO: EU FIZ!!! EU FIZ!!! E TERMINEI NO MESMO DIA... HOJE DIA 20 01 2026!!! FAZER OS CRÉDTIOS QUANDO GANHAR
+
+#TODO FEITO BUG mesmo pausado o cronometro da ultima fase fica on
 
 
-#TODO: FAZER O TUTORIAL: Melhor fazer isso quando a mecánica do jogo estiver 100% pronta
+#/ POR FIM...
 
-#TODO: FAZER OS CRÉDTIOS QUANDO GANHAR
+#TODO: colocar as estatisticas aparecendo aos poucos igual com os outros creditos
+#
+#TODO: ajeitar o cronometro que ativa as funçao de desenhar nos creditos
+
+#TODO: ajeitar os sons e remover os sons de pausar_MINHAVOZ
+
+#TODO: ajustar o fade da musica ao pausar e despausar, esta demorando demais e quebra o clima
+
+#TODO: ajustar variaveis? talvez tenha uma variavel que encaixa na Classe dela e nao na Classe Jogo
+
+
+
+
 
 #TODO corrigir bugs...
-
 #TODO: Organizar o código e otimizar, principalmente as listas... 
 
 #
@@ -129,9 +174,7 @@ CORES = {
 
 #//
 
-def criar_botoes(variaveis_classe, *, tamanho_tela, tamanho_botoes, quantos_botoes, pos_y, gap, frases, razao=1):
-   VARIAVEIS = variaveis_classe
-
+def criar_botoes(*, tamanho_tela, tamanho_botoes, quantos_botoes, pos_y, gap, frases, razao=1):
    tamanho_botoes = (int(tamanho_botoes[0]), int(tamanho_botoes[1]))
    tela_meio_botao = (tamanho_tela // 2) - (tamanho_botoes[0] // 2)
 
@@ -150,8 +193,6 @@ def criar_botoes(variaveis_classe, *, tamanho_tela, tamanho_botoes, quantos_boto
    
    return lista_botoes, texto_botoes, texto_botoes_rect_pos
 
-#//
-
 def centralizar_texto_corretamente(texto_surface, pos_x, pos_y):
    rect_todo = texto_surface.get_rect()
    rect_apenas_texto = texto_surface.get_bounding_rect()
@@ -161,25 +202,27 @@ def centralizar_texto_corretamente(texto_surface, pos_x, pos_y):
 
 #//
 
+FPS = 60
+
 class Variaveis:
    def __init__(self):
       self.variavel = { 
          # tela, bloco, V, distancia_minima, moedas / inimigos
          "tela-vitoria": [(600, 600), 0, 0, 0, 0, 0],
 
-         "tela+5": [(825, 825), 55, 11, 95, 0, 22],
-         "tela+4": [(780, 780), 52, 10, 94, 2, 18],
-         "tela+3": [(735, 735), 49, 10, 90, 3, 17],
-         "tela+2": [(690, 690), 46,  9, 80, 4, 17],
-         "tela+1": [(645, 645), 43,  8, 78, 6, 15],
-         "tela0": [(600, 600), 40, 7, 72, 6, 15],
-         "tela-1": [(555, 555), 37,  7, 66, 6, 15],
-         "tela-2": [(510, 510), 34,  8, 64, 5, 14],
+         "tela+5": [(825, 825), 55, 11, 95, 0, 21],
+         "tela+4": [(780, 780), 52, 11, 94, 2, 20],
+         "tela+3": [(735, 735), 49, 10, 90, 3, 18],
+         "tela+2": [(690, 690), 46,  9, 80, 4, 18],
+         "tela+1": [(645, 645), 43,  8, 76, 5, 15],
+         "tela0": [(600, 600), 40, 7, 72, 5, 15],
+         "tela-1": [(555, 555), 37,  7, 66, 5, 15],
+         "tela-2": [(510, 510), 34,  8, 64, 4, 14],
          
          "tela-morte": [(600, 600), 0, 0, 0, 0, 0],
       }
 
-      fase_boot = 6
+      fase_boot = 1
       self.array = list(self.variavel.values())
       self.atual = self.array[fase_boot]
       self.atual_inicio = self.array[6]
@@ -353,11 +396,21 @@ class Obstaculo:
       self.QUANTIDADE_POSICOES = int((self.QUANTIDADE_MOEDAS + self.QUANTIDADE_INIMIGOS) + 2)
       
       self.distancia_minima = self.VARIAVEIS.atual[3]
+
+      numero_de_posicoes_minimas = 10
       
-      while len(self.posicoes_feitas) < self.QUANTIDADE_POSICOES:
+      while len(self.posicoes_feitas) < numero_de_posicoes_minimas:
          procurar = True
+         
+         tentativas = 0
+         tentativas_max = 100
          while procurar:
             procurar = False
+
+            tentativas += 1
+            if tentativas > tentativas_max:
+               print("ERRO NA CRIAÇÃO DE OBSTÁCULOS - LIMITE ULTRAPASSADO")
+               break
             
             margem = self.VARIAVEIS.atual[1] // 2
             pos_x = random.randint(margem, self.VARIAVEIS.atual[0][0] - margem)
@@ -426,8 +479,8 @@ class Decoracao:
       self.resetar_decoracao()
    def resetar_decoracao(self):
       self.posicoes_feitas = []
-      self.criar_decoracao_posicoes()
       self.decoracoes_feitas = []
+      self.criar_decoracao_posicoes()
       self.criar_decoracao_rect()
    
    def criar_decoracao_posicoes(self):
@@ -450,7 +503,7 @@ class Decoracao:
          self.posicoes_feitas.append((pos_x, pos_y))
       
    def criar_decoracao_rect(self):
-      for posicao in self.posicoes_feitas[:]:
+      for posicao in self.posicoes_feitas:
          tamanho = random.randint(5, 11)
          surface = pygame.Surface((tamanho, tamanho))
          surface.fill(CORES["decoracaoEstrela"])
@@ -458,7 +511,7 @@ class Decoracao:
 
          self.decoracoes_feitas.append((surface, posicao))
    def desenhar_decoracao(self, tela):
-      for surface, posicao in self.decoracoes_feitas[:]:
+      for surface, posicao in self.decoracoes_feitas:
          tela.blit(surface, posicao)
 
 #//
@@ -511,14 +564,14 @@ class Pause:
       self.subTituloPause = FONTE(int(15 * self.razao)).render(("Pressione [space] para continuar"), 0, CORES["texto2_pause"])
       self.subTituloPause_pos = centralizar_texto_corretamente(self.subTituloPause, self.pos_x_meio, acrescimo_na_pos_y * self.razao)
 
-      self.lista_botoes, self.texto_botoes, self.texto_botoes_pos = criar_botoes(self.VARIAVEIS, 
-                                                                          tamanho_tela = self.VARIAVEIS.atual[0][0],
-                                                                        tamanho_botoes = (380 * self.razao, 80 * self.razao), 
-                                                                        quantos_botoes = 2, 
-                                                                                 pos_y = (395 - espaco_ate_margem) * self.razao,  
-                                                                                   gap = 30 * self.razao, 
-                                                                                frases = ["Sair para o menu", "Sair do jogo"], 
-                                                                                 razao = self.razao)
+      self.lista_botoes, self.texto_botoes, self.texto_botoes_pos = criar_botoes(tamanho_tela = self.VARIAVEIS.atual[0][0],
+                                                                               tamanho_botoes = (380 * self.razao, 80 * self.razao), 
+                                                                               quantos_botoes = 2, 
+                                                                                        pos_y = (395 - espaco_ate_margem) * self.razao,  
+                                                                                          gap = 30 * self.razao, 
+                                                                                       frases = ["Sair para o menu", "Sair do jogo"], 
+                                                                                        razao = self.razao)
+                                                                          
       
       self.overlay = pygame.Surface((self.VARIAVEIS.atual[0]))
       self.overlay.fill((0, 0, 0))
@@ -553,13 +606,13 @@ class Menu:
 
       #//
       
-      self.lista_botoes, self.texto_botoes, self.texto_botoes_pos = criar_botoes(self.VARIAVEIS,
-                                                                          tamanho_tela = self.VARIAVEIS.atual_inicio[0][0],         
-                                                                        tamanho_botoes = (210, 80), 
-                                                                        quantos_botoes = 3, 
-                                                                                 pos_y = 240, 
-                                                                                   gap = 30, 
-                                                                                frases = ["Jogar", "Tutorial", "Sair"])
+      self.lista_botoes, self.texto_botoes, self.texto_botoes_pos = criar_botoes(tamanho_tela = self.VARIAVEIS.atual_inicio[0][0], 
+                                                                               tamanho_botoes = (210, 80), 
+                                                                               quantos_botoes = 3, 
+                                                                                        pos_y = 240, 
+                                                                                          gap = 30, 
+                                                                                       frases = ["Jogar", "Tutorial", "Sair"])
+                                                                                  
 
    def desenhar_menu(self, tela):
       tela.blit(self.titulo, self.titulo_pos)
@@ -571,6 +624,88 @@ class Menu:
       
       for texto, texto_pos in zip(self.texto_botoes, self.texto_botoes_pos):
          tela.blit(texto, texto_pos)
+
+#//
+
+class Creditos:
+   def __init__(self, VARIAVEIS):
+      self.VARIAVEIS = VARIAVEIS 
+      self.pos_x_meio = self.VARIAVEIS.atual_inicio[0][0] // 2
+
+      pos_y = 100
+      self.titulo = FONTE(40).render("Creditos", 0, CORES["texto_titulo_credito"])
+      self.titulo_pos = centralizar_texto_corretamente(self.titulo, self.pos_x_meio, pos_y)
+
+      self.outros_creditos = {
+         "Diretor de Jogo": "cac",
+         "Diretor Tecnico": "cac",
+         "Diretor Criativo": "cac",
+         "Programador": "cac",
+         "Artista": "cac",
+         "Audio": "cac",
+      }
+      
+      self.tempo_espera_estatisticas = 0
+      self.tempo_espera = 0
+
+   def desenhar_creditos_titulo(self, tela):
+      tela.blit(self.titulo, self.titulo_pos)
+   
+   def desenhar_creditos_estatisticas(self, tela, valores, tempo_de_jogo):
+      pos_y_1 = 170 + (4*2)
+      pos_y_2 = pos_y_1 + 25
+      pos_y_3 = pos_y_2 + 25
+      
+      if tempo_de_jogo[0] == "segundos":
+         self.estatisticas_tempo = FONTE(17).render(f"Jogou por {tempo_de_jogo[1]} segundos", 0, CORES["texto_estatisticas_tempo_de_jogo"])
+      elif tempo_de_jogo[0] == "minutos":
+         self.estatisticas_tempo = FONTE(17).render(f"Jogou por {tempo_de_jogo[1]} minutos", 0, CORES["texto_estatisticas_tempo_de_jogo"])
+      
+      self.estatisticas_tempo_pos = centralizar_texto_corretamente(self.estatisticas_tempo, self.pos_x_meio, pos_y_1)
+
+      self.estatisticas_moedas = FONTE(17).render(f"Pegou {valores[0]} moedas!", 0, CORES["texto_estatisticas_moedas"])
+      self.estatisticas_moedas_pos = centralizar_texto_corretamente(self.estatisticas_moedas, self.pos_x_meio, pos_y_2)
+      
+      self.estatisticas_inimigos = FONTE(17).render(f"Pegou {valores[1]} inimigos...", 0, CORES["texto_estatisticas_inimigos"])
+      self.estatisticas_inimigos_pos = centralizar_texto_corretamente(self.estatisticas_inimigos, self.pos_x_meio, pos_y_3)
+
+      # lista = [
+      #    [self.estatisticas_tempo, self.estatisticas_tempo_pos],
+      #    [self.estatisticas_moedas, self.estatisticas_moedas_pos],
+      #    [self.estatisticas_inimigos, self.estatisticas_inimigos_pos],
+      # ]
+
+      # intervalo = 0
+
+      # for elemento in lista:
+      #    if self.tempo_espera_estatisticas > intervalo:
+      #       intervalo += 350
+      #       tela.blit(elemento[0], elemento[1])
+      #    self.tempo_espera_estatisticas += 1
+      
+      tela.blit(self.estatisticas_tempo, self.estatisticas_tempo_pos)
+      tela.blit(self.estatisticas_moedas, self.estatisticas_moedas_pos)
+      tela.blit(self.estatisticas_inimigos, self.estatisticas_inimigos_pos)
+
+   def desenhar_outros_creditos(self, tela):
+      pos_y = 290 - (4*3)
+      gap = 0
+      intervalo = 350
+
+      for tipo, nome in self.outros_creditos.items():
+         if self.tempo_espera > intervalo:
+            self.creditos = FONTE(17).render(f"{tipo}: {nome}", 0, CORES["texto_outros_creditos"])
+            self.creditos_pos = centralizar_texto_corretamente(self.creditos, self.pos_x_meio, pos_y + gap)
+            gap += 30
+            intervalo += 350
+            tela.blit(self.creditos, self.creditos_pos)
+         self.tempo_espera += 1
+   
+   def desenhar_agradecimento(self, tela):
+      pos_y = 500
+      self.agradecimento = FONTE(21).render("Obrigado por jogar ;)", 0, CORES["texto_titulo_credito"])
+      self.agradecimento_pos = centralizar_texto_corretamente(self.agradecimento, self.pos_x_meio, pos_y)
+      tela.blit(self.agradecimento, self.agradecimento_pos)
 
 #//
 
@@ -601,7 +736,7 @@ class TelaVitoriaMorte:
    
    def desenhar_space_vitoriaMorte(self, tela):
       decrescimo = -20
-      self.espacoMorte = FONTE(15).render("Pressione [space] para voltar ao menu", 0, CORES["texto_espaco_vitoriaMorte"])
+      self.espacoMorte = FONTE(15).render("Pressione [space] para voltar", 0, CORES["texto_espaco_vitoriaMorte"])
       self.espacoMorte_pos = centralizar_texto_corretamente(self.espacoMorte, self.pos_x_meio - 2, self.VARIAVEIS.atual_inicio[0][1] + decrescimo)
       tela.blit(self.espacoMorte, self.espacoMorte_pos)
 
@@ -609,19 +744,25 @@ class TelaVitoriaMorte:
 
 class Jogo:
    def __init__(self):
-      pygame.mixer.init(44100, -16, 2, 512)
+      pygame.mixer.pre_init(44100, -16, 2, 512)
       pygame.init()
       self.executar_todas_classes()
 
       self.RELACAO_ATUAL = "no_menu"
       self.titulo = pygame.display.set_caption("HORA DO LESK!")
       self.tempo = pygame.time.Clock()
-      self.acionar_musica_volume(CAMINHOS["musica_menu"], 0)
       
-      self.rodando = True
+      imagem_icon = pygame.image.load(CAMINHOS["imagem_icon"])
+      pygame.display.set_icon(imagem_icon)
+      
+      pywinstyles.apply_style(pygame.display.get_wm_info()['window'], "dark")
+
+      self.TIMER_EVENT = pygame.USEREVENT + 1
+      pygame.time.set_timer(self.TIMER_EVENT, 1000)
 
       self.EFEITOS = {
          "clicar_botao": pygame.mixer.Sound(CAMINHOS["clicar_botao"]),
+         "sair_do_jogo": pygame.mixer.Sound(CAMINHOS["sair_do_jogo"]),
          "comecando_partida_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["comecando_partida_MINHAVOZ"]),
          "voltando_para_menu_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["voltando_para_menu_MINHAVOZ"]),
          
@@ -649,7 +790,14 @@ class Jogo:
          "alertar_vitoria_sala_MINHAVOZ": pygame.mixer.Sound(CAMINHOS["alertar_vitoria_sala_MINHAVOZ"]),
       }
 
-   def executar_todas_classes(self):
+      self.ajustar_efeitos()
+
+      self.volume_atual = 0
+      self.acionar_musica_volume(CAMINHOS["musica_menu"], 0)
+
+      self.rodando = True
+
+   def _recriar_classes(self):
       self.VARIAVEIS = Variaveis()
       self.cobra = Cobra(self.VARIAVEIS)
       self.obstaculo = Obstaculo(self.VARIAVEIS)
@@ -658,18 +806,27 @@ class Jogo:
       self.textoAviso = Aviso(self.VARIAVEIS)
       self.telaVitoriaMorte = TelaVitoriaMorte(self.VARIAVEIS)
       self.decoracao = Decoracao(self.VARIAVEIS)
-
+      self.creditos = Creditos(self.VARIAVEIS)
       self.tela_atualizar_jogo(self.VARIAVEIS.atual_inicio[0])
-      
+
+   def _resetar_variaveis_jogo(self):
       self.moedas_pegas = 0
       self.inimigos_pegos = 0
+      self.lista_dois_quicantes = []
       
+      self.tutorial_ativo = False
+      self.ordem_do_tutorial = 0
+
+      self.moedas_inimigos_pegos_total = [0, 0]
+      self.jogo_pausado = False
+   
+   def _resetar_timers(self):
       self.nao_pode_colidir_por = 200 # Começa a partida com 200 frames sem colidir
       self.congelar_jogo_por = 200 # Começa a partida com 200 frames tudo congelado
-      
+   
       self.colidiu_aviso_booleano()
       self.duracao_obstaculo_aviso = 0
-      
+   
       self.fase_final_contagem = -self.nao_pode_colidir_por
       self.fase_final_variavel = 0
       
@@ -678,9 +835,44 @@ class Jogo:
       
       self.duracao_acrescentar_velocidade_porFase = 0
       self.tempo_musica_fade = 0
-      self.jogo_pausado = False
-      self.lista_dois_quicantes = []
-   
+
+      self.intervalo_dos_textos_creditos = 0
+      
+      self.tempo_de_jogo = 0
+  
+   def executar_todas_classes(self):
+      self._recriar_classes()
+      self._resetar_variaveis_jogo()
+      self._resetar_timers()
+
+   def ajustar_efeitos(self):
+      self.VOLUMES = {
+         "musica_menu": 0.20,
+         "musica_tutorial": 0.30,
+         "musica_creditos": 0.30,
+         
+         "musica_jogo_max": 0.12, 
+         "musica_jogo_min": 0.03, 
+
+         "pausar": 0.30,
+         "despausar": 0.30,
+         "alertar_ultima_sala": 0.7,
+         "sair_do_jogo": 0.30,
+
+         "MINHAVOZ": 0.45,
+      }
+      
+      self.EFEITOS["pausar"].set_volume(self.VOLUMES["pausar"])
+      self.EFEITOS["despausar"].set_volume(self.VOLUMES["despausar"])
+      self.EFEITOS["alertar_ultima_sala"].set_volume(self.VOLUMES["alertar_ultima_sala"]) 
+      self.EFEITOS["sair_do_jogo"].set_volume(self.VOLUMES["sair_do_jogo"])
+      
+      for chave, som in self.EFEITOS.items():
+         if "MINHAVOZ" in chave:
+            som.set_volume(self.VOLUMES["MINHAVOZ"])
+
+   #//
+
    def tela_atualizar_jogo(self, tamanho):
       self.tela = pygame.display.set_mode(tamanho)
 
@@ -688,8 +880,41 @@ class Jogo:
       pygame.mixer.music.load(musica)
       self.volume_atual = volume
       self.volume = pygame.mixer.music.set_volume(self.volume_atual)
-      pygame.mixer.music.play(-1)
+      pygame.mixer.music.play(-1, fade_ms=2000)
+
+   def diminuir_aumentar_som_smooth(self, soma, *, duracao=0, vol_min=0, vol_max=0, aumentar_quanto=1):
+      if duracao % aumentar_quanto != 0:
+         raise Exception("Número inválido")
+      
+      if soma == -0.01:
+         if self.volume_atual > vol_min:
+            if self.tempo_musica_fade > duracao: # Sempre True para efeitos
+               self.volume_atual += soma
+               self.volume = pygame.mixer.music.set_volume(self.volume_atual)
+               self.tempo_musica_fade = 0
+            else:
+               self.tempo_musica_fade += aumentar_quanto
+      if soma == 0.01: 
+         if self.volume_atual < vol_max: # Volume maximo da música de jogo
+            if self.tempo_musica_fade > duracao: # Sempre True para efeitos
+               self.volume_atual += soma
+               self.volume = pygame.mixer.music.set_volume(self.volume_atual)
+               self.tempo_musica_fade = 0
+            else:
+               self.tempo_musica_fade += aumentar_quanto
    
+   def mostrar_tutorial(self):
+      if self.ordem_do_tutorial < len(ARRAY_TUTORIAL):
+         if self.ordem_do_tutorial < 0:
+            self.ordem_do_tutorial = 0
+         imagem_tutorial = pygame.image.load(ARRAY_TUTORIAL[self.ordem_do_tutorial])
+         self.tela.blit(imagem_tutorial, (0, 0))
+      else:
+         self.tutorial_ativo = False
+         self.acionar_musica_volume(CAMINHOS["musica_menu"], self.VOLUMES["musica_menu"])
+      
+   #//
+
    def processar_eventos_jogo(self):
       for evento in pygame.event.get():
          
@@ -698,26 +923,36 @@ class Jogo:
          
          elif evento.type == pygame.KEYDOWN:
             self.processar_teclas_jogo(evento.key)
+         
+         elif self.RELACAO_ATUAL == "no_jogo" and not self.jogo_pausado == True:
+            if evento.type == self.TIMER_EVENT:
+               self.tempo_de_jogo += 1
+               print("DEBUG TEMPO:", self.tempo_de_jogo)
                
-         elif self.RELACAO_ATUAL == "no_menu":
+         elif self.RELACAO_ATUAL == "no_menu" and not self.tutorial_ativo:
             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                posicao_mouse = evento.pos
                
                for botao_menu in self.menu.lista_botoes:
                   if botao_menu.collidepoint(posicao_mouse):
+                     pygame.mixer.stop()
                      self.EFEITOS["clicar_botao"].play()
                      
                      if botao_menu == self.menu.lista_botoes[0]:
                         self.EFEITOS["comecando_partida_MINHAVOZ"].play()
                         self.RELACAO_ATUAL = "no_jogo"
                         self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
-                        self.acionar_musica_volume(CAMINHOS["musica_jogo"], 0.08)
+                        self.acionar_musica_volume(CAMINHOS["musica_jogo"], self.VOLUMES["musica_jogo_max"])
                      
                      if botao_menu == self.menu.lista_botoes[1]:
-                        pass
+                        self.tutorial_ativo = True
+                        self.acionar_musica_volume(CAMINHOS["musica_tutorial"], self.VOLUMES["musica_tutorial"])
 
                      if botao_menu == self.menu.lista_botoes[2]:
-                        self.rodando = False
+                        pygame.mixer.stop()
+                        self.EFEITOS["sair_do_jogo"].play()
+                        while pygame.mixer.get_busy():
+                           self.rodando = False
  
          elif self.jogo_pausado == True:
             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
@@ -725,24 +960,46 @@ class Jogo:
                
                for botao_pause in self.pause.lista_botoes:
                   if botao_pause.collidepoint(posicao_mouse):
+                     pygame.mixer.stop()
                      self.EFEITOS["clicar_botao"].play()
 
                      if botao_pause == self.pause.lista_botoes[0]:
                         self.EFEITOS["voltando_para_menu_MINHAVOZ"].play()
                         self.RELACAO_ATUAL = "no_menu"
-                        self.acionar_musica_volume(CAMINHOS["musica_menu"], 0.12)
+                        self.acionar_musica_volume(CAMINHOS["musica_menu"], self.VOLUMES["musica_menu"])
                         self.executar_todas_classes()
                      
                      if botao_pause == self.pause.lista_botoes[1]:
-                        self.rodando = False
+                        pygame.mixer.stop()
+                        self.EFEITOS["sair_do_jogo"].play()
+                        while pygame.mixer.get_busy():
+                           self.rodando = False
 
    def processar_teclas_jogo(self, tecla):
-      if self.RELACAO_ATUAL in ("na_vitoria", "no_gameover"):
+      if self.tutorial_ativo:
          if tecla == pygame.K_SPACE:
+            self.EFEITOS["clicar_botao"].play()
+            self.ordem_do_tutorial += 1
+         if tecla == pygame.K_ESCAPE:
+            self.EFEITOS["clicar_botao"].play()
+            self.ordem_do_tutorial -= 1
+
+      if self.RELACAO_ATUAL in ("no_gameover", "nos_creditos"):
+         if tecla == pygame.K_SPACE:
+            pygame.mixer.stop()
+            self.EFEITOS["clicar_botao"].play()
             self.EFEITOS["voltando_para_menu_MINHAVOZ"].play()
             self.RELACAO_ATUAL = "no_menu"
-            self.acionar_musica_volume(CAMINHOS["musica_menu"], 0.12)
+            self.acionar_musica_volume(CAMINHOS["musica_menu"], self.VOLUMES["musica_menu"])
             self.executar_todas_classes()
+      
+      if self.RELACAO_ATUAL == "na_vitoria":
+         if tecla == pygame.K_SPACE:
+            pygame.mixer.stop()
+            self.EFEITOS["clicar_botao"].play()
+            self.RELACAO_ATUAL = "nos_creditos"
+            self.acionar_musica_volume(CAMINHOS["musica_creditos"], self.VOLUMES["musica_creditos"])
+            self.tela_atualizar_jogo(self.VARIAVEIS.atual_inicio[0])
 
       if self.RELACAO_ATUAL == "no_jogo":
          if tecla == pygame.K_RIGHT:
@@ -757,72 +1014,21 @@ class Jogo:
          if tecla == pygame.K_SPACE:
             if self.jogo_pausado:
                self.congelar_jogo_por = 30
-               self.EFEITOS["despausar"].set_volume(0.08) 
                self.EFEITOS["despausar"].play()
-               self.EFEITOS["despausar_MINHAVOZ"].play()
+               #self.EFEITOS["despausar_MINHAVOZ"].play()
                self.jogo_pausado = False
             else:
-               self.EFEITOS["pausar"].set_volume(0.08)
                self.EFEITOS["pausar"].play()
-               self.EFEITOS["pausar_MINHAVOZ"].play()
+               #self.EFEITOS["pausar_MINHAVOZ"].play()
                self.jogo_pausado = True
-   
-   def diminuir_aumentar_som_smooth(self, soma, *, duracao=0, vol_min=0, vol_max=0):
-      if soma == -0.01:
-         if self.volume_atual > vol_min:
-            if self.tempo_musica_fade > duracao: # Sempre True para efeitos
-               self.volume_atual += soma
-               self.volume = pygame.mixer.music.set_volume(self.volume_atual)
-               self.tempo_musica_fade = 0
-            else:
-               self.tempo_musica_fade += 1
-      if soma == 0.01: 
-         if self.volume_atual < vol_max: # Volume maximo da música de jogo
-            if self.tempo_musica_fade > duracao: # Sempre True para efeitos
-               self.volume_atual += soma
-               self.volume = pygame.mixer.music.set_volume(self.volume_atual)
-               self.tempo_musica_fade = 0
-            else:
-               self.tempo_musica_fade += 1
 
    #//
 
-   def animacao_obstaculos(self):
-      for moeda in self.obstaculo.moedas_objetos[:]:
-            if moeda.fase != "completo":
-               moeda.animacao_moeda()
-      for inimigo in self.obstaculo.inimigos_objetos[:]:
-            if inimigo.fase != "completo":
-               inimigo.animacao_inimigo()          
-      
-      if self.fase_final_variavel == 9:
-         if self.obstaculo.moeda_vitoria_objeto[0].fase != "completo":
-             self.obstaculo.moeda_vitoria_objeto[0].animacao_moeda()
-
-   def escalonar_acionar_variaveis(self, preset_novo):
-      self.VARIAVEIS.preset_tudo_atualizar(preset_novo)
-
-      if self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 2): # Se chegou na fase antes do GameOver
-         self.EFEITOS["alertar_ultima_sala"].set_volume(0.5)
-         self.EFEITOS["alertar_ultima_sala"].play()
-      
-      if self.VARIAVEIS.indice == 1:
-         self.EFEITOS["alertar_vitoria_sala"].play()
-         self.EFEITOS["alertar_vitoria_sala_MINHAVOZ"].play()
-      
-      x, y = self.cobra.corpo.topleft # Pega a posição (x, y) atual da cobra.rect
-      self.obstaculo.moedas_objetos = []
-      self.obstaculo.inimigos_objetos = []
-      self.lista_dois_quicantes = [] # Sempre reseta a lista dos quicantes
-      self.obstaculo.posicoes_feitas = []
-
-      self.decoracao.resetar_decoracao()
-
-      self.obstaculo.criar_posicoes()
-      self.obstaculo.criar_objetos_obstaculos()
-      self.pause.criar_pause()
-      self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
-      self.cobra.cobra_rect_atualizar(self.VARIAVEIS.atual[0][0] // 2, self.VARIAVEIS.atual[0][1] // 2)
+   def colidiu_aviso_booleano(self, *, moeda=False, inimigo=False, up=False, down=False):
+      self.aviso_acertou_moeda = moeda
+      self.aviso_acertou_inimigo = inimigo
+      self.aviso_aumentou_nivel = up
+      self.aviso_diminuiu_nivel = down
 
    def remover_obstaculos_aleatorios(self, remover_moedas, remover_inimigos):
       if self.obstaculo.moedas_objetos:
@@ -834,46 +1040,84 @@ class Jogo:
          for x in range(min(remover_inimigos, len(self.obstaculo.inimigos_objetos))):
             aleatorio = random.randint(0, len(self.obstaculo.inimigos_objetos) - 1)
             self.obstaculo.inimigos_objetos.pop(aleatorio)
-   
-   def colidiu_aviso_booleano(self, *, moeda=False, inimigo=False, up=False, down=False):
-      self.aviso_acertou_moeda = moeda
-      self.aviso_acertou_inimigo = inimigo
-      self.aviso_aumentou_nivel = up
-      self.aviso_diminuiu_nivel = down
+
+   def animacao_obstaculos(self):
+      for moeda in self.obstaculo.moedas_objetos:
+            if moeda.fase != "completo":
+               moeda.animacao_moeda()
+      for inimigo in self.obstaculo.inimigos_objetos:
+            if inimigo.fase != "completo":
+               inimigo.animacao_inimigo()          
+      
+      if self.fase_final_variavel == 9:
+         if self.obstaculo.moeda_vitoria_objeto[0].fase != "completo":
+             self.obstaculo.moeda_vitoria_objeto[0].animacao_moeda()
+
+   def criar_quicante(self):
+      margem = self.VARIAVEIS.atual[1] // 2
+      pos_x = random.randint(margem, self.VARIAVEIS.atual[0][0] - margem)
+      pos_y = random.randint(margem, self.VARIAVEIS.atual[0][1] - margem)  
+      self.lista_dois_quicantes.append(QuicanteInimigo(self.VARIAVEIS, (pos_x, pos_y))) 
+
+   #/
+
+   def escalonar_acionar_variaveis(self, preset_novo):
+      self.VARIAVEIS.preset_tudo_atualizar(preset_novo)
+
+      if self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 2): # Se chegou na fase antes do GameOver
+         self.EFEITOS["alertar_ultima_sala"].play()
+      
+      if self.VARIAVEIS.indice == 1:
+         self.EFEITOS["alertar_vitoria_sala"].play()
+         self.EFEITOS["alertar_vitoria_sala_MINHAVOZ"].play()
+
+      self.obstaculo.moedas_objetos = []
+      self.obstaculo.inimigos_objetos = []
+      self.lista_dois_quicantes = []
+      self.obstaculo.posicoes_feitas = []
+
+      self.tela_atualizar_jogo(self.VARIAVEIS.atual[0])
+      self.cobra.cobra_rect_atualizar(self.VARIAVEIS.atual[0][0] // 2, self.VARIAVEIS.atual[0][1] // 2)
+
+      self.obstaculo.criar_posicoes()
+      self.obstaculo.criar_objetos_obstaculos()
+      self.pause.criar_pause()
+      self.decoracao.resetar_decoracao()
    
    def pegou_obstaculo_MAX(self, escala_variaveis):
       self.escalonar_acionar_variaveis(escala_variaveis)
       
       tempo_sem_colidir_base = 160
       acrescimo = 200
+      
       if self.VARIAVEIS.indice == 1:
          self.nao_pode_colidir_por = tempo_sem_colidir_base + acrescimo
-         self.fase_final_contagem = -self.nao_pode_colidir_por # resetando a contagem da fase final
+         self.fase_final_contagem = -self.nao_pode_colidir_por # Contando o tempo que a cobra está sem colidir
          self.fase_final_variavel = 0     
       else:
          self.nao_pode_colidir_por = tempo_sem_colidir_base
       
-      self.duracao_obstaculo_aviso = 70
       (self.moedas_pegas, self.inimigos_pegos) = (0, 0)
+      self.duracao_obstaculo_aviso = 70
       self.cobra.constante_razao_velocidade = 1
 
    def pegou_obstaculo_APENAS(self, obstaculo, tipo):
       if tipo == "moeda":
-         print("DEBUG: pegou moeda")
          self.moedas_pegas += 1
+         self.moedas_inimigos_pegos_total[0] += 1
          if obstaculo in self.obstaculo.moedas_objetos[:]:
             self.obstaculo.moedas_objetos.remove(obstaculo)
       
       if tipo == "inimigo_ou_quicante":
-         print("DEBUG: inimigo/quicante pega")
          self.inimigos_pegos += 1
+         self.moedas_inimigos_pegos_total[1] += 1
          if obstaculo in self.lista_dois_quicantes[:]:
             self.lista_dois_quicantes.remove(obstaculo)
          elif obstaculo in self.obstaculo.inimigos_objetos[:]:
             self.obstaculo.inimigos_objetos.remove(obstaculo)
       
-      self.nao_pode_colidir_por = 35
-      self.duracao_obstaculo_aviso = 35
+      self.nao_pode_colidir_por = 37
+      self.duracao_obstaculo_aviso = 37
    
    def colidiu_obstaculo_moeda(self, moeda_objeto, moedas_maximas, remover_moedas, remover_inimigos):
             self.pegou_obstaculo_APENAS(obstaculo=moeda_objeto, tipo="moeda")
@@ -881,11 +1125,12 @@ class Jogo:
             if self.moedas_pegas == moedas_maximas:
                self.colidiu_aviso_booleano(up=True)
                self.pegou_obstaculo_MAX(escala_variaveis=(-1))
+               
                self.EFEITOS["aumentar_fase"].play()
                self.EFEITOS["aumentar_fase_MINHAVOZ"].play()
             else:
                self.colidiu_aviso_booleano(moeda=True)
-               self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
+               self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)         
                self.EFEITOS["pegar_moeda"].play()
                self.EFEITOS["pegar_moeda_MINHAVOZ"].play()
    
@@ -898,60 +1143,55 @@ class Jogo:
                   self.pegou_obstaculo_MAX(escala_variaveis=(1))
                else:
                   self.pegou_obstaculo_MAX(escala_variaveis=(2))
+               
                if not self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1):
                   self.EFEITOS["diminuir_fase"].play()
                   self.EFEITOS["diminuir_fase_MINHAVOZ"].play()
             else:
                self.colidiu_aviso_booleano(inimigo=True)
-               self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)
+               self.remover_obstaculos_aleatorios(remover_moedas, remover_inimigos)               
                self.EFEITOS["pegar_inimigo"].play()
+               # Sem efeito de voz ao pegar inimigo
 
    def colidiu_obstaculos(self):
       moedas_maximas = 5
-      inimigos_maximos = 6
+      inimigos_maximos = 40
       remover_moedas = (self.obstaculo.QUANTIDADE_MOEDAS - 1) // 2
       remover_inimigos = (self.obstaculo.QUANTIDADE_INIMIGOS - 1) // 2
       
       if self.VARIAVEIS.indice == 1 and self.fase_final_variavel == 9:
             if self.cobra.corpo.colliderect(self.obstaculo.moeda_vitoria_objeto[0].rect):
                self.pegou_obstaculo_MAX(escala_variaveis=(-1))
-               print("DEBUG: moeda vitoria pega")
       
       if self.nao_pode_colidir_por == 0:
-         for moeda in self.obstaculo.moedas_objetos[:]:
+         for moeda in self.obstaculo.moedas_objetos:
             if self.cobra.corpo.colliderect(moeda.rect):
                self.colidiu_obstaculo_moeda(moeda, moedas_maximas, remover_moedas, remover_inimigos)
       
-         juncao_inimigo_quicante = self.obstaculo.inimigos_objetos[:] + self.lista_dois_quicantes[:]
+      if self.nao_pode_colidir_por == 0:
+         juncao_inimigo_quicante = self.obstaculo.inimigos_objetos + self.lista_dois_quicantes
          for inimigo_quicante in juncao_inimigo_quicante:
             if self.cobra.corpo.colliderect(inimigo_quicante.rect):
                self.colidiu_obstaculo_inimigo(inimigo_quicante, inimigos_maximos, remover_moedas, remover_inimigos)
-      else:
+      
+      if self.nao_pode_colidir_por != 0:
          self.nao_pode_colidir_por -= 1
-   
-   def criar_quicante(self):
-      margem = self.VARIAVEIS.atual[1] // 2
-      pos_x = random.randint(margem, self.VARIAVEIS.atual[0][0] - margem)
-      pos_y = random.randint(margem, self.VARIAVEIS.atual[0][1] - margem)  
-      self.lista_dois_quicantes.append(QuicanteInimigo(self.VARIAVEIS, (pos_x, pos_y))) 
    
    #//
    
    def ganhou_jogo(self):
       if self.VARIAVEIS.indice == 0:
-         print("DEBUG: indice 0 GANHOU JOGO")
          self.EFEITOS["musica_ganhar_jogo"].play()
          self.EFEITOS["ganhar_jogo_MINHAVOZ"].play()
          self.RELACAO_ATUAL = "na_vitoria"
-         self.tela_atualizar_jogo(self.VARIAVEIS.atual_inicio[0]) # Atualizar o tamanho da tela     
+         self.tela_atualizar_jogo(self.VARIAVEIS.atual_inicio[0])   
 
    def perdeu_jogo(self):
       if self.cobra.colidiu_borda_cobra() or self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1): # Se chegou na fase "tela-morte"
-         print("DEBUG: indice ultimo PERDEU JOGO")
          self.EFEITOS["musica_perder_jogo"].play()
          self.EFEITOS["perder_jogo_MINHAVOZ"].play()
          self.RELACAO_ATUAL = "no_gameover"
-         self.tela_atualizar_jogo(self.VARIAVEIS.atual_inicio[0]) # Atualizar o tamanho da tela
+         self.tela_atualizar_jogo(self.VARIAVEIS.atual_inicio[0])
          if self.VARIAVEIS.indice == (len(self.VARIAVEIS.array) - 1):
             self.motivo_da_morte = "ultima_fase"
          else:
@@ -968,20 +1208,21 @@ class Jogo:
 
    def atualizar_jogo(self):
       if self.RELACAO_ATUAL == "no_menu":
-         self.diminuir_aumentar_som_smooth(0.01, duracao=10, vol_max=0.12)
+         self.diminuir_aumentar_som_smooth(0.01, duracao=15, vol_max=self.VOLUMES["musica_menu"], aumentar_quanto=5)
 
       self.obstaculo.criar_posicoes()
       self.obstaculo.criar_objetos_obstaculos()
-      if self.fase_final_variavel == 9:
-         self.obstaculo.criar_vitoria_moeda()
+      
+      # if self.fase_final_variavel == 9:
+      #    self.obstaculo.criar_vitoria_moeda()
 
       if self.RELACAO_ATUAL == "no_jogo":        
          self.animacao_obstaculos()
          
          if self.jogo_pausado:
-            self.diminuir_aumentar_som_smooth(-0.01, vol_min=0.015)
+            self.diminuir_aumentar_som_smooth(-0.01, vol_min=self.VOLUMES["musica_jogo_min"])
          else:
-            self.diminuir_aumentar_som_smooth(0.01, vol_max=0.08) # Volume máximo, se mudar, mude lá em cima também
+            self.diminuir_aumentar_som_smooth(0.01, vol_max=self.VOLUMES["musica_jogo_max"])
          
          if self.congelar_jogo_por <= 0 and not self.jogo_pausado: # Ao iniciar o jogo ou pausar -> vai congelar tudo
             
@@ -997,7 +1238,7 @@ class Jogo:
                quantidade_quicantes = 4
                if len(self.lista_dois_quicantes) < quantidade_quicantes:
                   self.criar_quicante()
-               for quicante in self.lista_dois_quicantes[:]:
+               for quicante in self.lista_dois_quicantes:
                   quicante.quicante_mover_inimigo()
             
          elif self.congelar_jogo_por > 0:
@@ -1010,8 +1251,9 @@ class Jogo:
          acrescimo = 110
          tempo_para_aparecer = 168 + acrescimo
          tempo_para_aparecer_espaco = 310 + acrescimo
+         
          if self.intervalo_dos_textos_vitoriaMorte > tempo_para_aparecer:
-               self.telaVitoriaMorte.desenhar_comentario_vitoriaMorte(tela, "BOA!!!", "Foi muito hard? Parabens...", cor)  
+               self.telaVitoriaMorte.desenhar_comentario_vitoriaMorte(tela, "BOA!!!", "Foi muito hard? Parabens...", cor)
          
          if self.intervalo_dos_textos_vitoriaMorte > tempo_para_aparecer_espaco:
             self.telaVitoriaMorte.desenhar_space_vitoriaMorte(tela)
@@ -1021,6 +1263,7 @@ class Jogo:
       if relacao == "no_gameover":
          tempo_para_aparecer = 168
          tempo_para_aparecer_espaco = 310
+         
          if self.intervalo_dos_textos_vitoriaMorte > tempo_para_aparecer:
             if self.motivo_da_morte == "colidiu":
                self.telaVitoriaMorte.desenhar_comentario_vitoriaMorte(tela, "Colidiu com a tela?", "Cuidado hehe...", cor)
@@ -1031,6 +1274,35 @@ class Jogo:
             self.telaVitoriaMorte.desenhar_space_vitoriaMorte(tela)
          else:
             self.intervalo_dos_textos_vitoriaMorte += 1 
+   
+   def desenhar_creditos_logica(self, tela, valores, tempo_de_jogo):
+      def verificar_tempo_de_jogo(tempo_de_jogo):
+         if self.tempo_de_jogo / 60 >= 1:
+            tempo = f"{(self.tempo_de_jogo / 60):,.1f}"
+            return "minutos", tempo
+         return "segundos", tempo_de_jogo
+
+      self.creditos.desenhar_creditos_titulo(self.tela)
+
+      #tempo_das_estatisticas = 100
+      tempo_dos_outros_creditos = 350
+      acrescimo = 15
+      
+      tempo_para_esperar_1 = 100 + acrescimo
+      tempo_para_esperar_2 = tempo_para_esperar_1 + 100 + acrescimo
+      tempo_para_esperar_3 = tempo_para_esperar_2 + tempo_dos_outros_creditos + 100 + acrescimo
+      tempo_para_esperar_4 = tempo_para_esperar_3 + 150 + acrescimo
+
+      if self.intervalo_dos_textos_creditos > tempo_para_esperar_1:
+         self.creditos.desenhar_creditos_estatisticas(tela, valores, verificar_tempo_de_jogo(tempo_de_jogo))
+      if self.intervalo_dos_textos_creditos > tempo_para_esperar_2:
+         self.creditos.desenhar_outros_creditos(tela)
+      if self.intervalo_dos_textos_creditos > tempo_para_esperar_3:
+         self.creditos.desenhar_agradecimento(tela)
+      if self.intervalo_dos_textos_creditos > tempo_para_esperar_4:
+         self.telaVitoriaMorte.desenhar_space_vitoriaMorte(tela)
+      else:
+         self.intervalo_dos_textos_creditos += 1
    
    def desenhar_avisos_logica(self, tela):
       if self.duracao_obstaculo_aviso > 0:
@@ -1052,22 +1324,30 @@ class Jogo:
       tempo = 65
       if self.fase_final_contagem < (tempo * (self.fase_final_variavel+1)):
          self.textoAviso.criar_desenho_contagem(tela, numeros[self.fase_final_variavel])
-         self.fase_final_contagem += 1
-      
+         if self.congelar_jogo_por <= 0 and not self.jogo_pausado:
+          self.fase_final_contagem += 1
       elif self.fase_final_variavel < 9:
          self.fase_final_variavel += 1
 
    def desenhar_jogo(self):
       if self.RELACAO_ATUAL == "no_menu":
-         self.tela.fill(CORES["tela_menu"])
-         self.decoracao.desenhar_decoracao(self.tela)
-         self.menu.desenhar_menu(self.tela)
+         if not self.tutorial_ativo:
+            self.ordem_do_tutorial = 0
+            self.tela.fill(CORES["tela_menu"])
+            self.decoracao.desenhar_decoracao(self.tela)
+            self.menu.desenhar_menu(self.tela)
+         else:
+            self.mostrar_tutorial()
       
       if self.RELACAO_ATUAL == "na_vitoria":
          pygame.mixer.music.stop()
          self.tela.fill(CORES["tela_menu"])
          self.telaVitoriaMorte.desenhar_vitoriaMorte(self.tela, "VENCEU!", CORES["texto_vitoria"])
-         self.desenhar_frase_gameover(self.tela, self.RELACAO_ATUAL, CORES["texto_vitoria"])         
+         self.desenhar_frase_gameover(self.tela, self.RELACAO_ATUAL, CORES["texto_vitoria"])
+
+      if self.RELACAO_ATUAL == "nos_creditos":
+         self.tela.fill(CORES["tela_menu"])
+         self.desenhar_creditos_logica(self.tela, self.moedas_inimigos_pegos_total, self.tempo_de_jogo)
       
       if self.RELACAO_ATUAL == "no_gameover":
          pygame.mixer.music.stop()
@@ -1092,7 +1372,7 @@ class Jogo:
          self.obstaculo.desenhar_obstaculos(self.tela)
          
          if self.VARIAVEIS.indice == 1:
-            for quicante in self.lista_dois_quicantes[:]:
+            for quicante in self.lista_dois_quicantes:
                quicante.quicante_desenhar_inimigo(self.tela)
          
          if self.nao_pode_colidir_por == 0:
@@ -1105,12 +1385,23 @@ class Jogo:
 
       pygame.display.flip()
    
+   #//
+
    def loop(self):
+      frames = 0
+      tempo_inicio = pygame.time.get_ticks()
       while self.rodando:
          self.atualizar_jogo()
          self.desenhar_jogo()
          self.processar_eventos_jogo()
          self.tempo.tick(FPS)
+         
+         frames += 1
+         if frames % 60 == 0:  # a cada 60 frames
+            tempo_atual = pygame.time.get_ticks()
+            fps_real = 60000 / (tempo_atual - tempo_inicio)
+            print(f"FPS: {fps_real:.1f}")
+            tempo_inicio = tempo_atual
       pygame.quit()
 
 if __name__ == "__main__":
