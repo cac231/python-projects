@@ -13,34 +13,31 @@ cor = {
 }  
 
 resposta = [
-   "JAKE", 
+   "TAYLOR", 
    "JALECO", 
    "UVA", 
    "MUSGO", 
-   "ELIZABETH"]
-dica = [
-   "É um integrante do Enhypen...",
+   "ELIZABETH",
+   "SOPA",
+   "TESTE" 
+]
+
+dica = ["Sem nenhuma dica..."] * len(resposta)
+dicaBRUTO = [
+   "É famoso(a)...",
    "É uma roupa zé...",
    "Uma fruta rara kkk...",
    "Um tipo de planta eu acho, sei lá...",
-   "É uma rainha..."
+   "É uma rainha...",
+   "É uma comida..."
 ]
+for i in range(len(dicaBRUTO)):
+   dica[i] = dicaBRUTO[i]
 
-# dica = ["Sem nenhuma dica..."] * len(resposta)
-# dicaBRUTO = [
-#    "É um integrante do Enhypen...",
-#    "É uma roupa zé...",
-#    "Uma fruta rara kkk...",
-#    "Um tipo de planta eu acho, sei lá...",
-#    "É uma rainha..."
-# ]
-# for i in range(len(dicaBRUTO)):
-#    dica[i] = dicaBRUTO[i]
-
-def isLetra(letraPalavra, resposta, x):
+def isLetra(letraPalavra, resposta, nivel):
    if len(letraPalavra) == 1 and letraPalavra.isalpha():
       return True
-   elif letraPalavra.lower() == resposta[x].lower():
+   elif letraPalavra.lower() == resposta[nivel].lower():
       return "acertou"
    elif len(letraPalavra) > 1:
       return "errou"
@@ -50,7 +47,7 @@ def isLetra(letraPalavra, resposta, x):
 while True:
    inicio_menu = rf"""{"\n"}
 =====================================================================
-            BEM-VINDO AO JOGO DA FORCA ... do Calebe rs
+            BEM-VINDO AO JOGO DA FORCA ... do Cac rs
 =====================================================================
 ___________
 | /       |
@@ -74,22 +71,22 @@ ___________
    escolha = input(f"\n\n{cor['blueUP']}# ESCOLHA: Digite a opção aqui mano: {cor['reset']}")
     
    if escolha == "1":
-      x = 0 # Resposta e dica
+      nivel = 0 # Resposta e dica
       erradas = 0
-      while x < len(resposta):
+      while nivel < len(resposta):
             
-         y = 0 # Morte
+         nivel_morte = 0 # Morte
          acerto = 0 # Letra acertada 
-         acertoTotal = len(resposta[x]) # Total de acertos que precisa
+         acertoTotal = len(resposta[nivel]) # Total de acertos que precisa
          acertoPalavra = False
          escolhidos = []
-         underlines = list("_" * len(resposta[x]))
+         underlines = list("_" * len(resposta[nivel]))
          resetLetraOk = False
 
          def morte0():
             return rf"""{cor['cyan']}
 |
-|  -- {x + 1}º DESAFIO --
+|  -- {nivel + 1}º DESAFIO --
 |  ___________
 |  | /       |
 |  |/              (0-0)
@@ -98,7 +95,7 @@ ___________
 |  |                / \
 |
 |  Palavra: {"".join(underlines)}
-|  Dick: {dica[x]}
+|  Dick: {dica[nivel]}
 |  
 |  Usados: {", ".join(escolhidos)}
 |
@@ -108,16 +105,16 @@ ___________
          def morte1():
             return rf"""{cor['cyan']}
 |
-|  -- {x + 1}º DESAFIO --
+|  -- {nivel + 1}º DESAFIO --
 |  ___________
 |  | /       |          
-|  |/      (X-X)       
+|  |/      (nivel-nivel)       
 |  |                /|\
 |  |                 |
 |  |                / \           
 |
 |  Palavra: {"".join(underlines)}
-|  Dick: {dica[x]}
+|  Dick: {dica[nivel]}
 |  
 |  Usados: {", ".join(escolhidos)}
 |
@@ -127,16 +124,16 @@ ___________
          def morte2():
             return rf"""{cor['cyan']}
 |
-|  -- {x + 1}º DESAFIO --
+|  -- {nivel + 1}º DESAFIO --
 |  ___________
 |  | /       |
-|  |/      (X-X)       
+|  |/      (nivel-nivel)       
 |  |         |      / \
 |  |         |        
 |  |                / \                   
 |
 |  Palavra: {"".join(underlines)}
-|  Dick: {dica[x]}
+|  Dick: {dica[nivel]}
 |
 |  Usados: {", ".join(escolhidos)}
 |
@@ -146,16 +143,16 @@ ___________
          def morte3():
             return rf"""{cor['cyan']}
 |
-|  -- {x + 1}º DESAFIO --
+|  -- {nivel + 1}º DESAFIO --
 |  ___________
 |  | /       |
-|  |/      (X-X)       
+|  |/      (nivel-nivel)       
 |  |        /|        \
 |  |         |        
 |  |                / \          
 |
 |  Palavra: {"".join(underlines)}
-|  Dica (corrigi): {dica[x]}
+|  Dica (corrigi): {dica[nivel]}
 |
 |  Usados: {", ".join(escolhidos)}
 |
@@ -165,16 +162,16 @@ ___________
          def morte4():
             return rf"""{cor['cyan']}
 |
-|  -- {x + 1}º DESAFIO --
+|  -- {nivel + 1}º DESAFIO --
 |  ___________
 |  | /       |
-|  |/      (X-X)       
+|  |/      (nivel-nivel)       
 |  |        /|\
 |  |         |        
 |  |                / \
 |
 |  Palavra: {"".join(underlines)}
-|  Dica: {dica[x]}
+|  Dica: {dica[nivel]}
 |
 |  Usados: {", ".join(escolhidos)}
 |
@@ -184,16 +181,16 @@ ___________
          def morte5():
             return rf"""{cor['cyan']}
 |
-|  -- {x + 1}º DESAFIO --
+|  -- {nivel + 1}º DESAFIO --
 |  ___________
 |  | /       |
-|  |/      (X-X)       
+|  |/      (nivel-nivel)       
 |  |        /|\
 |  |         |        
 |  |        /         \
 |
 |  Palavra: {"".join(underlines)}
-|  Dica: {dica[x]}
+|  Dica: {dica[nivel]}
 |
 |  Usados: {", ".join(escolhidos)}
 |
@@ -206,12 +203,12 @@ ___________
 |  -- GAME OVER --
 |  ___________
 |  | /       |
-|  |/      (X-X)       
+|  |/      (nivel-nivel)       
 |  |        /|\     
 |  |         |       
 |  |        / \                   
 |
-|  Palavra: {resposta[x]}
+|  Palavra: {resposta[nivel]}
 |  imprecisão: Você errou {erradas} vezes rs
 |
 |  -- Matou o mlk sklkkkk. Cê perdeu feio ein, besta
@@ -220,12 +217,12 @@ ___________
          def getResposta():
             return rf"""
 |
-|  Resposta: {resposta[x]}
+|  Resposta: {resposta[nivel]}
 |"""
 
          morte = [morte0, morte1, morte2, morte3, morte4, morte5, morte6]
 
-         if x != 0:
+         if nivel != 0:
             time.sleep(0.8)
             print(f"\n\n{cor['green']}# # Vamos para próxima yeahh{cor['reset']}")
 
@@ -236,12 +233,12 @@ ___________
             print(f"# # Se a palavra estiver errada, vai perder vida! Não pode silábas ou fragmentos...")
             print(f"# # Escreva a palavra correta ein, se não perde vida também!{cor['reset']}")
          
-         while y < 6:
+         while nivel_morte < 6:
             resetLetraOk = False
 
             # SE GANHOU OU ACERTOU UMA
             if acerto == acertoTotal or acertoPalavra:
-               if x == len(resposta) - 1:
+               if nivel == len(resposta) - 1:
 
                   def vitoria0():
                      return rf"""{cor['yellow']}
@@ -254,10 +251,10 @@ ___________
 |  |                 |
 |  |                / \
 |
-|  Resposta: {resposta[x]}
+|  Resposta: {resposta[nivel]}
 |  imprecisão: Você errou {erradas} vezes rs
 |
-|  -- Você conseguiu acertar as CINCO PALAVRAS! (foi de primeira? rs)
+|  -- Você conseguiu acertar as {len(resposta)} PALAVRAS! (foi de primeira? rs)
 |  -- Enfim... Muito obrigado por ter jogado o meu jogo!
 |  -- Fiz com muito carinho, sério, e me diverti muito fazendo
 |  -- Obrigado <3
@@ -269,19 +266,19 @@ ___________
 |  -- CRÉDITOS --
 |""" ) 
                      time.sleep(1.6)
-                     print("|  Diretor do jogo: Calebe")
+                     print("|  Diretor do jogo: Cac")
                      time.sleep(1.6)
-                     print("|  Produtor: Calebe")
+                     print("|  Produtor: Cac")
                      time.sleep(1.6)
-                     print("|  Diretor de Arte: Calebe")
+                     print("|  Diretor de Arte: Cac")
                      time.sleep(1.6)
-                     print("|  Designer de Jogo: Calebe")
+                     print("|  Designer de Jogo: Cac")
                      time.sleep(1.6)
-                     print("|  Level Designer: Calebe")
+                     print("|  Level Designer: Cac")
                      time.sleep(1.6)
-                     print("|  Game Programmer: Calebe")
+                     print("|  Game Programmer: Cac")
                      time.sleep(1.6)
-                     print("|  Artista Técnico: Calebe")
+                     print("|  Artista Técnico: Cac")
                      print("|")
                
                   def vitoria2():
@@ -309,12 +306,12 @@ ___________
                   print(getResposta())
                   break
             
-            print(morte[y]())
+            print(morte[nivel_morte]())
             escolhaLetra = input(f"\n\n{cor['blueUP']}# ESCOLHA: Digite a letra ou a palavra: {cor['reset']}").strip().upper()
-            verificarEntrada = isLetra(escolhaLetra, resposta, x)
+            verificarEntrada = isLetra(escolhaLetra, resposta, nivel)
             
             # CAÇAR LETRA CORRETA
-            for i, letra in enumerate(resposta[x]):
+            for i, letra in enumerate(resposta[nivel]):
 
                if escolhaLetra.lower() not in escolhidos:
                   
@@ -352,7 +349,7 @@ ___________
             escolhidos.append(escolhaLetra.lower())
             if not resetLetraOk:
                erradas += 1
-               y += 1
+               nivel_morte += 1
                time.sleep(0.8)
                print(f"\n\n{cor['redUP']}# # Errou kkkk perdeu uma parte do corpo aí{cor['reset']}")
                
@@ -362,11 +359,11 @@ ___________
             print(f"\n\n{cor['red']}# # Burro tu perdeu kkkkkk aaahhh kkkk{cor['reset']}")
             print(getResposta())
             time.sleep(0.8)
-            print(morte[y]())
+            print(morte[nivel_morte]())
             time.sleep(7)
             break
 
-         x += 1
+         nivel += 1
    
    elif escolha == "2":
       time.sleep(0.8)
