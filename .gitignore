@@ -1,0 +1,17 @@
+nano .gitignore
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# UV
+.python-version
+uv.lock
