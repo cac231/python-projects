@@ -15,3 +15,6 @@ __pycache__/
 # UV
 .python-version
 uv.lock
+my_resource.pyxres
+
+.tmp.driveupload
