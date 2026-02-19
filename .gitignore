@@ -1,20 +1,18 @@
 nano .gitignore
 
-# Ambientes virtuais
 .venv/
 venv/
 env/
+uv.lock
 
-# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-
-# UV
 .python-version
-uv.lock
+my_resource.pyxpal
 my_resource.pyxres
 
+TODO.txt
 .tmp.driveupload
