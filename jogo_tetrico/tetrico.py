@@ -9,8 +9,10 @@ SHAPES = {
         "cor": (0, "p"),
     },
     "shape_2": {
-        "formato": [[0, 1, 1, 1, 1, 0],
-                    [0, 0, 0, 0, 0, 0]],
+        "formato": [[0, 0, 0, 0],
+                    [1, 1, 1, 1],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]],
         "cor": (1, "c"),
     },
     "shape_3": {
@@ -57,7 +59,7 @@ class Jogo:
     def __init__(self):
         
         px.init(LINHAS * TILE, LINHAS * TILE, title="Tetrico", fps=60, display_scale=2)
-        px.load("my_resource.pyxres")
+        px.load("resources/my_resource.pyxres")
         
         self.mapa = [["_"] * COLUNAS for _ in range(LINHAS)]
         
@@ -139,46 +141,20 @@ class Jogo:
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
                 self.shape_pos_atual[1] += 1
                 
-    def posicao_ao_rotacionar(self, pos, plano, movimento):
-        x, y = pos
-        
-        if plano == 1:
-            if movimento == "E":
-                self.shape_plano_atual = 4
-                return x, -y
-            elif movimento == "Q":
-                return -x, y
-        
-        elif plano == 2:
-            if movimento == "E":
-                return x, y
-            elif movimento == "Q":
-                return -x, -y
-        
-        elif plano == 3:
-            if movimento == "E":
-                return -x, y
-            elif movimento == "Q":
-                return x, -y
-        
-        elif plano == 4:
-            if movimento == "E":
-                return -x, -y
-            elif movimento == "Q":
-                self.shape_plano_atual = 1
-                return x, y
+    def verificar_colisao_ao_rotacionar(self):
+        pass
     
     def rotacionar(self):
         if px.btnp(px.KEY_Q):
             nova_matriz_menos_90 = list(zip(*self.shape_matriz_atual))[::-1]
-            # # #
             self.shape_matriz_atual = nova_matriz_menos_90
-        
+
         if px.btnp(px.KEY_E):
             nova_matriz_mais_90 = list(zip(*self.shape_matriz_atual[::-1]))
-            #nova_matriz_mais_90 = self.shape_matriz_atual[::-1]     
             self.shape_matriz_atual = nova_matriz_mais_90
-        
+            
+            #nova_matriz_mais_90 = self.shape_matriz_atual[::-1]     
+
         if px.btnp(px.KEY_R):
             nova_matriz_virar_180 = [el[::-1] for el in self.shape_matriz_atual[::-1]]
             self.shape_matriz_atual = nova_matriz_virar_180

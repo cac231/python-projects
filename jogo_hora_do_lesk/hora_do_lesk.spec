@@ -4,11 +4,10 @@ import os
 pasta_projeto = os.path.dirname(os.path.abspath(SPEC))
 
 a = Analysis(
-    [os.path.join(pasta_projeto, 'jogo_cobra_lesk.py')],
+    [os.path.join(pasta_projeto, 'hora_do_lesk.py')],
     pathex=[pasta_projeto],
     binaries=[],
     datas=[
-        # Adiciona a pasta assets inteira
         (os.path.join(pasta_projeto, 'assets'), 'assets'),
     ],
     hiddenimports=[],
