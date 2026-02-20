@@ -19,12 +19,12 @@ pip install pywinstyles
 ### 1. Usando o terminal
 * Pela pasta do jogo
 ```bash
-python jogo_cobra_lesk.py
+python hora_do_lesk.py
 ```
 
 * Pelo caminho completo do arquivo
 ```bash
-python "caminho do arquivo .py"
+python "caminho_do_arquivo.py"
 ```
 
 ## Como executar no Windows (.exe)
@@ -37,15 +37,15 @@ pip install pyinstaller
 ### 2. Gere o executável usando o arquivo .spec
 * Pela pasta do jogo
 ```bash
-pyinstaller jogo_cobra_lesk.spec
+pyinstaller hora_do_lesk.py.spec
 ```
 
 * Pelo caminho completo do arquivo .spec
 ```bash
-pyinstaller "caminho do arquivo .spec"
+pyinstaller "caminho_do_arquivo.spec"
 ```
 
 ### 3. Após a conversão, o executável será gerado na pasta
 ```bash
-dist/jogo_cobra_lesk.exe
+dist/Hora_do_Lesk.py.exe
 ```
