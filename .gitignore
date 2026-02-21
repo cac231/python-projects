@@ -11,8 +11,6 @@ __pycache__/
 *.pyd
 .Python
 .python-version
-my_resource.pyxpal
-my_resource.pyxres
 
 TODO.txt
 .tmp.driveupload
