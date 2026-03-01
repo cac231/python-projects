@@ -12,33 +12,119 @@ COR = {
    "yellow": Fore.YELLOW,
    "green": Fore.GREEN,
    "reset": Fore.RESET,
-}  
+}
 
-RESPOSTAS = [
-   "TAYLOR", 
-   "JALECO", 
-   "UVA", 
-   "MUSGO", 
-   "ELIZABETH",
-]
+PRESET = {
+   "1": {
+      "palavras": [
+            "SOPA",
+            "ABACATE",
+            "CAMISOLA",
+            "CUBA",
+            "JABUTI",
+            ],
+      "dicas": [
+         "É líquido...",
+         "É uma fruta kkk tá...",
+         "É um vestimento, com certeza...",
+         "País...",
+         "Animal lento kk dica ridícula"
+      ],
+   },
+   "2": {
+      "palavras": [
+            "CALENDÁRIO",
+            "TRIÂNGULO",
+            "RETROVISOR",
+            "OCEANO",
+            "GOLFINHO",
+            ],
+      "dicas": [
+         "Se localiza no tempo...",
+         "Matemática...",
+         "Evita acidentes!",
+         "É grandioso...",
+         "____ cor de rosa kkk"
+      ],
+   },
+   "3": {
+      "palavras": [
+            "JALECO",
+            "ELIZABETH",
+            "MUSGO",
+            "HAITI",
+            "FOTOSSÍNTESE",
+            ],
+      "dicas": [
+         "É um vestimento, não esqueça que está na dificuldade difícil...",
+         "Uma rainha... Como que escreve?",
+         "Uma planta briófita... é kkk",
+         "País... Apenas.",
+         "É um processo biológico daora"
+      ],
+   },
+   "4": {
+      "palavras": [
+            "PITAYA",
+            "SERIGUELA",
+            "CAJA",
+            "JACA",
+            "LIXIA",
+            ],
+      "dicas": [
+         "É uma fruta né... (OBS: Essa fruta tem duas formas de escrever, fique atento a isso)",
+         "É uma fruta né...",
+         "É uma fruta né...",
+         "É uma fruta né...",
+         "É uma fruta né...",
+      ],
+   },
+   "5": {
+      "palavras": [
+            "LÍBANO",
+            "BANGLADESH",
+            "GEÓRGIA",
+            "ROMÊNIA",
+            "PERU",
+            ],
+      "dicas": [
+         "É um país né...",
+         "É um país né...",
+         "É um país né...",
+         "É um país né...",
+         "É um país né...",
+      ],
+   },
+   "6": {
+      "palavras": [
+            "VETERINÁRIO",
+            "ENCANADOR",
+            "SOCIÓLOGO",
+            "ELETRICISTA",
+            "FOTÓGRAFO",
+            ],
+      "dicas": [
+         "É uma profissão né... (OBS: Está no masculino, se for necessário)",
+         "É uma profissão né... (OBS: Está no masculino, se for necessário)",
+         "É uma profissão né... (OBS: Está no masculino, se for necessário)",
+         "É uma profissão né... (OBS: Está no masculino, se for necessário)",
+         "É uma profissão né... (OBS: Está no masculino, se for necessário)",
+      ],
+   },
+}
 
-DICA = [
-   "É famoso(a)...",
-   "É uma roupa zé...",
-   "Uma fruta rara kkk...",
-   "Um tipo de planta eu acho, sei lá...",
-   "É uma rainha...",
-]
+RESPOSTAS = []
+DICAS = []
 
 #////
 
-inicio_menu = rf"""{"\n"}
+menu_inicio = rf"""{"\n"}
 {"=" * 70}
 {"BEM-VINDO AO JOGO DA FORCA ... do Cac rs":^70}
 {"=" * 70}
 ___________
 | /       |
-|/      (0-0)
+|/      (0u0)
 |        /|\
 |         |
 |        / \
@@ -47,7 +133,34 @@ ___________
        Serão 5 palavras para serem descobertas por você!
    
 ({2}) -- Para fec- fechar... o jogo, dig-... digite '2' 
-       Vamos jogar... por favor... não vá embora
+       Vamos jogar... Por favor... Não vá embora
+
+{"=" * 70}"""
+
+#
+
+menu_preset = rf"""{"\n"}
+{"=" * 70}
+{"QUAL TEMA DE PALAVRAS VOCÊ QUER USAR?":^70}
+{"=" * 70}
+___________   
+| /       |  (balão bem legal)
+|/      (7-7) /
+|        /|--/
+|         |
+|        / \
+
+({1}) -- Dificuldade fácil ahh
+   
+({2}) -- Dificuldade média, ok
+
+({3}) -- Dificuldade DIFÍCIL, boa sorte
+   
+({4}) -- Frutas kkkk maça
+
+({5}) -- Países hehe Buona fortuna (Boa sorte em italiano)
+   
+({6}) -- Profissões... CLT?
 
 {"=" * 70}"""
 
@@ -56,7 +169,7 @@ ___________
 def morte_0():
    return rf"""{COR['cyan']}
 |
-|  -- {nivel + 1}º DESAFIO --
+|  -- {nivel_resposta + 1}º DESAFIO --
 |  ___________
 |  | /       |
 |  |/              (0-0)
@@ -67,9 +180,9 @@ def morte_0():
 |  Palavra: {"".join(underlines)}
 |  Usadas: {", ".join(escolhidos)}
 |  
-|  Dick: {DICA[nivel]}
+|  Dica: {DICAS[nivel_resposta]}
 |
-|  -- Não ache que vai ser fácil
+|  -- Não ache que vai ser fácil (Só se você escolheu o fácil né)
 |{COR['reset']}"""
 
 #
@@ -77,7 +190,7 @@ def morte_0():
 def morte_1():
    return rf"""{COR['cyan']}
 |
-|  -- {nivel + 1}º DESAFIO --
+|  -- {nivel_resposta + 1}º DESAFIO --
 |  ___________
 |  | /       |          
 |  |/      (X-X)       
@@ -88,9 +201,9 @@ def morte_1():
 |  Palavra: {"".join(underlines)}
 |  Usadas: {", ".join(escolhidos)}
 |  
-|  Dick: {DICA[nivel]}
+|  Dica: {DICAS[nivel_resposta]}
 |
-|  -- Ok, você errou, mas eu confio (confio não lol)
+|  -- Ok, tudo bem... Eu confio (Confio não he)
 |{COR['reset']}"""
 
 #
@@ -98,7 +211,7 @@ def morte_1():
 def morte_2():
    return rf"""{COR['cyan']}
 |
-|  -- {nivel + 1}º DESAFIO --
+|  -- {nivel_resposta + 1}º DESAFIO --
 |  ___________
 |  | /       |
 |  |/      (X-X)       
@@ -109,9 +222,9 @@ def morte_2():
 |  Palavra: {"".join(underlines)}
 |  Usadas: {", ".join(escolhidos)}
 |
-|  Dick: {DICA[nivel]}
+|  Dica: {DICAS[nivel_resposta]}
 |
-|  -- Mano, cuidado aí viu, vai ficar tenso...
+|  -- Mano, cuidado aí viu, vai ficar tenso o bagui...
 |{COR['reset']}"""
 
 #
@@ -119,7 +232,7 @@ def morte_2():
 def morte_3():
    return rf"""{COR['cyan']}
 |
-|  -- {nivel + 1}º DESAFIO --
+|  -- {nivel_resposta + 1}º DESAFIO --
 |  ___________
 |  | /       |
 |  |/      (X-X)       
@@ -130,7 +243,7 @@ def morte_3():
 |  Palavra: {"".join(underlines)}
 |  Usadas: {", ".join(escolhidos)}
 |
-|  Dica (corrigi): {DICA[nivel]}
+|  Dica: {DICAS[nivel_resposta]}
 |
 |  -- Falta 3 tentativas ein, se você perder... vai reiniciar tudo!
 |{COR['reset']}"""
@@ -140,7 +253,7 @@ def morte_3():
 def morte_4():
    return rf"""{COR['cyan']}
 |
-|  -- {nivel + 1}º DESAFIO --
+|  -- {nivel_resposta + 1}º DESAFIO --
 |  ___________
 |  | /       |
 |  |/      (X-X)       
@@ -151,9 +264,9 @@ def morte_4():
 |  Palavra: {"".join(underlines)}
 |  Usadas: {", ".join(escolhidos)}
 |
-|  Dica: {DICA[nivel]}
+|  Dica: {DICAS[nivel_resposta]}
 |
-|  -- Kkkkk tá difícil? HAHAHAHA ESTÁ DIFÍCIL???
+|  -- Está difícil? HAHAHAHA ESTÁ DIFÍCIL???
 |{COR['reset']}"""
 
 #
@@ -161,7 +274,7 @@ def morte_4():
 def morte_5():
    return rf"""{COR['cyan']}
 |
-|  -- {nivel + 1}º DESAFIO --
+|  -- {nivel_resposta + 1}º DESAFIO --
 |  ___________
 |  | /       |
 |  |/      (X-X)       
@@ -172,9 +285,9 @@ def morte_5():
 |  Palavra: {"".join(underlines)}
 |  Usadas: {", ".join(escolhidos)}
 |
-|  Dica: {DICA[nivel]}
+|  Dica: {DICAS[nivel_resposta]}
 |
-|  -- Mano...
+|  -- Eh...
 |{COR['reset']}"""
 
 #
@@ -190,10 +303,9 @@ def morte_6():
 |  |         |       
 |  |        / \                   
 |
-|  Palavra: {RESPOSTAS[nivel]}
-|  Imprecisão: Você errou {erradas} vezes rs
+|  Imprecisão: Você errou {erradas} vezes... tome
 |
-|  -- Matou o mlk sklkkkk. Cê perdeu feio ein, besta
+|  -- Matou o menino kkkk Cê perdeu feio ein, besta
 |{COR['reset']}"""
 
 #
@@ -201,7 +313,7 @@ def morte_6():
 def aparecer_resposta():
    return rf"""
 |
-|  RESPOSTA: {RESPOSTAS[nivel]}
+|  RESPOSTA: {RESPOSTAS[nivel_resposta]}
 |"""
 
 #
@@ -217,13 +329,12 @@ def ganhou_jogo():
 |  |                 |
 |  |                / \
 |
-|  RESPOSTA: {RESPOSTAS[nivel]}
 |  Imprecisão: Você errou {erradas} vezes rs
 |
-|  -- Você conseguiu acertar as {len(RESPOSTAS)} PALAVRAS! (foi de primeira? rs)
+|  -- Você conseguiu acertar as {len(RESPOSTAS)} PALAVRAS! (Foi de primeira???)
 |  -- Enfim... Muito obrigado por ter jogado o meu jogo!
 |  -- Fiz com muito carinho, sério, e me diverti muito fazendo
-|  -- Obrigado <3
+|  -- Obrigado!
 |"""
 
    vitoria_1 = """
@@ -237,40 +348,54 @@ def ganhou_jogo():
 |  \      /
 |   \    /
 |    \  /
-|     \/{COR['reset']}
-|"""
+|     \/
+|{COR['reset']}"""
    
    #
    
    time.sleep(0.6)
+   print(aparecer_resposta())
+   
+   time.sleep(0.6)
    print(vitoria_0)
    
-   time.sleep(0.6 * 2)
+   time.sleep(0.6 * 8)
    print(vitoria_1)
    
-   time.sleep(1.6)
+   time.sleep(1.2)
    print("|  Diretor do jogo: Cac")
-   time.sleep(1.6)
+   time.sleep(1.2)
    print("|  Produtor: Cac")
-   time.sleep(1.6)
+   time.sleep(1.2)
    print("|  Diretor de Arte: Cac")
-   time.sleep(1.6)
+   time.sleep(1.2)
    print("|  Designer de Jogo: Cac")
-   time.sleep(1.6)
+   time.sleep(1.2)
    print("|  Level Designer: Cac")
-   time.sleep(1.6)
-   print("|  Game Programmer: Cac")
-   time.sleep(1.6)
-   print("|  Artista Técnico: Cac")
-   print("|")
+   time.sleep(1.2)
+   print("|  Programador: Cac")
+   time.sleep(1.2)
+   print("|  Artista Técnico: Cac\n|")
    
    time.sleep(0.6)
    print(vitoria_2)
+   time.sleep(0.6 * 3)
+
+def perdeu_jogo():
    time.sleep(0.6)
+   print(f"\n{COR['red']}# Irmão, você perdeu kkkk aahh kkkk{COR['reset']}")
+   time.sleep(0.6)
+   print(aparecer_resposta())
+   time.sleep(0.6)
+   print(morte[nivel_morte]())
+   time.sleep(0.6 * 10)
 
 #////
 
-def verificar_input_termo(input_termo, RESPOSTAS, nivel):
+def verificar_input_termo(input_termo, RESPOSTAS, nivel_resposta):
+   if input_termo in escolhidos:
+      return "repetido"
+   
    if input_termo == "" or not input_termo.isalnum():
       return "erro"
    
@@ -282,7 +407,7 @@ def verificar_input_termo(input_termo, RESPOSTAS, nivel):
    
    elif len(input_termo) > 1:
       lista_numerica = [str(x) for x in range(11)]
-      resposta_sem_acento = remover_acento_string(RESPOSTAS[nivel])
+      resposta_sem_acento = remover_acento_string(RESPOSTAS[nivel_resposta])
       
       if input_termo.lower() == resposta_sem_acento.lower():
          return "acertou_tudo"
@@ -295,27 +420,6 @@ def verificar_input_termo(input_termo, RESPOSTAS, nivel):
    else:
       print("Erro inesperado")
 
-#
-
-def letra_correta(indice, letra):
-   underlines[indice] = letra
-   time.sleep(0.6)
-   print(f"\n{COR['green']}# Boa! Conseguiu acertar uma letra, continue assim...{COR['reset']}") 
-
-def palavra_correta():    
-   time.sleep(0.6)
-   print(f"\n{COR['green']}# Oloko! Acertou a palavra de uma vez...{COR['reset']}")
-
-def palavra_errada():
-   time.sleep(0.6)
-   print(f"\n{COR['redUP']}# Palavra incorreta. Digitou errado? kkk{COR['reset']}")
-
-def palavra_invalida():
-   time.sleep(0.6)
-   print(f"\n{COR['yellow']}# ERRO: Digite uma letra ou uma palavra veikkkk{COR['reset']}")
-
-#
-   
 def remover_acento_string(input):
    return unidecode(input)
 
@@ -331,48 +435,100 @@ def aceitar_letra_com_acento(letra):
    for grupo in grupos.values():
       if letra in grupo:
          return grupo
-   
    return [letra]
+
+#
+
+def escolher_preset_palavras():
+   while True:
+      time.sleep(0.6)
+      print(menu_preset)
+      
+      time.sleep(0.6)
+      escolha = input(f"\n{COR['blueUP']}# ESCOLHA: Digite o número do tema: {COR['reset']}")
+      
+      descricao = {"1": "Fácil", "2": "Médio", "3": "Difícil", "4": "Frutas", "5": "Países", "6": "Profissões"}
+      
+      time.sleep(0.6)
+      match escolha:
+         case "1" | "2" | "3" | "4" |  "5" | "6":
+            for numero in descricao:
+               if escolha == numero:
+                  print(f"\n{COR['green']}# TEMA ESCOLHIDO: {descricao[escolha]}{COR['reset']}")
+                  break
+            return PRESET[escolha]["palavras"], PRESET[escolha]["dicas"]
+         case _:
+            print(f"\n{COR['yellow']}# ERRO: Digite 1 a 6 mano{COR['reset']}")
+            continue
+
+#
+
+frase_tutorial = f"""
+{COR['green']}# Vamos começar! Aqui está o tutorial:
+# Digite uma letra OU a palavra que cê acha que é e pronto, simples!
+# Se a palavra digitada estiver errada, vai perder vida! Não pode silábas ou fragmentos...
+# Apenas escreva a palavra se tiver certeza ein, se não perde vida sem dó!
+# Não precisa se preocupar com acentos nem com letras maiúsculas ou minúsculas...{COR['reset']}"""
+
+frase_sair_do_jogo = f"""
+{COR['yellow']}# Eu... Não... Não aceito isso. Não tem o que fazer...
+Tchau... Viva a vida por mim! ;){COR['reset']}"""
+
+#
+
+def letra_correta(mais_de_uma):
+   time.sleep(0.6)
+   if not mais_de_uma:
+      print(f"\n{COR['green']}# Boa! Conseguiu acertar uma letra, continue assim...{COR['reset']}")
+   else:
+      print(f"\n{COR['green']}# Hmm! A palavra tem outro letra igual a essa...{COR['reset']}") 
+
+def palavra_correta():    
+   time.sleep(0.6)
+   print(f"\n{COR['green']}# Oloko! Acertou a palavra de uma vez...{COR['reset']}")
+
+def palavra_errada():
+   time.sleep(0.6)
+   print(f"\n{COR['redUP']}# Palavra incorreta. Digitou errado? kkk{COR['reset']}")
+
+def palavra_invalida():
+   time.sleep(0.6)
+   print(f"\n{COR['yellow']}# ERRO: Digite uma letra ou uma palavra veikkkk{COR['reset']}")
 
 #////
 
 while True: 
    time.sleep(0.6)
-   print(inicio_menu)
+   print(menu_inicio)
    
    time.sleep(0.6)
    escolha = input(f"\n{COR['blueUP']}# ESCOLHA: Digite a opção aqui mano: {COR['reset']}")
     
    if escolha == "1":
-      nivel = 0 # RESPOSTAS e DICA
+      morte = [morte_0, morte_1, morte_2, morte_3, morte_4, morte_5, morte_6]
+      RESPOSTAS, DICAS = escolher_preset_palavras()
+      nivel_resposta = 0
       erradas = 0
-      while nivel < len(RESPOSTAS):
-            
-         nivel_morte = 0 # Morte
-         acerto = 0 # Letra acertada 
-         acerto_total = len(RESPOSTAS[nivel]) # Total de acertos que precisa
+      time.sleep(0.6)
+      print(frase_tutorial)
+      
+      while nivel_resposta < len(RESPOSTAS):
+         nivel_morte = 0
+         acertos_atual = 0
+         acerto_total = len(RESPOSTAS[nivel_resposta])
          acertou_palavra = False
          escolhidos = []
-         underlines = list("_" * len(RESPOSTAS[nivel]))
+         underlines = list("_" * len(RESPOSTAS[nivel_resposta]))
 
-         morte = [morte_0, morte_1, morte_2, morte_3, morte_4, morte_5, morte_6]
-
-         if nivel != 0:
+         if nivel_resposta != 0:
             time.sleep(0.6)
             print(f"\n{COR['green']}# Vamos para a próxima yeah{COR['reset']}")
-         else:
-            time.sleep(0.6)
-            print(f"\n{COR['green']}# Vamos começar! Aqui está o tutorial:")
-            print(f"# Digite uma letra OU a palavra que cê acha que é e pronto, simples!")
-            print(f"# Se a palavra digitada estiver errada, vai perder vida! Não pode silábas ou fragmentos...")
-            print(f"# Apenas escreva a palavra se tiver certeza ein, se não perde vida sem dó!{COR['reset']}")
          
          while nivel_morte < 6:
             perdeu_vida = True
 
-            # SE GANHOU OU ACERTOU UMA
-            if acerto == acerto_total or acertou_palavra:
-               if nivel == len(RESPOSTAS) - 1:
+            if acertos_atual == acerto_total or acertou_palavra:
+               if nivel_resposta == len(RESPOSTAS) - 1:
                   ganhou_jogo()
                   break
                else:
@@ -383,45 +539,41 @@ while True:
             
             print(morte[nivel_morte]())
             
-            input_termo = input(f"\n{COR['blueUP']}# ESCOLHA: Digite a letra ou a palavra: {COR['reset']}").strip().upper()
-            input_termo_sem_acento = remover_acento_string(input_termo)
-            
-            verificar_entrada = verificar_input_termo(input_termo_sem_acento, RESPOSTAS, nivel)
-            
-            # CAÇAR LETRA CORRETA
-            for indice, letra in enumerate(RESPOSTAS[nivel]):
-               
-               if input_termo_sem_acento not in escolhidos:
+            input_termo = input(f"\n{COR['blueUP']}# ESCOLHA: Digite a letra ou a palavra: {COR['reset']}").strip().upper()       
+            input_termo_sem_acento = remover_acento_string(input_termo)    
+            verificar_entrada = verificar_input_termo(input_termo_sem_acento, RESPOSTAS, nivel_resposta)
                   
-                  match verificar_entrada:           
-                     case "é_letra":
-                        input_termo_verificado = aceitar_letra_com_acento(input_termo_sem_acento)
-                        
-                        if letra in input_termo_verificado:
-                           perdeu_vida = False
-                           acerto += 1
-                           letra_correta(indice, letra)
-                     
-                     case "acertou_tudo":
+            match verificar_entrada:           
+               case "é_letra":
+                  input_termo_grupo_acentos = aceitar_letra_com_acento(input_termo_sem_acento)
+                  mais_de_uma = False                      
+                  for indice, letra in enumerate(RESPOSTAS[nivel_resposta]):
+                     if letra in input_termo_grupo_acentos:
                         perdeu_vida = False
-                        acertou_palavra = True 
-                        palavra_correta()
-                        break
-                     
-                     case "errou_tudo":
-                        palavra_errada()
-                        break
-                     
-                     case "erro":
-                        perdeu_vida = False
-                        palavra_invalida()
-                        break
-              
-               else:
+                        acertos_atual += 1
+                        underlines[indice] = letra
+                        letra_correta(mais_de_uma)
+                        mais_de_uma = True
+               
+               case "acertou_tudo":
+                  perdeu_vida = False
+                  acertou_palavra = True 
+                  palavra_correta()
+               
+               case "errou_tudo":
+                  palavra_errada()
+               
+               case "erro":
+                  perdeu_vida = False
+                  palavra_invalida()
+               
+               case "repetido":
                   perdeu_vida = False
                   time.sleep(0.6)
                   print(f"\n{COR['yellow']}# ERRO: Você já escolheu essa letra ou palavra...{COR['reset']}")
-                  break
+               
+               case _:
+                  print("Match inesperado")                  
             
             if not input_termo_sem_acento in escolhidos: 
                escolhidos.append(input_termo_sem_acento)
@@ -432,22 +584,15 @@ while True:
                time.sleep(0.6)
                print(f"\n{COR['redUP']}# Errou, perdeu uma parte do corpo aí{COR['reset']}")
                
-         # SE ERROU O DESAFIO ATUAL
-         else:
-            time.sleep(0.6)
-            print(f"\n{COR['red']}# Irmão, você perdeu kkkk aahh kkkk{COR['reset']}")
-            print(aparecer_resposta())
-            time.sleep(0.6)
-            print(morte[nivel_morte]())
-            time.sleep(0.6 * 10)
+         if nivel_morte == 6:
+            perdeu_jogo()
             break
-
-         nivel += 1
+         
+         nivel_resposta += 1
    
    elif escolha == "2":
       time.sleep(0.6)
-      print(f"\n{COR['yellow']}# Eu... Não... Não aceito isso... não tem o que fazer...")
-      print(f"# Tchau... Viva a vida por mim! ;){COR['reset']}")
+      print(frase_sair_do_jogo)      
       time.sleep(0.6 * 8)
       break
     
