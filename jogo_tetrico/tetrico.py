@@ -57,6 +57,8 @@ SHAPES = {
 #todo: detalhes: na visualização dos proximos shapes, queria que a peça I tivesse uma distância igual aos outros
 #todo: !: com a ghost piece, quando fico movimentando rapido, da umas travadinhas de leve
 
+#TODO pelo fato que tem um while no pos_fantasma rodando junto com o jogo, se apertar Hard Drop rapido, vai parar onde o while estiver, entao precisa calcular a pos antes de clicar, entede?
+
 
 COLUNAS = 10
 LINHAS = 20
@@ -64,6 +66,8 @@ TILE = 16
 
 ALTURA_DO_JOGO = 22
 BOARD_X = 80
+
+VAZIO = "_"
 
 class Jogo:
     def __init__(self):  
@@ -82,7 +86,7 @@ class Jogo:
     def iniciamente_jogo(self):
         self.tempo_inicial = time.perf_counter()
         
-        self.mapa = [["_"] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
+        self.mapa = [[VAZIO] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
         
         self.proximos_shapes = []
         self.bag_7 = []
@@ -135,7 +139,7 @@ class Jogo:
                     if n_lin >= ALTURA_DO_JOGO: # chao
                         return True
                     
-                    if mapa[n_lin][n_col] != "_": # verifica se contem uma peça fixada
+                    if mapa[n_lin][n_col] != VAZIO: # verifica se contem uma peça fixada
                         return True
         return False
     
@@ -247,6 +251,9 @@ class Jogo:
                         mapa[my][mx] = cor
             return True
         return False
+
+    def lock_delay(self):
+        pass
     
     def queda_automatica(self):
         self.tempo_cair += 1
@@ -254,12 +261,38 @@ class Jogo:
         if self.tempo_cair >= self.velocidade:
             self.tempo_cair = 0
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
+                self.lock_delay()
                 self.shape_pos_atual[1] += 1
             else:
                 self.fixar(self.pegar_formato(), self.shape_pos_atual, self.mapa, SHAPES[self.shape_atual]["cor"][1])
     
-    def limpar_linha(self):
-        pass
+    def verificar_linha(self, mapa):
+        mapa_temp = mapa[::-1]
+        
+        for linha_e in mapa_temp:             
+            if not VAZIO in linha_e:
+                self.atualizar_mapa(mapa_temp)
+                
+    def atualizar_mapa(self, mapa_temp):
+        pontuacao = 0
+        
+        for linha_i, linha_e in enumerate(mapa_temp):
+            if not VAZIO in linha_e:
+                mapa_temp[linha_i] = [VAZIO] * COLUNAS
+        
+        continuar_loop = True
+        while continuar_loop:
+            continuar_loop = False
+                    
+            for linha_i, linha_e in enumerate(mapa_temp):
+                if linha_i + 1 >= len(mapa_temp) - 3:
+                    break
+                elif linha_e.count(VAZIO) == COLUNAS and mapa_temp[linha_i + 1].count(VAZIO) != COLUNAS: 
+                    mapa_temp[linha_i + 1], mapa_temp[linha_i] = mapa_temp[linha_i], mapa_temp[linha_i + 1]
+                    continuar_loop = True
+                
+        self.mapa = mapa_temp[::-1]
+        return pontuacao
 
     def verificar_game_over(self):
         pass 
@@ -328,12 +361,12 @@ class Jogo:
         
         if self.fixou_neste_frame:
             self.guardado_neste_frame = False
-            self.limpar_linha()
+            self.verificar_linha(self.mapa)
             self.novo_shape()
             self.verificar_game_over()
         
         self.tempo_ocorrendo = (time.perf_counter() - self.tempo_inicial)
-        print(self.shape_pos_atual)
+        #print(self.shape_pos_atual)
 
     #//// //// ////
     
@@ -433,7 +466,7 @@ class Jogo:
         
         for linha in range(2, ALTURA_DO_JOGO):
             for coluna in range(COLUNAS):
-                if mapa[linha][coluna] != "_":
+                if mapa[linha][coluna] != VAZIO:
                     cor = mapa[linha][coluna]
                     
                     for chave in SHAPES:
