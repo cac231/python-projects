@@ -95,6 +95,9 @@ class Jogo:
         self.shape_atual = ""
         self.novo_shape()
         
+        self.nivel_atual = 7
+        self.pontos_atual = 0
+        
         self.fixou_neste_frame = False
         self.guardado_neste_frame = False
         self.shape_guardado = None
@@ -110,8 +113,15 @@ class Jogo:
         self.shape_pos_atual = self.desovar_shape(self.shape_atual)
         self.shape_matriz_atual = SHAPES[self.shape_atual]["formato"]
         self.shape_pos_fantasma = self.shape_pos_atual[:]
+        
         self.estado_rotacao = "0"
-        self.tempo_cair = 0
+        
+        self.tempo_existe = 0
+        self.tempo_simulado = 0
+        
+        self.lock_tempo = 0
+        self.lock_movimentos = 0
+        self.y_mais_baixo = 0
    
     def pegar_formato(self):
         return self.shape_matriz_atual
@@ -251,20 +261,43 @@ class Jogo:
                         mapa[my][mx] = cor
             return True
         return False
-
-    def lock_delay(self):
-        pass
     
     def queda_automatica(self):
-        self.tempo_cair += 1
-        self.velocidade = 64
-        if self.tempo_cair >= self.velocidade:
-            self.tempo_cair = 0
-            if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
-                self.lock_delay()
-                self.shape_pos_atual[1] += 1
-            else:
-                self.fixar(self.pegar_formato(), self.shape_pos_atual, self.mapa, SHAPES[self.shape_atual]["cor"][1])
+        tabela_G = {
+            1: 0.01667,
+            2: 0.021017,
+            3: 0.026977,
+            4: 0.035256,
+            5: 0.04693,
+            6: 0.06361,
+            7: 0.0879,
+            8: 0.1236,
+            9: 0.1775,
+            10: 0.2598,
+            11: 0.388,
+            12: 0.59,
+            13: 0.92,
+            14: 1.46,
+            15: 2.36
+        }
+        
+        self.tempo_existe += 1
+        g = tabela_G[self.nivel_atual]
+        
+        while self.tempo_existe > self.tempo_simulado: 
+                if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
+                    self.shape_pos_atual[1] += 1
+                    
+                    if self.shape_pos_atual[1] > self.y_mais_baixo:
+                        self.y_mais_baixo = self.shape_pos_atual[1]
+                        self.lock_movimentos = 0
+                    
+                    self.tempo_simulado += 1 / g # linhs por frame, que vai aumentando
+                    self.lock_tempo = 0
+                else:
+                    self.lock_tempo += 1
+                    self.tempo_existe = self.tempo_simulado
+                    break
     
     def verificar_linha(self, mapa):
         mapa_temp = mapa[::-1]
@@ -299,6 +332,16 @@ class Jogo:
     
     #////
     
+    def aumentar_lock_reset(self):
+        colisao = self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1)
+        if colisao:
+            if self.lock_movimentos != 15:
+                self.lock_tempo = 0
+                self.lock_movimentos += 1
+                print(self.lock_movimentos)
+        else:
+            print("apos rotacao, fiz que nao colide")
+    
     def segurar_shape(self):
         if px.btnp(px.KEY_TAB) and not self.guardado_neste_frame:
             self.guardado_neste_frame = True
@@ -316,23 +359,28 @@ class Jogo:
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=-1):
                 self.shape_pos_atual[0] -= 1
                 self.shape_pos_fantasma = self.shape_pos_atual[:]
+                self.aumentar_lock_reset()
         
         elif px.btnp(px.KEY_RIGHT, repeat=repeticao) or px.btnp(px.KEY_D, repeat=repeticao):
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=1):
                 self.shape_pos_atual[0] += 1
                 self.shape_pos_fantasma = self.shape_pos_atual[:]
+                self.aumentar_lock_reset()
     
     def verificar_rotacao_shape(self):
         if px.btnp(px.KEY_Q):
             self.rotacionar_shape("KEY_Q")
+            self.aumentar_lock_reset()
+
         if px.btnp(px.KEY_E):
             self.rotacionar_shape("KEY_E")
+            self.aumentar_lock_reset()
     
     def soft_drop(self):
         repeticao = 5
         if px.btnp(px.KEY_DOWN, repeat=repeticao) or px.btnp(px.KEY_S, repeat=repeticao):
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
-                self.tempo_cair = self.velocidade
+                self.tempo_existe = self.tempo_simulado + (1 / 60)
     
     def hard_drop(self):
         if px.btnp(px.KEY_SPACE):
@@ -358,6 +406,8 @@ class Jogo:
         self.sistema_bag_7()
         self.input_tecla()
         self.queda_automatica()
+        if self.lock_tempo >= 30 or self.lock_movimentos == 15:
+                self.fixar(self.pegar_formato(), self.shape_pos_atual, self.mapa, SHAPES[self.shape_atual]["cor"][1])
         
         if self.fixou_neste_frame:
             self.guardado_neste_frame = False
@@ -377,7 +427,9 @@ class Jogo:
         #         0.7, 
         #         x
         #     )
-        px.text(0, 30, f"Tempo: {self.tempo_ocorrendo:.3f}s", 7)
+        
+        px.text(2, 30, f"Tempo: {self.tempo_ocorrendo:.3f}s", 7)
+        px.text(2, 30 + 10, f"Nivel: {self.nivel_atual}", 7)
     
     def desenhar_texto(self, coluna_x, linha_y, spritesheet_x, *, diminuir=0):
         px.blt(
