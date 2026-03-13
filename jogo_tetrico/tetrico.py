@@ -54,10 +54,27 @@ SHAPES = {
     },
 }
 
-#todo: detalhes: na visualização dos proximos shapes, queria que a peça I tivesse uma distância igual aos outros
 #todo: !: com a ghost piece, quando fico movimentando rapido, da umas travadinhas de leve
 
 #TODO pelo fato que tem um while no pos_fantasma rodando junto com o jogo, se apertar Hard Drop rapido, vai parar onde o while estiver, entao precisa calcular a pos antes de clicar, entede?
+
+TABELA_G = {
+    1: 0.01667,
+    2: 0.021017,
+    3: 0.026977,
+    4: 0.035256,
+    5: 0.04693,
+    6: 0.06361,
+    7: 0.0879,
+    8: 0.1236,
+    9: 0.1775,
+    10: 0.2598,
+    11: 0.388,
+    12: 0.59,
+    13: 0.92,
+    14: 1.46,
+    15: 2.36
+}
 
 
 COLUNAS = 10
@@ -88,15 +105,15 @@ class Jogo:
         
         self.mapa = [[VAZIO] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
         
+        self.nivel_atual = 1
+        self.pontos_atual = 0
+        
         self.proximos_shapes = []
         self.bag_7 = []
         self.sistema_bag_7()
         
         self.shape_atual = ""
         self.novo_shape()
-        
-        self.nivel_atual = 7
-        self.pontos_atual = 0
         
         self.fixou_neste_frame = False
         self.guardado_neste_frame = False
@@ -117,11 +134,12 @@ class Jogo:
         self.estado_rotacao = "0"
         
         self.tempo_existe = 0
-        self.tempo_simulado = 0
+        g = TABELA_G[self.nivel_atual]
+        self.tempo_simulado = 1 / g
         
         self.lock_tempo = 0
         self.lock_movimentos = 0
-        self.y_mais_baixo = 0
+        self.y_mais_baixo = self.shape_pos_atual[1]
    
     def pegar_formato(self):
         return self.shape_matriz_atual
@@ -262,27 +280,9 @@ class Jogo:
             return True
         return False
     
-    def queda_automatica(self):
-        tabela_G = {
-            1: 0.01667,
-            2: 0.021017,
-            3: 0.026977,
-            4: 0.035256,
-            5: 0.04693,
-            6: 0.06361,
-            7: 0.0879,
-            8: 0.1236,
-            9: 0.1775,
-            10: 0.2598,
-            11: 0.388,
-            12: 0.59,
-            13: 0.92,
-            14: 1.46,
-            15: 2.36
-        }
-        
+    def queda_automatica(self):        
         self.tempo_existe += 1
-        g = tabela_G[self.nivel_atual]
+        g = TABELA_G[self.nivel_atual]
         
         while self.tempo_existe > self.tempo_simulado: 
                 if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
@@ -295,13 +295,14 @@ class Jogo:
                     self.tempo_simulado += 1 / g # linhs por frame, que vai aumentando
                     self.lock_tempo = 0
                 else:
-                    self.lock_tempo += 1
                     self.tempo_existe = self.tempo_simulado
                     break
+        
+        if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
+            self.lock_tempo += 1
     
     def verificar_linha(self, mapa):
         mapa_temp = mapa[::-1]
-        
         for linha_e in mapa_temp:             
             if not VAZIO in linha_e:
                 self.atualizar_mapa(mapa_temp)
@@ -327,20 +328,25 @@ class Jogo:
         self.mapa = mapa_temp[::-1]
         return pontuacao
 
+    def ajustar_desovação(self):
+        if (self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa) or 
+            self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1)):
+            self.shape_pos_atual[1] -= 1
+            self.shape_pos_fantasma = self.shape_pos_atual[:]
+
     def verificar_game_over(self):
-        pass 
-    
+        if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa):
+            self.iniciamente_jogo()
+        
     #////
     
     def aumentar_lock_reset(self):
-        colisao = self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1)
-        if colisao:
+        if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
             if self.lock_movimentos != 15:
-                self.lock_tempo = 0
                 self.lock_movimentos += 1
-                print(self.lock_movimentos)
+                self.lock_tempo = 0
         else:
-            print("apos rotacao, fiz que nao colide")
+            print("Sem encostar|Wall Wick subiu")
     
     def segurar_shape(self):
         if px.btnp(px.KEY_TAB) and not self.guardado_neste_frame:
@@ -382,6 +388,10 @@ class Jogo:
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
                 self.tempo_existe = self.tempo_simulado + (1 / 60)
     
+    def recalcular_pos_fantasma(self):
+         while not self.verificar_colisao(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, dy=1):
+            self.shape_pos_fantasma[1] += 1    
+    
     def hard_drop(self):
         if px.btnp(px.KEY_SPACE):
             self.fixar(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, SHAPES[self.shape_atual]["cor"][1])
@@ -395,6 +405,7 @@ class Jogo:
         self.mover_lados_shape()
         self.verificar_rotacao_shape()
         self.soft_drop()
+        self.recalcular_pos_fantasma()
         self.hard_drop()
         self.teclas_especiais()
     
@@ -413,10 +424,11 @@ class Jogo:
             self.guardado_neste_frame = False
             self.verificar_linha(self.mapa)
             self.novo_shape()
+            self.ajustar_desovação()
             self.verificar_game_over()
         
         self.tempo_ocorrendo = (time.perf_counter() - self.tempo_inicial)
-        #print(self.shape_pos_atual)
+        print(self.shape_pos_atual)
 
     #//// //// ////
     
@@ -482,9 +494,6 @@ class Jogo:
     #////
     
     def desenhar_shape_fantasma(self, formato):
-        while not self.verificar_colisao(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, dy=1):
-            self.shape_pos_fantasma[1] += 1
-        
         offset = self.calcular_offset_camera()
         spritesheet_x = SHAPES[self.shape_atual]["cor"][0]   
         
