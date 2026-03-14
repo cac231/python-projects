@@ -107,6 +107,7 @@ class Jogo:
         
         self.nivel_atual = 1
         self.pontos_atual = 0
+        self.combo_atual = -1
         
         self.proximos_shapes = []
         self.bag_7 = []
@@ -115,9 +116,9 @@ class Jogo:
         self.shape_atual = ""
         self.novo_shape()
         
+        self.shape_guardado = None
         self.fixou_neste_frame = False
         self.guardado_neste_frame = False
-        self.shape_guardado = None
    
     def desovar_shape(self, formato):       
        return [4, 0] if formato == "shape_O" else [3, 0]
@@ -132,6 +133,9 @@ class Jogo:
         self.shape_pos_fantasma = self.shape_pos_atual[:]
         
         self.estado_rotacao = "0"
+        self.ultima_acao_foi_rotacao = False
+        self.ultimo_srs_foi_1x2 = False
+        self.situacao_t_spin = None
         
         self.tempo_existe = 0
         g = TABELA_G[self.nivel_atual]
@@ -139,13 +143,23 @@ class Jogo:
         
         self.lock_tempo = 0
         self.lock_movimentos = 0
-        self.y_mais_baixo = self.shape_pos_atual[1]
+        self.y_anterior = self.shape_pos_atual[1]
    
     def pegar_formato(self):
         return self.shape_matriz_atual
     
     #////
 
+    def sistema_bag_7(self):
+        quantidades_de_shapes = 3
+        if len(self.bag_7) == 0:
+            piece = ["I", "O", "T", "L", "J", "S", "Z"]
+            self.bag_7 = [f"shape_{x}" for x in piece]
+            random.shuffle(self.bag_7)
+        
+        while len(self.proximos_shapes) < quantidades_de_shapes:
+            self.proximos_shapes.append(self.bag_7.pop(0))
+    
     def verificar_colisao(self, formato, pos, mapa, dx=0, dy=0):
         correcao_altura = 2
         for i_linha, e_linha in enumerate(formato):
@@ -158,7 +172,7 @@ class Jogo:
                     if n_col < 0:  # parede da esquerda
                         return True
                     
-                    if n_lin <= 0: # teto
+                    if n_lin < 0: # teto
                         return True
                     
                     if n_col >= COLUNAS: # parede da direita
@@ -204,9 +218,13 @@ class Jogo:
         transcricao = f"{self.estado_rotacao}->{novo_estado}"
         lista_das_sequencias = SEQUENCIA["shape_I" if self.shape_atual == "shape_I" else "todos_shapes"][transcricao]
         
-        for (dx, dy) in lista_das_sequencias:
+        for index, (dx, dy) in enumerate(lista_das_sequencias):
             resultado = self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=dx, dy=dy)
             if not resultado:
+                if index == 4:
+                    self.ultimo_srs_foi_1x2 = True
+                else:
+                    self.ultimo_srs_foi_1x2 = False
                 return (True, (dx, dy))
         return (False, (0, 0)) 
                     
@@ -256,30 +274,22 @@ class Jogo:
             self.shape_matriz_atual = backup
     
     #////
-
-    def sistema_bag_7(self):
-        quantidades_de_shapes = 3
-        if len(self.bag_7) == 0:
-            piece = ["I", "O", "T", "L", "J", "S", "Z"]
-            self.bag_7 = [f"shape_{x}" for x in piece]
-            random.shuffle(self.bag_7)
-        
-        while len(self.proximos_shapes) < quantidades_de_shapes:
-            self.proximos_shapes.append(self.bag_7.pop(0))
     
     def fixar(self, formato, pos, mapa, cor):
         correcao_altura = 2
         if not self.fixou_neste_frame:
             self.fixou_neste_frame = True
-            for linha in range(len(formato)):
-                for coluna in range(len(formato[linha])):
-                    if formato[linha][coluna] == 1:
-                        mx = pos[0] + coluna
-                        my = pos[1] + linha + correcao_altura
+            
+            for i_linha, e_linha in enumerate(formato):
+                for i_coluna, _ in enumerate(e_linha):
+                    if formato[i_linha][i_coluna] == 1:
+                        
+                        mx = pos[0] + i_coluna
+                        my = pos[1] + i_linha + correcao_altura
                         mapa[my][mx] = cor
             return True
         return False
-    
+   
     def queda_automatica(self):        
         self.tempo_existe += 1
         g = TABELA_G[self.nivel_atual]
@@ -288,8 +298,8 @@ class Jogo:
                 if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
                     self.shape_pos_atual[1] += 1
                     
-                    if self.shape_pos_atual[1] > self.y_mais_baixo:
-                        self.y_mais_baixo = self.shape_pos_atual[1]
+                    if self.shape_pos_atual[1] > self.y_anterior:
+                        self.y_anterior = self.shape_pos_atual[1]
                         self.lock_movimentos = 0
                     
                     self.tempo_simulado += 1 / g # linhs por frame, que vai aumentando
@@ -301,13 +311,82 @@ class Jogo:
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
             self.lock_tempo += 1
     
+    def condicoes_do_t_spin(self, mapa):        
+        T_SPIN_CANTO = {
+            "0": {
+                "F": [(-1,-1), (1,-1)], 
+                "B": [(-1, 1), (1, 1)],
+                },
+            "R": {
+                "F": [( 1,-1), (1, 1)], 
+                "B": [(-1,-1), (-1,1)],
+                },
+            "2": {
+                "F": [(-1, 1), (1, 1)], 
+                "B": [(-1,-1), (1,-1)],
+                },
+            "L": {
+                "F": [(-1,-1), (-1,1)], 
+                "B": [( 1,-1), (1, 1)],
+                },
+        }
+        
+        rotacao_preset = T_SPIN_CANTO[self.estado_rotacao]
+        pos_do_centro = self.shape_pos_atual[0] + 1, self.shape_pos_atual[1] + 1 
+        
+        dig_f = 0
+        dig_b = 0
+        
+        correcao_altura = 2
+        for diagonal, posicoes in rotacao_preset.items():
+            for tupla in posicoes:
+                mx = pos_do_centro[0] + tupla[0]
+                if mx < 0 or mx >= COLUNAS:
+                    if diagonal == "F": 
+                            dig_f += 1
+                            continue
+                    if diagonal == "B": 
+                            dig_b += 1
+                            continue
+                        
+                my = pos_do_centro[1] + tupla[1] + correcao_altura
+                if my < 0 or my >= ALTURA_DO_JOGO:
+                    if diagonal == "F": 
+                            dig_f += 1
+                            continue
+                    if diagonal == "B": 
+                            dig_b += 1
+                            continue
+                
+                if mapa[my][mx] != VAZIO:
+                    match diagonal:
+                        case "F": dig_f += 1
+                        case "B": dig_b += 1
+        
+        print("dig_f", dig_f)
+        print("dig_b", dig_b, "\n")
+        return (dig_f, dig_b)
+
+    def t_spin(self, dig_f, dig_b):
+        if dig_f == 2 and dig_b >= 1:
+            return "t-spin"
+        elif dig_f == 1 and dig_b == 2:
+            if self.ultimo_srs_foi_1x2:
+                return "t-spin_double"
+            else:
+                return "mini-t-spin"
+        return None
+    
+    
+    #////
+    
     def verificar_linha(self, mapa):
         mapa_temp = mapa[::-1]
         for linha_e in mapa_temp:             
             if not VAZIO in linha_e:
-                self.atualizar_mapa(mapa_temp)
+                self.atualizar_mapa_e_pontos(mapa_temp)
                 
-    def atualizar_mapa(self, mapa_temp):
+    def atualizar_mapa_e_pontos(self, mapa_temp):
         pontuacao = 0
         
         for linha_i, linha_e in enumerate(mapa_temp):
@@ -346,7 +425,8 @@ class Jogo:
                 self.lock_movimentos += 1
                 self.lock_tempo = 0
         else:
-            print("Sem encostar|Wall Wick subiu")
+            pass
+            #print("Sem encostar|Wall Wick subiu")
     
     def segurar_shape(self):
         if px.btnp(px.KEY_TAB) and not self.guardado_neste_frame:
@@ -366,28 +446,33 @@ class Jogo:
                 self.shape_pos_atual[0] -= 1
                 self.shape_pos_fantasma = self.shape_pos_atual[:]
                 self.aumentar_lock_reset()
+                self.ultima_acao_foi_rotacao = False
         
         elif px.btnp(px.KEY_RIGHT, repeat=repeticao) or px.btnp(px.KEY_D, repeat=repeticao):
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=1):
                 self.shape_pos_atual[0] += 1
                 self.shape_pos_fantasma = self.shape_pos_atual[:]
                 self.aumentar_lock_reset()
+                self.ultima_acao_foi_rotacao = False
     
     def verificar_rotacao_shape(self):
         if px.btnp(px.KEY_Q):
             self.rotacionar_shape("KEY_Q")
             self.aumentar_lock_reset()
+            self.ultima_acao_foi_rotacao = True
 
         if px.btnp(px.KEY_E):
             self.rotacionar_shape("KEY_E")
             self.aumentar_lock_reset()
+            self.ultima_acao_foi_rotacao = True
     
     def soft_drop(self):
         repeticao = 5
         if px.btnp(px.KEY_DOWN, repeat=repeticao) or px.btnp(px.KEY_S, repeat=repeticao):
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
                 self.tempo_existe = self.tempo_simulado + (1 / 60)
-    
+                self.ultima_acao_foi_rotacao = False
+            
     def recalcular_pos_fantasma(self):
          while not self.verificar_colisao(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, dy=1):
             self.shape_pos_fantasma[1] += 1    
@@ -415,20 +500,24 @@ class Jogo:
         self.fixou_neste_frame = False
         
         self.sistema_bag_7()
-        self.input_tecla()
+        self.input_tecla()        
         self.queda_automatica()
+        
         if self.lock_tempo >= 30 or self.lock_movimentos == 15:
-                self.fixar(self.pegar_formato(), self.shape_pos_atual, self.mapa, SHAPES[self.shape_atual]["cor"][1])
+            if self.ultima_acao_foi_rotacao and self.shape_atual == "shape_T":
+                dig_f, dig_b = self.condicoes_do_t_spin(self.mapa)
+                self.situacao_t_spin = self.t_spin(dig_f, dig_b)
+            self.fixar(self.pegar_formato(), self.shape_pos_atual, self.mapa, SHAPES[self.shape_atual]["cor"][1])
         
         if self.fixou_neste_frame:
             self.guardado_neste_frame = False
-            self.verificar_linha(self.mapa)
+            self.verificar_linha(self.mapa) # calcular pontos aqui
             self.novo_shape()
             self.ajustar_desovação()
             self.verificar_game_over()
         
         self.tempo_ocorrendo = (time.perf_counter() - self.tempo_inicial)
-        print(self.shape_pos_atual)
+        #print(self.shape_pos_atual)
 
     #//// //// ////
     
@@ -438,10 +527,11 @@ class Jogo:
         #         (x + (0.2 * (x + 1))), 
         #         0.7, 
         #         x
-        #     )
+        #     )     
         
-        px.text(2, 30, f"Tempo: {self.tempo_ocorrendo:.3f}s", 7)
-        px.text(2, 30 + 10, f"Nivel: {self.nivel_atual}", 7)
+        px.text(2, 10, f"Tempo: {self.tempo_ocorrendo:.3f}s", 3)
+        px.text(2, 10 + 10, f"Nivel: {self.nivel_atual}", 4)
+        px.text(2, 10 + 20, f"Pontos {self.pontos_atual}", 2)
     
     def desenhar_texto(self, coluna_x, linha_y, spritesheet_x, *, diminuir=0):
         px.blt(
