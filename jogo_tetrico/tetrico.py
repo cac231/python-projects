@@ -131,8 +131,10 @@ class Jogo:
         self.fixou_neste_frame = False
         self.guardado_neste_frame = False
         
-        self.temp_do_are = 0
-        self.esta_em_are = False
+        self.movimento_y_esquerda = 0
+        self.movimento_y_direita = 0
+        self.movimento_y = 0
+        self.movimento_x = 0 
    
     def desovar_shape(self, formato):       
        return [4, 0] if formato == "shape_O" else [3, 0]
@@ -145,6 +147,7 @@ class Jogo:
         self.shape_pos_atual = self.desovar_shape(self.shape_atual)
         self.shape_matriz_atual = SHAPES[self.shape_atual]["formato"]
         self.shape_pos_fantasma = self.shape_pos_atual[:]
+        self.recalcular_pos_fantasma()
         
         # rotacao e outras funções que a utilizam
         self.estado_rotacao = "0"
@@ -168,10 +171,14 @@ class Jogo:
         self.quantos_soft_drops = 0
         self.atual_back_to_back = 0
         
+        # ARE
+        self.temp_do_are = 0
+        self.esta_em_are = False
+        
         # movimentar desenho
         self.foi_para_esquerda = False
-        self.foi_para_direita = False     
-   
+        self.foi_para_direita = False      
+        
     def pegar_formato(self):
         return self.shape_matriz_atual
     
@@ -549,8 +556,9 @@ class Jogo:
                 self.reiniciar_shape()    
 
     def mover_lados_shape(self):
-        repeticao = 5        
-        if px.btnp(px.KEY_LEFT, repeat=repeticao) or px.btnp(px.KEY_A, repeat=repeticao):
+        repeticao = 4
+        hold = 10        
+        if px.btnp(px.KEY_LEFT, repeat=repeticao, hold=hold) or px.btnp(px.KEY_A, repeat=repeticao, hold=hold):
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=-1):
                 self.shape_pos_atual[0] -= 1
                 self.shape_pos_fantasma = self.shape_pos_atual[:]
@@ -561,10 +569,9 @@ class Jogo:
                 if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=-1):
                     self.foi_para_esquerda = True
                 else:
-                    self.foi_para_esquerda = False
-                    self.foi_para_direita = False
+                    self.foi_para_esquerda, self.foi_para_direita = False, False
         
-        elif px.btnp(px.KEY_RIGHT, repeat=repeticao) or px.btnp(px.KEY_D, repeat=repeticao):
+        elif px.btnp(px.KEY_RIGHT, repeat=repeticao, hold=hold) or px.btnp(px.KEY_D, repeat=repeticao, hold=hold):
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=1):
                 self.shape_pos_atual[0] += 1
                 self.shape_pos_fantasma = self.shape_pos_atual[:]
@@ -575,8 +582,7 @@ class Jogo:
                 if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=1):
                     self.foi_para_direita = True
                 else:
-                    self.foi_para_esquerda = False
-                    self.foi_para_direita = False
+                    self.foi_para_esquerda, self.foi_para_direita = False, False
     
     def verificar_rotacao_shape(self):
         if px.btnp(px.KEY_Q):
@@ -589,6 +595,10 @@ class Jogo:
             self.aumentar_lock_reset()
             self.ultima_acao_foi_rotacao = True
     
+    def recalcular_pos_fantasma(self):
+         while not self.verificar_colisao(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, dy=1):
+            self.shape_pos_fantasma[1] += 1    
+    
     def soft_drop(self):
         repeticao = 5
         if px.btnp(px.KEY_DOWN, repeat=repeticao) or px.btnp(px.KEY_S, repeat=repeticao):
@@ -596,11 +606,7 @@ class Jogo:
                 self.tempo_existe = self.tempo_simulado + (1 / 60)
                 self.ultima_acao_foi_rotacao = False
                 print(self.quantos_soft_drops)
-                self.quantos_soft_drops += 1
-            
-    def recalcular_pos_fantasma(self):
-         while not self.verificar_colisao(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, dy=1):
-            self.shape_pos_fantasma[1] += 1    
+                self.quantos_soft_drops += 1        
     
     def hard_drop(self):
         correcao_altura = 2
@@ -618,8 +624,8 @@ class Jogo:
         self.segurar_shape()
         self.mover_lados_shape()
         self.verificar_rotacao_shape()
-        self.soft_drop()
         self.recalcular_pos_fantasma()
+        self.soft_drop()
         self.hard_drop()
         self.teclas_especiais()
     
@@ -692,7 +698,7 @@ class Jogo:
         
     #////
     
-    def desenhar_fundo(self, pos, spritesheet_pos, tamanho, movimento_y, *, movimento_x=0):
+    def desenhar_fundo(self, pos, spritesheet_pos, tamanho, *, movimento_x=0, movimento_y=0):
         px.bltm(
             pos[0] + movimento_y * 16, 
             pos[1] + movimento_x * 16, 
@@ -829,26 +835,45 @@ class Jogo:
     def desenhar(self):
         px.cls(0)
         
-        movimento_y_esquerda = 0
-        movimento_y_direita = 0
-        movimento_y = 0
-        movimento_x = 0
-        
+        movimento_padrao = 6
+  
         if self.foi_para_esquerda:
-            movimento_y_esquerda = -0.2
-            movimento_y = movimento_y_esquerda
-        elif self.foi_para_direita:
-            movimento_y_direita = 0.2
-            movimento_y = movimento_y_direita
+            if self.movimento_y_esquerda > -movimento_padrao:
+                self.movimento_y_esquerda += -1
+                self.movimento_y = self.movimento_y_esquerda
+        else:
+            if self.movimento_y_esquerda < 0:
+                self.movimento_y_esquerda -= -1
+                self.movimento_y = self.movimento_y_esquerda
+                
+        
+        if self.foi_para_direita:
+            if self.movimento_y_direita < movimento_padrao:
+                self.movimento_y_direita += 1
+                self.movimento_y = self.movimento_y_direita
+        else:
+            if self.movimento_y_direita > 0:
+                self.movimento_y_direita -= 1
+                self.movimento_y = self.movimento_y_direita
         
         if self.acionou_hard_drop:
-            movimento_x = 0.2
+            if self.movimento_x < movimento_padrao:
+                self.movimento_x += 1
+        else:
+            if self.movimento_x > 0:
+                self.movimento_x -= 1
+        
+        movimento_y_esquerda = self.movimento_y_esquerda / 10
+        movimento_y_direita = self.movimento_y_direita / 10
+        movimento_y = self.movimento_y / 10
+        movimento_x = self.movimento_x  / 10
+        
+        print(movimento_y_direita)  
         
         # desenhar bordas
-        self.desenhar_fundo(                        (0, 0), (TILE, 0), (10, 20), movimento_y_esquerda)
-        self.desenhar_fundo((((TILE * LINHAS) - BOARD_X) - 10, 0), (TILE, 0), (10, LINHAS), movimento_y_direita)
+        self.desenhar_fundo((0, 0), (12, 0), (LINHAS, LINHAS))
         
-        self.desenhar_fundo((BOARD_X, 0), (0, 0), (COLUNAS, LINHAS), movimento_y, movimento_x=movimento_x)
+        self.desenhar_fundo((BOARD_X, 0), (0, 0), (COLUNAS, LINHAS), movimento_x=movimento_x, movimento_y=movimento_y,)
 
         if not self.esta_em_are:
             self.desenhar_shape_fantasma(self.pegar_formato(), movimento_y, movimento_x)
