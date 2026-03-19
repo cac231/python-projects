@@ -64,11 +64,9 @@ SHAPES = {
 #todo: colocar que, no ARE, poder rotacionar ou hold. use px.btn inves de px.btnp... sei la
 #todo erro mo ihr e irs
 #todo: fazer animacao ao limpar linha... fazer isso antes de mover as linhas tlg... tipo, quando acabar o ARE, acionaria self.mover_linha
-
-#
-
 #todo: implementar o (ultima tecla com prioridade), principalmente ao ser mover lateralmente
 
+#
 
 T_SPIN_CANTO = {
             "0": {
@@ -190,7 +188,6 @@ class Jogo:
         self.shape_pos_atual = self.desovar_shape(self.shape_atual)
         self.shape_matriz_atual = SHAPES[self.shape_atual]["formato"]
         self.shape_pos_fantasma = self.shape_pos_atual[:]
-        self.cor_do_shape = SHAPES[self.shape_atual]["imagem_pos"] + 1
         self.recalcular_pos_fantasma()
         
         # rotacao
@@ -215,11 +212,11 @@ class Jogo:
         self.atual_back_to_back = 0
         
         # movimentar os desenhos
-        self.localizacao_das_linhas_limpas = []
         self.foi_para_esquerda = False
         self.foi_para_direita = False
-        self.etapa_da_animacao_limpar_linha = 0
-        self.tempo_da_animacao_limpar_linha = 0
+        self.localizacao_das_linhas_limpas = []
+        self.constante_animacao_limpar_linha = 0
+        self.tempo_animacao_limpar_linha = 0
         
         # CONFIGURAÇÃO DO JOGO
         
@@ -230,7 +227,7 @@ class Jogo:
         self.limpou_linha = False
         
     
-    #////
+    #//// //// ////
 
     def sistema_bag_7(self):
         if len(self.bag_7) == 0:
@@ -264,6 +261,21 @@ class Jogo:
                     
                     if mapa[n_lin][n_col] != VAZIO: # verifica se contem uma peça fixada
                         return True
+        return False
+    
+    def fixar(self, formato, pos, mapa, cor):
+        correcao_altura = 2
+        if not self.fixou_neste_frame:
+            self.fixou_neste_frame = True
+            
+            for i_linha, e_linha in enumerate(formato):
+                for i_coluna, _ in enumerate(e_linha):
+                    
+                    if formato[i_linha][i_coluna] == 1:
+                        mx = pos[0] + i_coluna
+                        my = pos[1] + i_linha + correcao_altura
+                        mapa[my][mx] = cor
+            return True
         return False
     
     #////
@@ -351,21 +363,6 @@ class Jogo:
     
     #////
     
-    def fixar(self, formato, pos, mapa, cor):
-        correcao_altura = 2
-        if not self.fixou_neste_frame:
-            self.fixou_neste_frame = True
-            
-            for i_linha, e_linha in enumerate(formato):
-                for i_coluna, _ in enumerate(e_linha):
-                    
-                    if formato[i_linha][i_coluna] == 1:
-                        mx = pos[0] + i_coluna
-                        my = pos[1] + i_linha + correcao_altura
-                        mapa[my][mx] = cor
-            return True
-        return False
-    
     def queda_automatica(self):
         self.gravidade_tempo_existe += 1
         g = buscar_tabela_g(self.nivel_atual)
@@ -432,11 +429,6 @@ class Jogo:
     
     #////
     
-    def verificar_combo(self, combo_atual):
-        if combo_atual >= 1:
-            return 50 * combo_atual * self.nivel_atual
-        return 0
-    
     def verificar_linha(self, mapa):
         mapa_temp = mapa[::-1]
         for linha_e in mapa_temp:             
@@ -454,7 +446,7 @@ class Jogo:
             case "t_spin": return 400 * self.nivel_atual
             case "mini_t_spin": return 100 * self.nivel_atual
         return 0
-                
+    
     def limpar_linhas_e_pontuar(self, mapa_temp):
         def calcular_pontos(linhas_limpas_consecutivas):
             PONTUACAO_POR_LINHAS = {
@@ -490,6 +482,12 @@ class Jogo:
                 return
             self.atual_back_to_back = 0    
         
+        def calculo_final_dos_pontos(linhas_limpas_consecutivas):
+            pontuacao_soma = calcular_pontos(linhas_limpas_consecutivas)
+            calcular_back_to_back(linhas_limpas_consecutivas)
+            (aumento_do_back_to_back := 1.5) if self.atual_back_to_back >= 2 else (aumento_do_back_to_back := 1)         
+            return pontuacao_soma * aumento_do_back_to_back  
+            
         pontuacao_total = 0
         linhas_limpas_consecutivas = 0
         
@@ -501,23 +499,26 @@ class Jogo:
                 linhas_limpas_consecutivas += 1
             else:
                 if linhas_limpas_consecutivas > 0:
-                    pontuacao_soma = calcular_pontos(linhas_limpas_consecutivas)
-                    calcular_back_to_back(linhas_limpas_consecutivas)             
-                    (aumento_do_back_to_back := 1.5) if self.atual_back_to_back >= 2 else (aumento_do_back_to_back := 1)        
-                    
-                    pontuacao_total += pontuacao_soma * aumento_do_back_to_back  
+                    pontuacao_total += calculo_final_dos_pontos(linhas_limpas_consecutivas)
                     linhas_limpas_consecutivas = 0
         
         if linhas_limpas_consecutivas > 0:
-            pontuacao_soma = calcular_pontos(linhas_limpas_consecutivas)
-            calcular_back_to_back(linhas_limpas_consecutivas)
-            (aumento_do_back_to_back := 1.5) if self.atual_back_to_back >= 2 else (aumento_do_back_to_back := 1)         
-            
-            pontuacao_total += pontuacao_soma * aumento_do_back_to_back  
+            pontuacao_total += calculo_final_dos_pontos(linhas_limpas_consecutivas)
             linhas_limpas_consecutivas = 0
-    
+        
         return pontuacao_total
+    
+    def verificar_combo(self, combo_atual):
+        if combo_atual >= 1:
+            return 50 * combo_atual * self.nivel_atual
+        return 0
+    
+    def verificar_nivel(self, linhas_limpas):
+        if linhas_limpas >= self.nivel_atual * 10:
+            self.nivel_atual += 1
 
+    #////
+    
     def mover_linhas_do_mapa(self, mapa_temp):
         continuar_loop = True
         while continuar_loop:
@@ -530,11 +531,7 @@ class Jogo:
                     mapa_temp[linha_i + 1], mapa_temp[linha_i] = mapa_temp[linha_i], mapa_temp[linha_i + 1]
                     continuar_loop = True
                 
-        self.mapa = mapa_temp[::-1]
-
-    def verificar_nivel(self, linhas_limpas):
-        if linhas_limpas >= self.nivel_atual * 10:
-            self.nivel_atual += 1
+        self.mapa = mapa_temp[::-1]    
 
     def ajustar_desovação(self):
         if (self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa) or 
@@ -547,7 +544,7 @@ class Jogo:
             self.iniciamente_jogo()
     
     def verificar_ihs(self):
-        if px.btn(px.KEY_TAB):
+        if px.btn(px.KEY_TAB) or px.btn(px.GAMEPAD1_BUTTON_Y):
             self.guardado_neste_frame = True
             
             if self.shape_guardado == None:
@@ -558,12 +555,12 @@ class Jogo:
                 self.reiniciar_shape()  
         
     def verificar_irs(self):
-        if px.btn(px.KEY_Q):
+        if px.btn(px.KEY_Q) or px.btnp(px.GAMEPAD1_BUTTON_A):
             self.rotacionar_shape("KEY_Q")
             self.aumentar_lock_reset()
             self.ultima_acao_foi_rotacao = True
 
-        if px.btn(px.KEY_E):
+        if px.btn(px.KEY_E) or px.btnp(px.GAMEPAD1_BUTTON_B):
             self.rotacionar_shape("KEY_E")
             self.aumentar_lock_reset()
             self.ultima_acao_foi_rotacao = True  
@@ -577,7 +574,7 @@ class Jogo:
                 self.lock_tempo = 0
     
     def segurar_shape(self):
-        if px.btnp(px.KEY_TAB) and not self.guardado_neste_frame:
+        if px.btnp(px.KEY_TAB) or px.btn(px.GAMEPAD1_BUTTON_Y) and not self.guardado_neste_frame:
             self.guardado_neste_frame = True
             
             if self.shape_guardado == None:
@@ -591,8 +588,16 @@ class Jogo:
         hold = self.das        
         repeticao = self.arr
         
-        esquerda = px.btnp(px.KEY_LEFT, hold=hold, repeat=repeticao) or px.btnp(px.KEY_A, hold=hold, repeat=repeticao)
-        direita = px.btnp(px.KEY_RIGHT, hold=hold, repeat=repeticao) or px.btnp(px.KEY_D, hold=hold, repeat=repeticao)
+        esquerda = (
+            px.btnp(px.KEY_LEFT, hold=hold, repeat=repeticao) or 
+            px.btnp(px.KEY_A, hold=hold, repeat=repeticao) or
+            px.btnp(px.GAMEPAD1_BUTTON_DPAD_LEFT, hold=hold, repeat=repeticao)    
+        )
+        direita = (
+            px.btnp(px.KEY_RIGHT, hold=hold, repeat=repeticao) or 
+            px.btnp(px.KEY_D, hold=hold, repeat=repeticao) or
+            px.btnp(px.GAMEPAD1_BUTTON_DPAD_RIGHT, hold=hold, repeat=repeticao)
+            )
         
         if esquerda and not direita:
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=-1):
@@ -621,12 +626,12 @@ class Jogo:
                     self.foi_para_esquerda, self.foi_para_direita = False, False
     
     def verificar_rotacao_shape(self):
-        if px.btnp(px.KEY_Q):
+        if px.btnp(px.KEY_Q) or px.btnp(px.GAMEPAD1_BUTTON_A):
             self.rotacionar_shape("KEY_Q")
             self.aumentar_lock_reset()
             self.ultima_acao_foi_rotacao = True
 
-        if px.btnp(px.KEY_E):
+        if px.btnp(px.KEY_E) or px.btnp(px.GAMEPAD1_BUTTON_B):
             self.rotacionar_shape("KEY_E")
             self.aumentar_lock_reset()
             self.ultima_acao_foi_rotacao = True
@@ -637,21 +642,21 @@ class Jogo:
     
     def soft_drop(self):
         repeticao = 3 # padrao=3
-        if px.btnp(px.KEY_DOWN, repeat=repeticao) or px.btnp(px.KEY_S, repeat=repeticao):
+        if px.btnp(px.KEY_DOWN, repeat=repeticao) or px.btnp(px.KEY_S, repeat=repeticao) or px.btnp(px.GAMEPAD1_BUTTON_DPAD_DOWN, repeat=repeticao):
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
                 self.gravidade_tempo_existe = self.gravidade_tempo_simulado + (1 / 60)
                 self.ultima_acao_foi_rotacao = False
                 self.quantos_soft_drops += 1        
     
     def hard_drop(self):
-        if px.btnp(px.KEY_SPACE):
+        if px.btnp(px.KEY_SPACE) or px.btnp(px.GAMEPAD1_BUTTON_DPAD_UP):
             self.fixar(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, SHAPES[self.shape_atual]["cor_letra"])
             self.pontos_atual += (self.shape_pos_fantasma[1] - self.shape_pos_atual[1]) * 2
             self.esta_em_are = True
             self.acionou_hard_drop = True
     
     def teclas_especiais(self):
-        if px.btnp(px.KEY_F1):
+        if px.btnp(px.KEY_F1) or px.btnp(px.GAMEPAD1_BUTTON_START):
             self.iniciamente_jogo()
     
     def input_tecla(self):
@@ -887,7 +892,7 @@ class Jogo:
             if self.movimento_x_esquerda < 0:
                 self.movimento_x_esquerda -= -1
                 self.movimento_x = self.movimento_x_esquerda    
-        ##
+        #
         if self.foi_para_direita:
             if self.movimento_x_direita < self.movimento_padrao:
                 self.movimento_x_direita += 1
@@ -896,7 +901,7 @@ class Jogo:
             if self.movimento_x_direita > 0:
                 self.movimento_x_direita -= 1
                 self.movimento_x = self.movimento_x_direita
-        ##
+        #
         if self.acionou_hard_drop:
             if self.movimento_y < self.movimento_padrao:
                 self.movimento_y += 1
@@ -907,39 +912,32 @@ class Jogo:
                 self.movimento_y -= 1
     
     def animacao_limpar_linha(self, *, movimento_x=0, movimento_y=0):
+        def desenhar_animacao_limpar_linha(start, end, constante, *, constante_na_pos_x=0):
+            for localizacao in self.localizacao_das_linhas_limpas:
+                for pos_x in range(start, end - constante):
+                    self.desenhar_shape(
+                        pos_x + constante_na_pos_x,
+                        localizacao,
+                        spritesheet_x, 0,
+                        movimento_x=movimento_x,
+                        movimento_y=movimento_y, 
+                        offset=offset
+                    )
+        
         offset = self.calcular_offset_camera()
         spritesheet_x = SHAPES[self.shape_atual]["imagem_pos"]
         
-        tempo_divido = self.temp_do_are // 5
+        tempo_divido = self.are_duracao // 6
 
-        if self.tempo_da_animacao_limpar_linha > tempo_divido * self.etapa_da_animacao_limpar_linha:
-            self.etapa_da_animacao_limpar_linha += 1
+        if self.tempo_animacao_limpar_linha > tempo_divido * (self.constante_animacao_limpar_linha + 1):
+            self.constante_animacao_limpar_linha += 1
         else:
-            self.tempo_da_animacao_limpar_linha += 1
+            self.tempo_animacao_limpar_linha += 1
         
-        constante = self.etapa_da_animacao_limpar_linha
-            
-        for localizacao in self.localizacao_das_linhas_limpas:
-            for pos_x in range(0, COLUNAS // 2 - constante):
-                self.desenhar_shape(
-                    pos_x,
-                    localizacao,
-                    spritesheet_x, 0,
-                    movimento_x=movimento_x,
-                    movimento_y=movimento_y, 
-                    offset=offset
-                )
+        constante = self.constante_animacao_limpar_linha
         
-        for localizacao in self.localizacao_das_linhas_limpas:
-            for pos_x in range(COLUNAS // 2, COLUNAS - constante):
-                self.desenhar_shape(
-                    pos_x  + constante,
-                    localizacao, 
-                    spritesheet_x, 0,
-                    movimento_x=movimento_x,
-                    movimento_y=movimento_y, 
-                    offset=offset
-                )
+        desenhar_animacao_limpar_linha(0, COLUNAS // 2, constante, constante_na_pos_x=constante)
+        desenhar_animacao_limpar_linha(COLUNAS // 2, COLUNAS, constante)
     
     #////
     
@@ -953,12 +951,9 @@ class Jogo:
         movimento_x = self.movimento_x  / 10
         movimento_y = self.movimento_y / 10
         
-        if movimento_x != 0 or movimento_y != 0:
-            print(f"mx={movimento_x:.2f}, my={movimento_y:.2f}")
-        
-        # desenhar fundo
+        # fundo
         self.desenhar_fundo((0, 0), (12, 0), (LINHAS, LINHAS))
-        # desenhar tabuleiro
+        # tabuleiro
         self.desenhar_fundo((BOARD_X, 0), (0, 0), (COLUNAS, LINHAS), movimento_x=movimento_x, movimento_y=movimento_y)
 
         if not self.esta_em_are:
