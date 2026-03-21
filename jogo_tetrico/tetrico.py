@@ -61,12 +61,73 @@ SHAPES = {
     },
 }
 
+def pegar_input(input, repeticao=0, hold=0):
+    TECLAS_INPUT = {
+        "ESQUERDA": 
+            px.btnp(px.KEY_LEFT, hold=hold, repeat=repeticao) or 
+            px.btnp(px.KEY_A, hold=hold, repeat=repeticao) or
+            px.btnp(px.GAMEPAD1_BUTTON_DPAD_LEFT, hold=hold, repeat=repeticao),
+        
+        "DIREITA":
+            px.btnp(px.KEY_RIGHT, hold=hold, repeat=repeticao) or 
+            px.btnp(px.KEY_D, hold=hold, repeat=repeticao) or
+            px.btnp(px.GAMEPAD1_BUTTON_DPAD_RIGHT, hold=hold, repeat=repeticao),
+        
+        "ROTACAO_ESQUERDA":
+            px.btnp(px.KEY_Q) or 
+            px.btnp(px.GAMEPAD1_BUTTON_A),
+        
+        "ROTACAO_DIREITA":
+            px.btnp(px.KEY_E) or 
+            px.btnp(px.GAMEPAD1_BUTTON_B),
+        
+        "SEGURAR":
+            px.btnp(px.KEY_TAB) or 
+            px.btn(px.GAMEPAD1_BUTTON_Y),
+        
+        "SOFT_DROP":
+            px.btnp(px.KEY_DOWN, repeat=repeticao) or 
+            px.btnp(px.KEY_S, repeat=repeticao) or 
+            px.btnp(px.GAMEPAD1_BUTTON_DPAD_DOWN, repeat=repeticao),
+        
+        "HARD_DROP":
+            px.btnp(px.KEY_SPACE) or 
+            px.btnp(px.GAMEPAD1_BUTTON_GUIDE),
+        #/
+        "ROTACAO_ESQUERDA_IRS":
+            px.btn(px.KEY_Q) or 
+            px.btn(px.GAMEPAD1_BUTTON_A),
+        
+        "ROTACAO_DIREITA_IRS":
+            px.btn(px.KEY_E) or 
+            px.btn(px.GAMEPAD1_BUTTON_B),
+        
+        "SEGURAR_IHS":
+            px.btn(px.KEY_TAB) or 
+            px.btn(px.GAMEPAD1_BUTTON_Y),
+        #/
+        "REINICIAR":
+            px.btnp(px.KEY_F1) or 
+            px.btnp(px.GAMEPAD1_BUTTON_START),
+            
+    }
+    
+    return TECLAS_INPUT[input]
+
 #todo: colocar que, no ARE, poder rotacionar ou hold. use px.btn inves de px.btnp... sei la
 #todo erro mo ihr e irs
 #todo: fazer animacao ao limpar linha... fazer isso antes de mover as linhas tlg... tipo, quando acabar o ARE, acionaria self.mover_linha
 #todo: implementar o (ultima tecla com prioridade), principalmente ao ser mover lateralmente
 
 #
+
+#todo: na parede, ao pressionar esq/dir da aquele trava tlg, o mesmo com wasd com seta
+
+#todo organizar os inputs, as teclas/gamepad!
+
+#todo: adicionar fonte
+
+#todo: adicionar menu com um botao de começar, historico, configuracao e sair. Tela de pause, tela de game_over com as pontuações
 
 T_SPIN_CANTO = {
             "0": {
@@ -126,7 +187,7 @@ VAZIO = "_"
 
 class Jogo:
     def __init__(self):  
-        px.init(LINHAS * TILE, LINHAS * TILE, title="Tetrico", fps=60, display_scale=2)
+        px.init(LINHAS * TILE, LINHAS * TILE, title="Tetrico", fps=60, display_scale=2, quit_key=False)
         px.load("my_resource.pyxres")
         px.tilemaps[0].set(0, 32, ["0"])
         px.tilemaps[0].set(32, 32, ["1"])
@@ -161,6 +222,8 @@ class Jogo:
         self.guardado_neste_frame = False
         self.acionou_hard_drop = False
         
+        self.estado_do_jogo = "jogo"
+        
         # CONFIGURAÇÃO DO USUÁRIO
 
         # animacao
@@ -169,6 +232,11 @@ class Jogo:
         self.movimento_x_direita = 0
         self.movimento_y = 0
         self.movimento_x = 0
+        
+        self.duracao_animacao_game_over = 21 * 4
+        self.tempo_animacao_game_over = 0
+        self.constante_animacao_game_over = 0
+        
         
         # delay na movimentacao lateral
         self.das = 10 # padrao=10
@@ -217,6 +285,8 @@ class Jogo:
         self.localizacao_das_linhas_limpas = []
         self.constante_animacao_limpar_linha = 0
         self.tempo_animacao_limpar_linha = 0
+        
+        self.movimento_lateral_atual = ""
         
         # CONFIGURAÇÃO DO JOGO
         
@@ -541,10 +611,10 @@ class Jogo:
 
     def verificar_game_over(self):
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa):
-            self.iniciamente_jogo()
+            self.estado_do_jogo = "game_over"
     
     def verificar_ihs(self):
-        if px.btn(px.KEY_TAB) or px.btn(px.GAMEPAD1_BUTTON_Y):
+        if pegar_input("SEGURAR_IHS"):
             self.guardado_neste_frame = True
             
             if self.shape_guardado == None:
@@ -555,12 +625,12 @@ class Jogo:
                 self.reiniciar_shape()  
         
     def verificar_irs(self):
-        if px.btn(px.KEY_Q) or px.btnp(px.GAMEPAD1_BUTTON_A):
+        if pegar_input("ROTACAO_ESQUERDA_IRS"):
             self.rotacionar_shape("KEY_Q")
             self.aumentar_lock_reset()
             self.ultima_acao_foi_rotacao = True
 
-        if px.btn(px.KEY_E) or px.btnp(px.GAMEPAD1_BUTTON_B):
+        if pegar_input("ROTACAO_DIREITA_IRS"):
             self.rotacionar_shape("KEY_E")
             self.aumentar_lock_reset()
             self.ultima_acao_foi_rotacao = True  
@@ -574,7 +644,7 @@ class Jogo:
                 self.lock_tempo = 0
     
     def segurar_shape(self):
-        if px.btnp(px.KEY_TAB) or px.btn(px.GAMEPAD1_BUTTON_Y) and not self.guardado_neste_frame:
+        if pegar_input("SEGURAR") and not self.guardado_neste_frame:
             self.guardado_neste_frame = True
             
             if self.shape_guardado == None:
@@ -588,18 +658,13 @@ class Jogo:
         hold = self.das        
         repeticao = self.arr
         
-        esquerda = (
-            px.btnp(px.KEY_LEFT, hold=hold, repeat=repeticao) or 
-            px.btnp(px.KEY_A, hold=hold, repeat=repeticao) or
-            px.btnp(px.GAMEPAD1_BUTTON_DPAD_LEFT, hold=hold, repeat=repeticao)    
-        )
-        direita = (
-            px.btnp(px.KEY_RIGHT, hold=hold, repeat=repeticao) or 
-            px.btnp(px.KEY_D, hold=hold, repeat=repeticao) or
-            px.btnp(px.GAMEPAD1_BUTTON_DPAD_RIGHT, hold=hold, repeat=repeticao)
-            )
+        esquerda = pegar_input("ESQUERDA", repeticao, hold)
+        direita = pegar_input("DIREITA", repeticao, hold)
+
+        esquerda_puro = px.btn(px.KEY_LEFT) and not px.btn(px.KEY_RIGHT)
+        direita_puro = px.btn(px.KEY_RIGHT) and not px.btn(px.KEY_LEFT)
         
-        if esquerda and not direita:
+        if esquerda_puro and esquerda:
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=-1):
                 self.shape_pos_atual[0] -= 1
                 self.shape_pos_fantasma = self.shape_pos_atual[:]
@@ -612,7 +677,7 @@ class Jogo:
                 else:
                     self.foi_para_esquerda, self.foi_para_direita = False, False
         
-        elif direita and not esquerda:
+        elif direita_puro and direita:
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=1):
                 self.shape_pos_atual[0] += 1
                 self.shape_pos_fantasma = self.shape_pos_atual[:]
@@ -626,12 +691,12 @@ class Jogo:
                     self.foi_para_esquerda, self.foi_para_direita = False, False
     
     def verificar_rotacao_shape(self):
-        if px.btnp(px.KEY_Q) or px.btnp(px.GAMEPAD1_BUTTON_A):
+        if pegar_input("ROTACAO_ESQUERDA"):
             self.rotacionar_shape("KEY_Q")
             self.aumentar_lock_reset()
             self.ultima_acao_foi_rotacao = True
 
-        if px.btnp(px.KEY_E) or px.btnp(px.GAMEPAD1_BUTTON_B):
+        if pegar_input("ROTACAO_DIREITA"):
             self.rotacionar_shape("KEY_E")
             self.aumentar_lock_reset()
             self.ultima_acao_foi_rotacao = True
@@ -642,21 +707,22 @@ class Jogo:
     
     def soft_drop(self):
         repeticao = 3 # padrao=3
-        if px.btnp(px.KEY_DOWN, repeat=repeticao) or px.btnp(px.KEY_S, repeat=repeticao) or px.btnp(px.GAMEPAD1_BUTTON_DPAD_DOWN, repeat=repeticao):
+        
+        if pegar_input("SOFT_DROP", repeticao):
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
                 self.gravidade_tempo_existe = self.gravidade_tempo_simulado + (1 / 60)
                 self.ultima_acao_foi_rotacao = False
                 self.quantos_soft_drops += 1        
     
     def hard_drop(self):
-        if px.btnp(px.KEY_SPACE) or px.btnp(px.GAMEPAD1_BUTTON_DPAD_UP):
+        if pegar_input("HARD_DROP"):
             self.fixar(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, SHAPES[self.shape_atual]["cor_letra"])
             self.pontos_atual += (self.shape_pos_fantasma[1] - self.shape_pos_atual[1]) * 2
             self.esta_em_are = True
             self.acionou_hard_drop = True
     
     def teclas_especiais(self):
-        if px.btnp(px.KEY_F1) or px.btnp(px.GAMEPAD1_BUTTON_START):
+        if pegar_input("REINICIAR"):
             self.iniciamente_jogo()
     
     def input_tecla(self):
@@ -671,6 +737,14 @@ class Jogo:
     #////
 
     def atualizar(self):
+        if self.estado_do_jogo == "pausado":
+            return
+        
+        if self.estado_do_jogo == "game_over":
+            if self.tempo_animacao_game_over >= self.duracao_animacao_game_over:
+                self.iniciamente_jogo()
+            return
+        
         self.fixou_neste_frame = False
         if not self.esta_em_are:
         
@@ -710,7 +784,6 @@ class Jogo:
                 self.temp_do_are += 1
         
         self.tempo_ocorrendo = (time.perf_counter() - self.tempo_inicial)
-        #print(self.shape_pos_atual)
 
     #//// //// ////
     
@@ -813,7 +886,11 @@ class Jogo:
     
     def desenhar_shapes_fixados(self, mapa, movimento_y, movimento_x):
         correcao_altura = 2
-        offset = self.calcular_offset_camera()
+        
+        if self.estado_do_jogo == "game_over":
+            offset = 0
+        else:
+            offset = self.calcular_offset_camera()
         
         for linha in range(2, ALTURA_DO_JOGO):
             for coluna in range(COLUNAS):
@@ -939,6 +1016,25 @@ class Jogo:
         desenhar_animacao_limpar_linha(0, COLUNAS // 2, constante, constante_na_pos_x=constante)
         desenhar_animacao_limpar_linha(COLUNAS // 2, COLUNAS, constante)
     
+    def desenhar_animacao_game_over(self, mapa):
+        tempo_divido = self.duracao_animacao_game_over // LINHAS
+
+        if self.tempo_animacao_game_over > tempo_divido * (self.constante_animacao_game_over + 1) and self.constante_animacao_game_over < 20:
+            self.constante_animacao_game_over += 1
+        else:
+            self.tempo_animacao_game_over += 1
+        
+        cor_do_shape_atual = SHAPES[self.shape_atual]["cor_letra"]
+        
+        constante = LINHAS - self.constante_animacao_game_over
+        
+        for indice in range(LINHAS + 1, constante, -1):
+            for espaco_i, espaco_e in enumerate(mapa[indice]):
+                if espaco_e == VAZIO:
+                    mapa[indice][espaco_i] = cor_do_shape_atual
+
+        self.mapa = mapa
+    
     #////
     
     def desenhar(self):
@@ -956,7 +1052,7 @@ class Jogo:
         # tabuleiro
         self.desenhar_fundo((BOARD_X, 0), (0, 0), (COLUNAS, LINHAS), movimento_x=movimento_x, movimento_y=movimento_y)
 
-        if not self.esta_em_are:
+        if not self.esta_em_are and not self.estado_do_jogo == "game_over":
             self.desenhar_shape_fantasma(self.pegar_formato(), movimento_y, movimento_x)
             self.desenhar_shape_atual(self.pegar_formato(), self.shape_pos_atual[0], self.shape_pos_atual[1], movimento_y, movimento_x)
         
@@ -965,6 +1061,9 @@ class Jogo:
         
         self.desenhar_shapes_fixados(self.mapa, movimento_y, movimento_x)
         self.desenhar_proximos_shapes(self.proximos_shapes, movimento_x_direita)
+        
+        if self.estado_do_jogo == "game_over":
+            self.desenhar_animacao_game_over(self.mapa)
                 
         if self.shape_guardado != None:
             self.desenhar_shape_guardado(self.shape_guardado, movimento_x_esquerda)
