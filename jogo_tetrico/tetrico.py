@@ -1,6 +1,7 @@
 import pyxel as px
 import time
 import random
+import os
 
 SHAPES = {
     "shape_T": {
@@ -80,6 +81,32 @@ SHAPES = {
 
 #
 
+def TABELA_PONTUACAO(tipo, linhas_limpas_consecutivas, nivel_atual):
+    tabela = { 
+        "normal": {
+            1: 100 * nivel_atual,
+            2: 300 * nivel_atual,
+            3: 500 * nivel_atual,
+            4: 800 * nivel_atual,
+        },
+        "t_spin": {
+            1: 800 * nivel_atual,
+            2: 1200 * nivel_atual,
+            3: 1600 * nivel_atual,
+        },
+        "mini_t_spin": {            
+            1: 200 * nivel_atual,
+            2: 400 * nivel_atual,
+        },
+        "perfect_clear": {
+            1: 800 * nivel_atual,
+            2: 1200 * nivel_atual,
+            3: 1800 * nivel_atual,
+            4: 2000 * nivel_atual,
+        },
+    }
+    return tabela[tipo][linhas_limpas_consecutivas]
+
 T_SPIN_CANTO = {
             "0": {
                 "F": [(-1,-1), (1,-1)], 
@@ -127,9 +154,11 @@ def buscar_tabela_g(nivel):
         return TABELA_G[20]
     return TABELA_G[nivel]
 
+CAMINHO = lambda caminho: os.path.join(os.path.dirname(os.path.abspath(__file__)), caminho)
+
 TRANSFORMA_EM_DECIMAL = lambda num: num / 10
 
-FONT_1 = px.Font("assets/PublicPixel.ttf", 8)
+FONT_1 = px.Font(CAMINHO("assets/PublicPixel.ttf"), 8)
 
 COLUNAS = 10
 LINHAS = 20
@@ -192,7 +221,6 @@ class Jogo:
    
     def iniciamente_jogo(self):
         self.tempo_inicial = time.perf_counter()
-        self.tempo_formatado = 0
         
         self.mapa = [[VAZIO] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
         
@@ -214,7 +242,7 @@ class Jogo:
         # estados
         self.estado_do_jogo = "em_jogo"
         self.fixou_neste_frame = False
-        self.guardado_neste_frame = False
+        self.segurou_neste_frame = False
         self.acionou_hard_drop = False
         
         # custumizacao
@@ -267,6 +295,7 @@ class Jogo:
         self.y_anterior = self.shape_pos_atual[1]
         
         # pontuacao
+        self.linhas_limpas_consecutivas = 0
         self.quantos_soft_drops = 0
         self.atual_back_to_back = 0
         
@@ -354,7 +383,7 @@ class Jogo:
         minutos = int(self.tempo_segundos // 60)
         segundos = int(self.tempo_segundos % 60)
         centesimos = int((self.tempo_segundos - int(self.tempo_segundos)) * 100)
-        self.tempo_formatado = f"{minutos:02d}:{segundos:02d}.{centesimos:02d}"
+        return f"{minutos:02d}:{segundos:02d}.{centesimos:02d}"
     
     #////
     
@@ -511,85 +540,63 @@ class Jogo:
         mapa_temp = mapa[::-1]
         for linha_e in mapa_temp:             
             if not VAZIO in linha_e:
-                pontuacao = self.limpar_linhas_e_pontuar(mapa_temp)              
-                self.combo_atual += 1
-                pontuacao += self.verificar_combo(self.combo_atual)         
-                #
+                self.limpar_linhas(mapa_temp)        
                 self.limpou_linha = True
-                self.mapa = mapa_temp[::-1]         
-                return pontuacao
-        
-        self.combo_atual = -1
-        match self.tipo_do_t_spin:
-            case "t_spin": return 400 * self.nivel_atual
-            case "mini_t_spin": return 100 * self.nivel_atual
-        return 0
+                self.mapa = mapa_temp[::-1]
+                break
     
-    def limpar_linhas_e_pontuar(self, mapa_temp):
-        def calcular_pontos(linhas_limpas_consecutivas):
-            PONTUACAO_POR_LINHAS = {
-                1: 100 * self.nivel_atual,
-                2: 300 * self.nivel_atual,
-                3: 500 * self.nivel_atual,
-                4: 800 * self.nivel_atual,
-            }
-            PONTUACAO_POR_T_SPIN = {
-                1: 800 * self.nivel_atual,
-                2: 1200 * self.nivel_atual,
-                3: 1600 * self.nivel_atual,
-            }
-            PONTUACAO_POR_MINI_T_SPIN = {            
-                1: 200 * self.nivel_atual,
-                2: 400 * self.nivel_atual,
-            }
-            pontuacao_pelas_linhas_consecutivas = 0
-            if self.tipo_do_t_spin == None:
-                pontuacao_pelas_linhas_consecutivas += PONTUACAO_POR_LINHAS[linhas_limpas_consecutivas]
-            else:
-                match self.tipo_do_t_spin:
-                    case "t_spin": pontuacao_pelas_linhas_consecutivas += PONTUACAO_POR_T_SPIN[linhas_limpas_consecutivas]
-                    case "mini_t_spin": pontuacao_pelas_linhas_consecutivas += PONTUACAO_POR_MINI_T_SPIN[linhas_limpas_consecutivas]
-            return pontuacao_pelas_linhas_consecutivas
-        
-        def calcular_back_to_back(linhas_limpas_consecutivas):
-            if linhas_limpas_consecutivas == 4:
-                self.atual_back_to_back += 1
-                return
-            if self.tipo_do_t_spin != None:
-                self.atual_back_to_back += 1
-                return
-            self.atual_back_to_back = 0    
-        
-        def calculo_final_dos_pontos(linhas_limpas_consecutivas):
-            pontuacao_soma = calcular_pontos(linhas_limpas_consecutivas)
-            calcular_back_to_back(linhas_limpas_consecutivas)
-            (aumento_do_back_to_back := 1.5) if self.atual_back_to_back >= 2 else (aumento_do_back_to_back := 1)         
-            return pontuacao_soma * aumento_do_back_to_back  
-            
-        pontuacao_total = 0
-        linhas_limpas_consecutivas = 0
-        
+    def limpar_linhas(self, mapa_temp):        
         for linha_i, linha_e in enumerate(mapa_temp):
             if not VAZIO in linha_e:
                 mapa_temp[linha_i] = [VAZIO] * COLUNAS
                 self.localizacao_das_linhas_limpas += [(LINHAS - 1) - linha_i]
                 self.linhas_limpas += 1
-                linhas_limpas_consecutivas += 1
-            else:
-                if linhas_limpas_consecutivas > 0:
-                    pontuacao_total += calculo_final_dos_pontos(linhas_limpas_consecutivas)
-                    linhas_limpas_consecutivas = 0
+                self.linhas_limpas_consecutivas += 1
         
-        if linhas_limpas_consecutivas > 0:
-            pontuacao_total += calculo_final_dos_pontos(linhas_limpas_consecutivas)
-            linhas_limpas_consecutivas = 0
-        
-        return pontuacao_total
+        print(self.linhas_limpas_consecutivas)
     
+    def calcular_pontos(self):
+        linhas_limpas = self.linhas_limpas_consecutivas
+        pontuacao = 0
+        
+        if linhas_limpas == 0:
+            self.combo_atual = -1
+            match self.tipo_do_t_spin:
+                case "t_spin": return 400 * self.nivel_atual
+                case "mini_t_spin": return 100 * self.nivel_atual
+            return 0
+        else:
+            self.combo_atual += 1  
+            pontuacao += self.verificar_combo(self.combo_atual)
+        
+        if self.verificar_perfect_clear(self.mapa[::-1]):
+            pontuacao += TABELA_PONTUACAO("perfect_clear", linhas_limpas, self.nivel_atual)
+                        
+        if linhas_limpas == 4:
+            self.atual_back_to_back += 1
+        elif self.tipo_do_t_spin != None:
+            self.atual_back_to_back += 1
+        elif linhas_limpas in (1, 2, 3):
+            self.atual_back_to_back = 0
+        (aumento_do_back_to_back := 1.5) if self.atual_back_to_back >= 2 else (aumento_do_back_to_back := 1) 
+    
+        if self.tipo_do_t_spin == None:
+            pontuacao += TABELA_PONTUACAO("normal", linhas_limpas, self.nivel_atual) * aumento_do_back_to_back
+        else:
+            pontuacao += TABELA_PONTUACAO(self.tipo_do_t_spin, linhas_limpas, self.nivel_atual) * aumento_do_back_to_back
+        
+        return pontuacao
+  
     def verificar_combo(self, combo_atual):
         if combo_atual >= 1:
             return 50 * combo_atual * self.nivel_atual
         return 0
+    
+    def verificar_perfect_clear(self, mapa):
+        for linha in mapa:
+            if any(espaco != VAZIO for espaco in linha):
+                return False
+        return True
     
     def verificar_nivel(self, linhas_limpas):
         if linhas_limpas >= self.nivel_atual * 10:
@@ -648,8 +655,8 @@ class Jogo:
     #////
     
     def segurar_shape(self, *, input_puro=False):
-        if self.pegar_input("SEGURAR", input_puro=input_puro) and not self.guardado_neste_frame:
-            self.guardado_neste_frame = True
+        if self.pegar_input("SEGURAR", input_puro=input_puro) and not self.segurou_neste_frame:
+            self.segurou_neste_frame = True
             
             if self.shape_segurado == None:
                 self.shape_segurado = self.shape_atual
@@ -768,8 +775,9 @@ class Jogo:
                 self.fixar(self.pegar_formato(), self.shape_pos_atual, self.mapa, SHAPES[self.shape_atual]["cor_letra"])
         
             if self.fixou_neste_frame:
-                    self.guardado_neste_frame = False                 
-                    self.pontos_atual += self.verificar_linha(self.mapa)
+                    self.segurou_neste_frame = False                 
+                    self.verificar_linha(self.mapa)
+                    self.pontos_atual += self.calcular_pontos()
                     self.verificar_nivel(self.linhas_limpas)
               
         if self.esta_em_are: 
@@ -791,7 +799,6 @@ class Jogo:
                 self.temp_do_are += 1
         
         self.tempo_segundos = (time.perf_counter() - self.tempo_inicial)
-        self.transformar_segundos()
         #print(self.shape_pos_atual)
 
     #//// //// ////
@@ -858,7 +865,8 @@ class Jogo:
         centralizado = lambda string: (largura / 2) - (FONT_1.text_width(string) / 2)
         cor = self.cores_aleatorias
         
-        tempo = [f"{self.tempo_formatado}"]
+        tempo_formatado = self.transformar_segundos()
+        tempo = [f"{tempo_formatado}"]
         linhas = ["LINHAS", f"{self.linhas_limpas:>8}"]
         level = ["LEVEL", f"{self.nivel_atual:>8}"]
         pontos = ["PONTOS", f"{self.pontos_atual:>8}"]
@@ -1173,7 +1181,7 @@ class Jogo:
     
     def desenhar(self):
         px.cls(0)
-
+    
         if self.estado_do_jogo != "pausado":
             self.calcular_valores_das_animacoes()
         
@@ -1204,6 +1212,6 @@ class Jogo:
         self.todos_os_textos(movimento_x_esquerda, movimento_x_direita, self.movimento_game_over_slide)
         
         self.tempo_inical_test_fim = time.perf_counter()
-        print(f"{((self.tempo_inical_test_fim - self.tempo_inical_test) * 1000):.2f} MS")
+        #print(f"{((self.tempo_inical_test_fim - self.tempo_inical_test) * 1000):.2f} MS")
         
 Jogo()
