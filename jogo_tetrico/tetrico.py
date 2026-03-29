@@ -81,7 +81,7 @@ SHAPES = {
 
 #
 
-def TABELA_PONTUACAO(tipo, linhas_limpas_consecutivas, nivel_atual):
+def TABELA_PONTUACAO(tipo, linhas_limpas_por_shape, nivel_atual):
     tabela = { 
         "normal": {
             1: 100 * nivel_atual,
@@ -105,7 +105,7 @@ def TABELA_PONTUACAO(tipo, linhas_limpas_consecutivas, nivel_atual):
             4: 2000 * nivel_atual,
         },
     }
-    return tabela[tipo][linhas_limpas_consecutivas]
+    return tabela[tipo][linhas_limpas_por_shape]
 
 T_SPIN_CANTO = {
             "0": {
@@ -205,6 +205,8 @@ class Jogo:
         self.movimento_y = 0
         self.movimento_x = 0
         
+        self.offset = 0
+        
         self.tempo_animacao_game_over_cascata = 0
         self.constante_animacao_game_over_cascata = 0
         
@@ -246,7 +248,10 @@ class Jogo:
         self.acionou_hard_drop = False
         
         # custumizacao
-        self.cores_aleatorias = random.sample(range(1, 8), 4)
+        self.cores_aleatorias = random.sample(range(1, 8), 5)
+        
+        self.comprimento_do_rect_esquerdo = 0
+        self.comprimento_do_rect_direita = 0
         
         # CONFIGURAÇÃO DO USUÁRIO
         self.variaveis_movimentos()
@@ -295,7 +300,7 @@ class Jogo:
         self.y_anterior = self.shape_pos_atual[1]
         
         # pontuacao
-        self.linhas_limpas_consecutivas = 0
+        self.linhas_limpas_por_shape = 0
         self.quantos_soft_drops = 0
         self.atual_back_to_back = 0
         
@@ -524,7 +529,7 @@ class Jogo:
                         case "B": canto_b += 1
         return (canto_f, canto_b)
     
-    def t_spin(self, canto_f, canto_b):
+    def retornar_tipo_do_t_spin(self, canto_f, canto_b):
         if canto_f == 2 and canto_b >= 1:
             return "t_spin"
         elif canto_f == 1 and canto_b == 2:
@@ -551,12 +556,12 @@ class Jogo:
                 mapa_temp[linha_i] = [VAZIO] * COLUNAS
                 self.localizacao_das_linhas_limpas += [(LINHAS - 1) - linha_i]
                 self.linhas_limpas += 1
-                self.linhas_limpas_consecutivas += 1
+                self.linhas_limpas_por_shape += 1
         
-        print(self.linhas_limpas_consecutivas)
+        print(self.linhas_limpas_por_shape)
     
     def calcular_pontos(self):
-        linhas_limpas = self.linhas_limpas_consecutivas
+        linhas_limpas = self.linhas_limpas_por_shape
         pontuacao = 0
         
         if linhas_limpas == 0:
@@ -768,7 +773,7 @@ class Jogo:
             if self.lock_tempo >= 30 or self.lock_movimentos == 15:
                 if self.ultima_acao_foi_rotacao and self.shape_atual == "shape_T":
                     canto_f, canto_b = self.condicoes_do_t_spin(self.mapa)
-                    self.tipo_do_t_spin = self.t_spin(canto_f, canto_b)
+                    self.tipo_do_t_spin = self.retornar_tipo_do_t_spin(canto_f, canto_b)
                 
                 self.pontos_atual += self.quantos_soft_drops
                 self.esta_em_are = True
@@ -806,85 +811,138 @@ class Jogo:
     def desenhar_rect(self, pos_x, pos_y, largura, comprimento, cor, *, movimento_x_esquerda=0, movimento_x_direita=0, movimento_y=0):
         px.rect(pos_x + ((movimento_x_esquerda + movimento_x_direita) * TILE), pos_y + (movimento_y * TILE), largura, comprimento, cor)
     
-    def todos_os_rects(self, movimento_x_esquerda=0, movimento_x_direita=0, movimento_y=0):
-        tamanho_1 = 80
-        tamanho_2 = 105 + 20
-        
-        margem = 4
-        comprimento = tamanho_1 - margem * 2
-        
-        self.desenhar_rect(
-            margem, margem, 
-            comprimento, comprimento, 
-            0, 
-            movimento_x_esquerda=movimento_x_esquerda,
-            movimento_y=movimento_y
-        )
-        
+    def rects_da_esquerda(self, margem, largura, movimento_x_esquerda, movimento_y):
         if self.shape_segurado != None:
             imagem_do_shape_segurado = SHAPES[self.shape_segurado]["imagem_pos"] + 1
         else:
-            imagem_do_shape_segurado = 0
+            imagem_do_shape_segurado = 0       
         
         self.desenhar_rect(
             margem, 0, 
-            comprimento, 4, 
+            largura, 4, 
             imagem_do_shape_segurado, 
             movimento_x_esquerda=movimento_x_esquerda,
             movimento_y=movimento_y
         )
         
         self.desenhar_rect(
-            margem, comprimento + (margem * 2), 
-            comprimento, tamanho_2 - (margem * 2), 
+            margem, margem, 
+            largura, largura, 
             0, 
             movimento_x_esquerda=movimento_x_esquerda,
             movimento_y=movimento_y
         )
         
-        #
+        self.desenhar_rect(
+            margem, largura + (margem * 2), 
+            largura, self.comprimento_do_rect_esquerdo , 
+            0, 
+            movimento_x_esquerda=movimento_x_esquerda,
+            movimento_y=movimento_y
+        )
+    
+    def rects_da_direita(self, margem, largura, movimento_x_direita, movimento_y):
+        pos_y = ((TILE * 10) + BOARD_X) + margem
+        comprimento_dir = TILE * 10
         
         self.desenhar_rect(
-            ((TILE * 10) + BOARD_X) + margem, margem, 
-            comprimento, 16 * 10,
+            pos_y, 0, 
+            largura, 4,
+            SHAPES[self.proximos_shapes[0]]["imagem_pos"] + 1,
+            movimento_x_direita=movimento_x_direita,
+            movimento_y=movimento_y
+        )
+        
+        self.desenhar_rect(
+            pos_y, margem, 
+            largura, comprimento_dir,
             0,
             movimento_x_direita=movimento_x_direita,
             movimento_y=movimento_y
         )
         
         self.desenhar_rect(
-            ((TILE * 10) + BOARD_X) + margem, 0, 
-            comprimento, 4,
-            SHAPES[self.proximos_shapes[0]]["imagem_pos"] + 1,
+            pos_y, comprimento_dir + (margem * 2), 
+            largura, self.comprimento_do_rect_direita,
+            0,
             movimento_x_direita=movimento_x_direita,
             movimento_y=movimento_y
         )
+            
+    def todos_os_rects(self, movimento_x_esquerda=0, movimento_x_direita=0, movimento_y=0):
+        margem = 4
+        largura_do_espaco = 80
+        largura_final = largura_do_espaco - (margem * 2)
+        self.rects_da_esquerda(margem, largura_final, movimento_x_esquerda, movimento_y)
+        self.rects_da_direita(margem, largura_final, movimento_x_direita, movimento_y)
     
-    def todos_os_textos(self, movimento_x_esquerda=0, movimento_x_direita=0, movimento_y=0):
-        largura = 80
-        centralizado = lambda string: (largura / 2) - (FONT_1.text_width(string) / 2)
-        cor = self.cores_aleatorias
+    #////
+    
+    def textos_da_esquerda(self, altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y):
+        valor_do_espacamento = 10
+        valor_do_espacamento_entre_valores = 4
+        
+        espacamento = altura_da_fonte + valor_do_espacamento
+        espacamento_entre_valores = altura_da_fonte + valor_do_espacamento_entre_valores
+        
+        centralizado = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
+        pos_y = (80 - 1) - altura_da_fonte
         
         tempo_formatado = self.transformar_segundos()
         tempo = [f"{tempo_formatado}"]
         linhas = ["LINHAS", f"{self.linhas_limpas:>8}"]
         level = ["LEVEL", f"{self.nivel_atual:>8}"]
         pontos = ["PONTOS", f"{self.pontos_atual:>8}"]
-        
         frases = [tempo, linhas, level, pontos]
         
-        acrescimo = 79 + 10
         for index, conteudo in enumerate(frases):
             contador = 0
             for frase in conteudo:
                 if contador == 0:
-                    px.text((movimento_x_esquerda * TILE) + centralizado(frase), acrescimo + (movimento_y * TILE), frase, cor[index], FONT_1)
+                    pos_y += espacamento
+                    px.text((movimento_x_esquerda * TILE) + centralizado(frase, largura), pos_y + (movimento_y * TILE), frase, cor[index], FONT_1)
                 elif contador == 1:
-                    acrescimo += 10
-                    px.text((movimento_x_esquerda * TILE), acrescimo + (movimento_y * TILE), frase, cor[index], FONT_1)
+                    pos_y += espacamento_entre_valores
+                    px.text((movimento_x_esquerda * TILE), pos_y + (movimento_y * TILE), frase, cor[index], FONT_1)
                 contador += 1
-            acrescimo += 20
         
+        self.comprimento_do_rect_esquerdo = pos_y - (80 - 1) + espacamento
+    
+    def textos_da_direita(self, altura_da_fonte, largura, cor, movimento_x_direita, movimento_y):
+        valor_do_espacamento = 5
+        valor_do_espacamento_entre_valores = 4
+        
+        espacamento = altura_da_fonte + valor_do_espacamento
+        espacamento_entre_valores = altura_da_fonte + valor_do_espacamento_entre_valores
+        
+        centralizado = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
+        margem = 4
+        pos_x = ((TILE * 10) + BOARD_X)
+        pos_y = ((TILE * 10) - 1) + (margem * 2)
+        
+        combo = ["COMBO", f"{self.combo_atual}"]
+        
+        if self.combo_atual >= 1:
+            cor_final = cor[4]
+        else:
+            cor_final = 0
+        
+        pos_y += espacamento
+        px.text((movimento_x_direita * TILE) + pos_x + centralizado(combo[0], largura), pos_y + (movimento_y * TILE), combo[0], cor_final, FONT_1)
+        pos_y += espacamento_entre_valores
+        px.text((movimento_x_direita * TILE) + pos_x + centralizado(combo[1], largura), pos_y + (movimento_y * TILE), combo[1], cor_final, FONT_1)
+        
+        self.comprimento_do_rect_direita = pos_y - (TILE * 10) + espacamento
+    
+    def todos_os_textos(self, movimento_x_esquerda=0, movimento_x_direita=0, movimento_y=0):
+        largura = 80
+        # 14 é a altura literal desta fonte
+        altura_da_fonte = 14 / 2
+        cor = self.cores_aleatorias
+        
+        self.textos_da_esquerda(altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y)
+        self.textos_da_direita(altura_da_fonte, largura, cor, movimento_x_direita, movimento_y)
+ 
     #////
     
     def desenhar_fundo(self, pos, spritesheet_pos, tamanho, *, movimento_x=0, movimento_y=0):
@@ -1147,7 +1205,7 @@ class Jogo:
     #////
     
     def desenhar_tudo_em_jogo(self, movimento_x, movimento_x_esquerda, movimento_x_direita, movimento_y):
-        offset = self.calcular_offset()
+        offset = self.calcular_offset()        
             
         self.desenhar_tabuleiro_com_teto(offset, movimento_x, movimento_y)
         
