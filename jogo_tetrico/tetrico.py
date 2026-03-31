@@ -205,8 +205,6 @@ class Jogo:
         self.movimento_y = 0
         self.movimento_x = 0
         
-        self.offset = 0
-        
         self.tempo_animacao_game_over_cascata = 0
         self.constante_animacao_game_over_cascata = 0
         
@@ -803,7 +801,7 @@ class Jogo:
                 self.foi_para_direita = False
                 self.temp_do_are += 1
         
-        self.tempo_segundos = (time.perf_counter() - self.tempo_inicial)
+        self.tempo_segundos = (time.perf_counter() - self.tempo_inicial)\
         #print(self.shape_pos_atual)
 
     #//// //// ////
@@ -843,7 +841,7 @@ class Jogo:
     
     def rects_da_direita(self, margem, largura, movimento_x_direita, movimento_y):
         pos_y = ((TILE * 10) + BOARD_X) + margem
-        comprimento_dir = TILE * 10
+        comprimento_dir = TILE * (self.mostrar_quantos_shapes * 3 + 1)
         
         self.desenhar_rect(
             pos_y, 0, 
@@ -879,8 +877,8 @@ class Jogo:
     #////
     
     def textos_da_esquerda(self, altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y):
-        valor_do_espacamento = 10
-        valor_do_espacamento_entre_valores = 4
+        valor_do_espacamento = 12
+        valor_do_espacamento_entre_valores = 3
         
         espacamento = altura_da_fonte + valor_do_espacamento
         espacamento_entre_valores = altura_da_fonte + valor_do_espacamento_entre_valores
@@ -889,21 +887,23 @@ class Jogo:
         pos_y = (80 - 1) - altura_da_fonte
         
         tempo_formatado = self.transformar_segundos()
-        tempo = [f"{tempo_formatado}"]
-        linhas = ["LINHAS", f"{self.linhas_limpas:>8}"]
-        level = ["LEVEL", f"{self.nivel_atual:>8}"]
-        pontos = ["PONTOS", f"{self.pontos_atual:>8}"]
-        frases = [tempo, linhas, level, pontos]
         
-        for index, conteudo in enumerate(frases):
+        frases = {
+            "tempo": [f"{tempo_formatado}"],
+            "linhas": ["LINHAS", f"{self.linhas_limpas}"],
+            "level": ["LEVEL", f"{self.nivel_atual}"],
+            "pontos": ["PONTOS", f"{self.pontos_atual}"],
+        }
+        
+        for index, (_, valor) in enumerate(frases.items()):
             contador = 0
-            for frase in conteudo:
+            for frase in valor:
                 if contador == 0:
                     pos_y += espacamento
                     px.text((movimento_x_esquerda * TILE) + centralizado(frase, largura), pos_y + (movimento_y * TILE), frase, cor[index], FONT_1)
                 elif contador == 1:
                     pos_y += espacamento_entre_valores
-                    px.text((movimento_x_esquerda * TILE), pos_y + (movimento_y * TILE), frase, cor[index], FONT_1)
+                    px.text((movimento_x_esquerda * TILE) + centralizado(frase, largura), pos_y + (movimento_y * TILE), frase, cor[index], FONT_1)
                 contador += 1
         
         self.comprimento_do_rect_esquerdo = pos_y - (80 - 1) + espacamento
@@ -917,12 +917,14 @@ class Jogo:
         
         centralizado = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
         margem = 4
-        pos_x = ((TILE * 10) + BOARD_X)
-        pos_y = ((TILE * 10) - 1) + (margem * 2)
+        comprimento_dir = TILE * (self.mostrar_quantos_shapes * 3 + 1)
+        
+        pos_x = (TILE * 10) + BOARD_X
+        pos_y = comprimento_dir + (margem * 2)
         
         combo = ["COMBO", f"{self.combo_atual}"]
         
-        if self.combo_atual >= 1:
+        if self.combo_atual >= -11:
             cor_final = cor[4]
         else:
             cor_final = 0
@@ -932,7 +934,7 @@ class Jogo:
         pos_y += espacamento_entre_valores
         px.text((movimento_x_direita * TILE) + pos_x + centralizado(combo[1], largura), pos_y + (movimento_y * TILE), combo[1], cor_final, FONT_1)
         
-        self.comprimento_do_rect_direita = pos_y - (TILE * 10) + espacamento
+        self.comprimento_do_rect_direita = pos_y - comprimento_dir + espacamento
     
     def todos_os_textos(self, movimento_x_esquerda=0, movimento_x_direita=0, movimento_y=0):
         largura = 80
@@ -1228,10 +1230,8 @@ class Jogo:
         
         self.desenhar_tabuleiro_com_teto(offset, 0, self.movimento_game_over_slide)
         
-        self.desenhar_animacao_game_over_cascata(offset, self.movimento_game_over_slide)
-        #px.dither(0.8)
+        #self.desenhar_animacao_game_over_cascata(offset, self.movimento_game_over_slide)
         self.desenhar_shapes_fixados(self.mapa, offset, movimento_x, self.movimento_game_over_slide)
-        #px.dither(1)
         
         self.desenhar_shape_segurado_e_proximos(movimento_x_esquerda, movimento_x_direita, movimento_y=self.movimento_game_over_slide)
     
@@ -1251,8 +1251,10 @@ class Jogo:
         if self.estado_do_jogo == "game_over":
             self.calcular_animacao_game_over_slide()
                 
-        if self.estado_do_jogo in ("em_jogo", "game_over", "apos_game_over"): 
+        if self.estado_do_jogo in ("em_jogo", "game_over", "apos_game_over"):
+            px.dither(0.9)
             px.rect(0, 0, LINHAS * TILE, LINHAS * TILE, 8)
+            px.dither(1)
         
         self.todos_os_rects(movimento_x_esquerda, movimento_x_direita, self.movimento_game_over_slide)
         
