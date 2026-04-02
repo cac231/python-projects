@@ -142,6 +142,8 @@ TABELA_G = {
 
 #todo: adicionar menu com um botao de começar, historico, configuracao e sair. Tela de pause, tela de game_over com as pontuações
 
+#todo: ao pressinar segurar e espaço repetidamente, vai bugar la no teto
+
 def buscar_tabela_g(nivel):
     if nivel >= 20:
         return TABELA_G[20]
@@ -239,6 +241,16 @@ class Jogo:
         self.fixou_neste_frame = False
         self.segurou_neste_frame = False
         self.acionou_hard_drop = False
+        
+        # status
+        self.quantidade_singles = 0
+        self.quantidade_doubles = 0
+        self.quantidade_triples = 0
+        self.quantidade_quads = 0
+        self.quantidade_t_spins = 0
+        self.quantidade_perfect_clears = 0
+        self.combo_maximo = 0
+        self.streak_maximo = 0
         
         # custumizacao
         self.cores_aleatorias = random.sample(range(1, 8), 5)
@@ -629,9 +641,9 @@ class Jogo:
                 self.lock_tempo = 0
     
     def verificar_movimento_lateral(self):
-        if self.shape_pos_atual[0] > 5:
+        if self.shape_pos_atual[0] >= 6:
             movimento = "direita"
-        elif self.shape_pos_atual[0] < 1:
+        elif self.shape_pos_atual[0] <= 1:
             movimento = "esquerda"
         else:
             return
@@ -735,6 +747,7 @@ class Jogo:
 
     def atualizar(self):
         self.tempo_fps_ms = time.perf_counter()
+        print(self.estado_do_jogo)
         
         if self.estado_do_jogo == "pausado":
             self.teclas_especiais()
@@ -790,7 +803,7 @@ class Jogo:
                 self.temp_do_are += 1
         
         self.tempo_atual_em_segundos = (time.perf_counter() - self.tempo_inicial)
-        print(self.shape_pos_atual)
+        #print(self.shape_pos_atual)
 
     #//// //// ////
     
@@ -865,42 +878,38 @@ class Jogo:
     #////
     
     def textos_da_esquerda(self, altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y):
-        valor_do_espacamento = 12
-        valor_do_espacamento_entre_valores = 3
+        espacamento = 12
+        espacamento_entre_valores = 3
         
-        espacamento = altura_da_fonte + valor_do_espacamento
-        espacamento_entre_valores = altura_da_fonte + valor_do_espacamento_entre_valores
+        espacamento = altura_da_fonte + espacamento
+        espacamento_entre_valores = altura_da_fonte + espacamento_entre_valores
         
         centralizado = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
         pos_y = (80 - 1) - altura_da_fonte
         
         tempo_formatado = self.transformar_segundos()
-        frases = {
-            "tempo": [f"{tempo_formatado}"],
-            "linhas": ["LINHAS", f"{self.linhas_limpas}"],
-            "level": ["LEVEL", f"{self.nivel_atual}"],
-            "pontos": ["PONTOS", f"{self.pontos_atual}"],
-        }
+        frases = [
+            (f"{tempo_formatado}",),
+            ("LINHAS", f"{self.linhas_limpas}"),
+            ("LEVEL",  f"{self.nivel_atual}"),
+            ("PONTOS", f"{self.pontos_atual}"),
+        ]
         
-        for index, (_, valor) in enumerate(frases.items()):
-            contador = 0
-            for frase in valor:
-                if contador == 0:
-                    pos_y += espacamento
-                    px.text((movimento_x_esquerda * TILE) + centralizado(frase, largura), pos_y + (movimento_y * TILE), frase, cor[index], FONT_1)
-                elif contador == 1:
-                    pos_y += espacamento_entre_valores
-                    px.text((movimento_x_esquerda * TILE) + centralizado(frase, largura), pos_y + (movimento_y * TILE), frase, cor[index], FONT_1)
-                contador += 1
+        for index, tupla in enumerate(frases):
+            pos_y += espacamento
+            px.text((movimento_x_esquerda * TILE) + centralizado(tupla[0], largura), pos_y + (movimento_y * TILE), tupla[0], cor[index], FONT_1)
+            if len(tupla) == 2:
+                pos_y += espacamento_entre_valores
+                px.text((movimento_x_esquerda * TILE) + centralizado(tupla[1], largura), pos_y + (movimento_y * TILE), tupla[1], cor[index], FONT_1)
         
         self.comprimento_do_rect_esquerdo = pos_y - (80 - 1) + espacamento
     
     def textos_da_direita(self, altura_da_fonte, largura, cor, movimento_x_direita, movimento_y):
-        valor_do_espacamento = 5
-        valor_do_espacamento_entre_valores = 4
+        espacamento = 5
+        espacamento_entre_valores = 4
         
-        espacamento = altura_da_fonte + valor_do_espacamento
-        espacamento_entre_valores = altura_da_fonte + valor_do_espacamento_entre_valores
+        espacamento = altura_da_fonte + espacamento
+        espacamento_entre_valores = altura_da_fonte + espacamento_entre_valores
         
         centralizado = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
         
@@ -931,6 +940,45 @@ class Jogo:
         self.textos_da_esquerda(altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y)
         self.textos_da_direita(altura_da_fonte, largura, cor, movimento_x_direita, movimento_y)
  
+    #////
+    
+    def textos_apos_game_over(self, *, pos_y_negativo=0, movimento_y):
+        tempo_formatado = self.transformar_segundos()
+        frases = [
+            (f"Tempo",           f"{tempo_formatado}"),
+            (f"Level Final",     f"{self.nivel_atual}"),
+            (f"Linhas | Pontos", f"{self.linhas_limpas:^-7}|{self.pontos_atual:^7}"),
+            (f"Singles|Doubles", f"{self.quantidade_singles:^-7}|{self.quantidade_doubles:^7}"),
+            (f"Triples| Quads ", f"{self.quantidade_triples:^-7}|{self.quantidade_quads:^7}"),
+            (f"T-spins",         f"{self.quantidade_t_spins}"),
+            (f"Perfect Clears",  f"{self.quantidade_perfect_clears}"),
+            (f"Combo Max",       f"{self.combo_maximo}"),
+            (f"Streak Max",      f"{self.streak_maximo}"),
+        ]
+
+        largura = TILE * LINHAS
+        espacamento = 32
+        espacamento_entre_valores = 10
+        
+        centralizado = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
+        
+        altura_total = (len(frases)) * espacamento - (espacamento / 2) + espacamento_entre_valores / 2
+        pos_y = ((TILE * LINHAS) / 2 - altura_total / 2) - pos_y_negativo
+        
+        cores = [1, 2, 3, 4, 5, 6, 7]
+        cores_atual = 0
+        
+        for tupla in frases:
+            frase, valor = tupla
+            if cores_atual == 7:
+                cores_atual = 0
+            
+            px.text(centralizado(frase, largura), pos_y + (movimento_y * TILE), frase, cores[cores_atual], FONT_1)
+            px.text(centralizado(valor, largura), pos_y + (movimento_y * TILE) + espacamento_entre_valores, valor, cores[cores_atual], FONT_1)
+            
+            pos_y += espacamento
+            cores_atual += 1
+    
     #////
     
     def desenhar_fundo(self, pos, spritesheet_pos, tamanho, *, movimento_x=0, movimento_y=0):
@@ -1206,15 +1254,17 @@ class Jogo:
     
     def desenhar_tudo_no_game_over(self, movimento_x, movimento_x_esquerda, movimento_x_direita):
         offset = self.calcular_offset_pelo_mapa()
-            
+        
         self.desenhar_fundo((BOARD_X, (-LINHAS - 1) * TILE), (0, LINHAS), (COLUNAS, LINHAS), movimento_x=0, movimento_y=self.movimento_game_over_slide)
+        self.textos_apos_game_over(pos_y_negativo=-(-LINHAS - 1) * TILE, movimento_y=self.movimento_game_over_slide)
         
         self.desenhar_tabuleiro_com_teto(offset, 0, self.movimento_game_over_slide)
         
-        self.desenhar_animacao_game_over_cascata(offset, self.movimento_game_over_slide)
+        #self.desenhar_animacao_game_over_cascata(offset, self.movimento_game_over_slide)
         self.desenhar_shapes_fixados(self.mapa, offset, movimento_x, self.movimento_game_over_slide)
         
         self.desenhar_shape_segurado_e_proximos(movimento_x_esquerda, movimento_x_direita, movimento_y=self.movimento_game_over_slide)
+        
     
     #////
     
@@ -1245,6 +1295,7 @@ class Jogo:
         
         if self.estado_do_jogo == "apos_game_over":
             self.desenhar_fundo((BOARD_X, (-LINHAS - 1) * TILE), (0, LINHAS), (COLUNAS, LINHAS), movimento_x=0, movimento_y=self.movimento_game_over_slide)
+            self.textos_apos_game_over(pos_y_negativo=0, movimento_y=0)
         
         self.tempo_inical_test_fim = time.perf_counter()
         #(f"{((self.tempo_inical_test_fim - self.tempo_fps_ms) * 1000):.2f} MS")
