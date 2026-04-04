@@ -142,17 +142,15 @@ TABELA_G = {
 
 #todo: adicionar menu com um botao de começar, historico, configuracao e sair. Tela de pause, tela de game_over com as pontuações
 
-#todo: ao pressinar segurar e espaço repetidamente, vai bugar la no teto
-
 def buscar_tabela_g(nivel):
     if nivel >= 20:
         return TABELA_G[20]
     return TABELA_G[nivel]
 
-CAMINHO = lambda caminho: os.path.join(os.path.dirname(os.path.abspath(__file__)), caminho)
-
+CENTRALIZAR = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
 TRANSFORMA_EM_DECIMAL = lambda num: num / 10
 
+CAMINHO = lambda caminho: os.path.join(os.path.dirname(os.path.abspath(__file__)), caminho)
 FONT_1 = px.Font(CAMINHO("assets/PublicPixel.ttf"), 8)
 
 COLUNAS = 10
@@ -192,10 +190,7 @@ class Jogo:
 
    #//// //// ////
    
-    def variaveis_movimentos(self):
-        # movimento_padrao = 5
-        self.movimento_padrao = 5
-        
+    def variaveis_movimentos(self):    
         self.movimento_x_esquerda = 0
         self.movimento_x_direita = 0
         self.movimento_y = 0
@@ -228,7 +223,7 @@ class Jogo:
         self.atual_back_to_back = 0
         
         # mostrar_quantos_shapes = 3
-        self.mostrar_quantos_shapes = 3
+        self.mostrar_quantos_shapes = 4
         self.proximos_shapes = []
         self.bag_7 = []
         self.sistema_bag_7()
@@ -254,11 +249,18 @@ class Jogo:
         self.streak_maximo = 0
         
         # custumizacao
-        self.cores_aleatorias = random.sample(range(1, 8), 5)
+        self.cores_aleatorias = random.sample(range(1, 8), 6)
+        
+        self.distancia_rect_direita = 2.5
+        self.offset_rect_direita = 0.5
+        
         self.comprimento_do_rect_esquerdo = 0
         self.comprimento_do_rect_direita = 0
         
         # CONFIGURAÇÃO DO USUÁRIO
+        
+        # movimento_padrao = 5
+        self.movimento_padrao = 5
         self.variaveis_movimentos()
         self.variaveis_velocidade_movimentacao()
     
@@ -553,7 +555,9 @@ class Jogo:
     def acrementar_os_status(self, *, linhas_limpas=0, tipo_do_t_spin=None, combo_atual=-1, atual_back_to_back=0):
         if linhas_limpas != 0:
             match linhas_limpas:
-                case 1: self.quantidade_singles += 1
+                case 1: 
+                    self.quantidade_singles += 1
+                    
                 case 2: self.quantidade_doubles += 1
                 case 3: self.quantidade_triples += 1
                 case 4: self.quantidade_quads += 1
@@ -616,7 +620,7 @@ class Jogo:
         else:
             pontuacao += TABELA_PONTUACAO(self.tipo_do_t_spin, linhas_limpas, self.nivel_atual) * aumento_do_back_to_back
         
-        return pontuacao
+        return int(pontuacao)
   
     def verificar_combo(self, combo_atual):
         if combo_atual >= 1:
@@ -852,7 +856,15 @@ class Jogo:
         
         self.desenhar_rect(
             margem, largura + (margem * 2), 
-            largura, self.comprimento_do_rect_esquerdo , 
+            largura, self.comprimento_do_rect_esquerdo, 
+            0, 
+            movimento_x_esquerda=movimento_x_esquerda,
+            movimento_y=movimento_y
+        )
+        
+        self.desenhar_rect(
+            margem, largura + self.comprimento_do_rect_esquerdo + (margem * 3), 
+            largura, self.comprimento_do_rect_direita, 
             0, 
             movimento_x_esquerda=movimento_x_esquerda,
             movimento_y=movimento_y
@@ -860,7 +872,7 @@ class Jogo:
     
     def rects_da_direita(self, margem, largura, movimento_x_direita, movimento_y):
         pos_y = ((TILE * 10) + BOARD_X) + margem
-        comprimento_dir = TILE * (self.mostrar_quantos_shapes * 3 + 1)
+        comprimento_dir = TILE * (self.mostrar_quantos_shapes * self.distancia_rect_direita + self.offset_rect_direita)
         
         self.desenhar_rect(
             pos_y, 0, 
@@ -878,13 +890,13 @@ class Jogo:
             movimento_y=movimento_y
         )
         
-        self.desenhar_rect(
-            pos_y, comprimento_dir + (margem * 2), 
-            largura, self.comprimento_do_rect_direita,
-            0,
-            movimento_x_direita=movimento_x_direita,
-            movimento_y=movimento_y
-        )
+        # self.desenhar_rect(
+        #     pos_y, comprimento_dir + (margem * 2), 
+        #     largura, self.comprimento_do_rect_direita,
+        #     0,
+        #     movimento_x_direita=movimento_x_direita,
+        #     movimento_y=movimento_y
+        # )
             
     def todos_os_rects(self, movimento_x_esquerda, movimento_x_direita, movimento_y):
         margem = 4
@@ -895,14 +907,13 @@ class Jogo:
     
     #////
     
-    def textos_da_esquerda(self, altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y):
-        espacamento = 12
-        espacamento_entre_valores = 3
-        espacamento = altura_da_fonte + espacamento
-        espacamento_entre_valores = altura_da_fonte + espacamento_entre_valores
+    def textos_da_esquerda_1(self, altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y):
+        espaco = 8
+        espacamento = altura_da_fonte + espaco
+        espacamento_entre_valores = altura_da_fonte + 3
         
-        centralizado = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
-        pos_y = (80 - 1) - altura_da_fonte
+        offset_fonte = 1
+        pos_y = 80 - offset_fonte
         
         tempo_formatado = self.transformar_segundos()
         frases = [
@@ -912,41 +923,47 @@ class Jogo:
             ("PONTOS", f"{self.pontos_atual}"),
         ]
         
+        pos_y += espaco
         for index, tupla in enumerate(frases):
-            pos_y += espacamento
-            px.text((movimento_x_esquerda * TILE) + centralizado(tupla[0], largura), pos_y + (movimento_y * TILE), tupla[0], cor[index], FONT_1)
+            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(tupla[0], largura), pos_y + (movimento_y * TILE), tupla[0], cor[index], FONT_1)
             if len(tupla) == 2:
                 pos_y += espacamento_entre_valores
-                px.text((movimento_x_esquerda * TILE) + centralizado(tupla[1], largura), pos_y + (movimento_y * TILE), tupla[1], cor[index], FONT_1)
-        
-        self.comprimento_do_rect_esquerdo = pos_y - (80 - 1) + espacamento
+                px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(tupla[1], largura), pos_y + (movimento_y * TILE), tupla[1], cor[index], FONT_1)
+            pos_y += espacamento
+        self.comprimento_do_rect_esquerdo = pos_y - 80 + offset_fonte
     
-    def textos_da_direita(self, altura_da_fonte, largura, cor, movimento_x_direita, movimento_y):
-        espacamento = 5
-        espacamento_entre_valores = 4
-        espacamento = altura_da_fonte + espacamento
-        espacamento_entre_valores = altura_da_fonte + espacamento_entre_valores
+    def textos_da_esquerda_2(self, altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y):
+        espaco = 8
+        espacamento = altura_da_fonte + espaco
+        espacamento_entre_valores = altura_da_fonte + 3
+
+        margem =  4
+        offset_fonte = 1
+        pos_y = (80 - offset_fonte) + self.comprimento_do_rect_esquerdo + margem
         
-        centralizado = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
+        # pos_x = (TILE * 10) + BOARD_X
+        # comprimento_dir = TILE * (self.mostrar_quantos_shapes * self.distancia_rect_direita + self.offset_rect_direita)
+        # margem =  4
+        # offset_fonte = 1
+        # pos_y = comprimento_dir + (margem * 2) - offset_fonte
         
-        comprimento_dir = TILE * (self.mostrar_quantos_shapes * 3 + 1)
-        margem = 4
-        pos_x = (TILE * 10) + BOARD_X
-        pos_y = comprimento_dir + (margem * 2)
+        frases = [
+            ("COMBO", f"{self.combo_atual}x"),
+            ("STREAK", f"{self.atual_back_to_back}x")
+        ]
         
-        combo = ["COMBO", f"{self.combo_atual}"]
+        cor_combo = cor[4] if self.combo_atual >= 1 else 0
+        cor_streak = cor[5] if self.atual_back_to_back >= 1 else 0
         
-        if self.combo_atual >= 1:
-            cor_final = cor[4]
-        else:
-            cor_final = 0
+        pos_y += espaco
+        for tupla in frases:
+            cor_final = cor_combo if tupla[0] == "COMBO" else cor_streak        
+            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(tupla[0], largura), pos_y + (movimento_y * TILE), tupla[0], cor_final, FONT_1)
+            pos_y += espacamento_entre_valores
+            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(tupla[1], largura), pos_y + (movimento_y * TILE), tupla[1], cor_final, FONT_1)
+            pos_y += espacamento
         
-        pos_y += espacamento
-        px.text((movimento_x_direita * TILE) + pos_x + centralizado(combo[0], largura), pos_y + (movimento_y * TILE), combo[0], cor_final, FONT_1)
-        pos_y += espacamento_entre_valores
-        px.text((movimento_x_direita * TILE) + pos_x + centralizado(combo[1], largura), pos_y + (movimento_y * TILE), combo[1], cor_final, FONT_1)
-        
-        self.comprimento_do_rect_direita = pos_y - comprimento_dir + espacamento
+        self.comprimento_do_rect_direita = pos_y - ((80 - offset_fonte) + self.comprimento_do_rect_esquerdo + margem)
     
     def todos_os_textos(self, movimento_x_esquerda, movimento_x_direita, movimento_y):
         largura = 80
@@ -954,8 +971,8 @@ class Jogo:
         altura_da_fonte = 14 / 2
         cor = self.cores_aleatorias
         
-        self.textos_da_esquerda(altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y)
-        self.textos_da_direita(altura_da_fonte, largura, cor, movimento_x_direita, movimento_y)
+        self.textos_da_esquerda_1(altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y)
+        self.textos_da_esquerda_2(altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y)
     
     def textos_apos_game_over(self, movimento_y, *, pos_y_negativo):
         tempo_formatado = self.transformar_segundos()
@@ -975,8 +992,6 @@ class Jogo:
         espacamento = 32
         espacamento_entre_valores = 10
         
-        centralizado = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
-        
         altura_total = (len(frases)) * espacamento - (espacamento / 2) + espacamento_entre_valores / 2
         pos_y = ((TILE * LINHAS) / 2 - altura_total / 2) - pos_y_negativo
         
@@ -988,11 +1003,15 @@ class Jogo:
             if cores_atual == 7:
                 cores_atual = 0
             
-            px.text(centralizado(frase, largura), pos_y + (movimento_y * TILE), frase, cores[cores_atual], FONT_1)
-            px.text(centralizado(valor, largura), pos_y + (movimento_y * TILE) + espacamento_entre_valores, valor, cores[cores_atual], FONT_1)
+            px.text(CENTRALIZAR(frase, largura), pos_y + (movimento_y * TILE), frase, cores[cores_atual], FONT_1)
+            px.text(CENTRALIZAR(valor, largura), pos_y + (movimento_y * TILE) + espacamento_entre_valores, valor, cores[cores_atual], FONT_1)
             
             pos_y += espacamento
             cores_atual += 1
+    
+    def textos_status(self, movimento_x, movimento_y):
+        pass
+    
     
     #////
     
@@ -1091,7 +1110,7 @@ class Jogo:
     def desenhar_shape_proximos(self, proximos_shapes, movimento_x_direita, movimento_y):
         escalonar_tamanho = 0
         ajustar_valor_x = 10.5
-        ajustar_valor_y = 1
+        ajustar_valor_y = self.offset_rect_direita
         
         acrescimo_distancia = (0.05 * 5)
         for proximo_shape in proximos_shapes:
@@ -1112,7 +1131,7 @@ class Jogo:
                             movimento_y=movimento_y,
                             diminuir=escalonar_tamanho
                         )
-            acrescimo_distancia += 3
+            acrescimo_distancia += self.distancia_rect_direita
     
     def desenhar_shape_segurado(self, shape_segurado, movimento_x_esquerda, movimento_y):
         escalonar_tamanho = 0
@@ -1272,6 +1291,8 @@ class Jogo:
         self.desenhar_shapes_fixados(self.mapa, movimento_x, movimento_y, offset)
         self.desenhar_shape_segurado_e_proximos(movimento_x_esquerda, movimento_x_direita)
         
+        #self.textos_status(self, movimento_x, movimento_y)
+        
     #
     
     def desenhar_tudo_no_game_over(self, movimento_x, movimento_x_esquerda, movimento_x_direita, movimento_y):
@@ -1319,7 +1340,7 @@ class Jogo:
         
         if self.estado_do_jogo == "apos_game_over":
             self.desenhar_fundo((BOARD_X, (-LINHAS - 1) * TILE), (0, LINHAS), (COLUNAS, LINHAS), movimento_x=0, movimento_y=self.movimento_game_over_slide)
-        self.textos_apos_game_over(movimento_y, pos_y_negativo=0)
+            self.textos_apos_game_over(movimento_y, pos_y_negativo=0)
         
         self.tempo_inical_test_fim = time.perf_counter()
         #(f"{((self.tempo_inical_test_fim - self.tempo_fps_ms) * 1000):.2f} MS")
