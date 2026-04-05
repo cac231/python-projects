@@ -140,7 +140,11 @@ TABELA_G = {
     20:	36.6,
 }
 
+
+#todo: verifique se os t-spin esta funcionando corretamente, os incrementos dos status e os pop ups
+
 #todo: adicionar menu com um botao de começar, historico, configuracao e sair. Tela de pause, tela de game_over com as pontuações
+
 
 def buscar_tabela_g(nivel):
     if nivel >= 20:
@@ -152,6 +156,7 @@ TRANSFORMA_EM_DECIMAL = lambda num: num / 10
 
 CAMINHO = lambda caminho: os.path.join(os.path.dirname(os.path.abspath(__file__)), caminho)
 FONT_1 = px.Font(CAMINHO("assets/PublicPixel.ttf"), 8)
+FONT_2 = px.Font(CAMINHO("assets/PublicPixel.ttf"), 16)
 
 COLUNAS = 10
 LINHAS = 20
@@ -247,9 +252,14 @@ class Jogo:
         self.quantidade_perfect_clears = 0
         self.combo_maximo = 0
         self.streak_maximo = 0
+        self.quantidade_hold = 0
+        self.quantidade_pausadas = 0
+        
+        self.sequencia_dos_eventos = []
         
         # custumizacao
-        self.cores_aleatorias = random.sample(range(1, 8), 6)
+        self.cores_aleatorias = [x for x in range(1, 8)]
+        random.shuffle(self.cores_aleatorias)
         
         self.distancia_rect_direita = 2.5
         self.offset_rect_direita = 0.5
@@ -284,7 +294,7 @@ class Jogo:
     
     def variaveis_are(self):
         # are_duracao = 18
-        self.are_duracao = 18
+        self.are_duracao = 20
         self.tempo_do_are = 0
         self.esta_em_are = False
         self.limpou_linha = False # Se False, sem ARE
@@ -340,8 +350,8 @@ class Jogo:
     
     def sistema_bag_7(self):
         if len(self.bag_7) == 0:
-            piece = ["I", "O", "T", "L", "J", "S", "Z"]
-            self.bag_7 = [f"shape_{x}" for x in piece]
+            shapes = ["I", "O", "T", "L", "J", "S", "Z"]
+            self.bag_7 = [f"shape_{x}" for x in shapes]
             random.shuffle(self.bag_7)
         
         while len(self.proximos_shapes) < self.mostrar_quantos_shapes:
@@ -508,15 +518,17 @@ class Jogo:
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
             self.lock_tempo += 1
     
-    def condicoes_do_t_spin(self, mapa):
+    def condicoes_do_t_spin(self, mapa, posicao):
         rotacao_preset = T_SPIN_CANTO[self.estado_rotacao]
-        pos_do_centro = self.shape_pos_atual[0] + 1, self.shape_pos_atual[1] + 1 
+        pos_do_centro = posicao[0] + 1, posicao[1] + 1 
         canto_f = 0
         canto_b = 0
 
         for diagonal, posicoes in rotacao_preset.items():
             for tupla in posicoes:
-                mx = pos_do_centro[0] + tupla[0]
+                x, y = tupla
+                
+                mx = pos_do_centro[0] + x
                 if mx < 0 or mx >= COLUNAS:
                     if diagonal == "F": 
                             canto_f += 1
@@ -525,7 +537,7 @@ class Jogo:
                             canto_b += 1
                             continue
                         
-                my = pos_do_centro[1] + tupla[1] + CORRECAO_ALTURA
+                my = pos_do_centro[1] + y + CORRECAO_ALTURA
                 if my < 0 or my >= ALTURA_DO_JOGO:
                     if diagonal == "F": 
                             canto_f += 1
@@ -549,15 +561,18 @@ class Jogo:
             else:
                 return "mini_t_spin"
         return None
+
+    def verificar_t_spin(self, posicao):
+        if self.ultima_acao_foi_rotacao and self.shape_atual == "shape_T":
+            canto_f, canto_b = self.condicoes_do_t_spin(self.mapa, posicao)
+            self.tipo_do_t_spin = self.retornar_tipo_do_t_spin(canto_f, canto_b)
     
     #////
     
     def acrementar_os_status(self, *, linhas_limpas=0, tipo_do_t_spin=None, combo_atual=-1, atual_back_to_back=0):
         if linhas_limpas != 0:
             match linhas_limpas:
-                case 1: 
-                    self.quantidade_singles += 1
-                    
+                case 1: self.quantidade_singles += 1
                 case 2: self.quantidade_doubles += 1
                 case 3: self.quantidade_triples += 1
                 case 4: self.quantidade_quads += 1
@@ -594,8 +609,12 @@ class Jogo:
         if linhas_limpas == 0:
             self.combo_atual = -1
             match self.tipo_do_t_spin:
-                case "t_spin": return 400 * self.nivel_atual
-                case "mini_t_spin": return 100 * self.nivel_atual
+                case "t_spin": 
+                    self.sequencia_dos_eventos.insert(2, [f"{self.tipo_do_t_spin}", 0, 200, None])
+                    return 400 * self.nivel_atual
+                case "mini_t_spin": 
+                    self.sequencia_dos_eventos.insert(2, [f"{self.tipo_do_t_spin}", 0, 200, None])
+                    return 100 * self.nivel_atual
             return 0
         else:
             self.combo_atual += 1  
@@ -604,13 +623,18 @@ class Jogo:
         if self.verificar_perfect_clear(self.mapa[::-1]):
             pontuacao += TABELA_PONTUACAO("perfect_clear", linhas_limpas, self.nivel_atual)
             self.quantidade_perfect_clears += 1
+            self.sequencia_dos_eventos.insert(0, ["perfect_clear", None, 200, None])
                         
         if linhas_limpas == 4:
             self.atual_back_to_back += 1
+            self.sequencia_dos_eventos.insert(3, [f"{linhas_limpas}", linhas_limpas, 200, None])
         elif self.tipo_do_t_spin != None:
             self.atual_back_to_back += 1
+            self.sequencia_dos_eventos.insert(1, [f"{self.tipo_do_t_spin}", linhas_limpas, 200, None])
         elif linhas_limpas in (1, 2, 3):
             self.atual_back_to_back = 0
+            self.sequencia_dos_eventos.insert(4, [f"{linhas_limpas}", linhas_limpas, 200, None])
+        
         aumento_do_back_to_back = 1.5 if self.atual_back_to_back >= 2 else 1
         
         self.acrementar_os_status(combo_atual=self.combo_atual, atual_back_to_back=self.atual_back_to_back)
@@ -686,6 +710,7 @@ class Jogo:
     def segurar_shape(self, *, input_puro=False):
         if self.pegar_input("SEGURAR", input_puro=input_puro) and not self.segurou_neste_frame:
             self.segurou_neste_frame = True
+            self.quantidade_hold += 1
             
             if self.shape_segurado == None:
                 self.shape_segurado = self.shape_atual
@@ -744,11 +769,12 @@ class Jogo:
     
     def hard_drop(self):
         if self.pegar_input("HARD_DROP"):
+            self.verificar_t_spin(self.shape_pos_fantasma)
             self.fixar(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, SHAPES[self.shape_atual]["cor_letra"])
-            self.pontos_atual += (self.shape_pos_fantasma[1] - self.shape_pos_atual[1]) * 2
-            self.pontos_atual += self.quantos_soft_drops
             self.esta_em_are = True
             self.acionou_hard_drop = True
+            self.pontos_atual += self.quantos_soft_drops
+            self.pontos_atual += (self.shape_pos_fantasma[1] - self.shape_pos_atual[1]) * 2
     
     def teclas_especiais(self):
         if self.pegar_input("REINICIAR"):
@@ -770,7 +796,6 @@ class Jogo:
 
     def atualizar(self):
         self.tempo_fps_ms = time.perf_counter()
-        print(self.estado_do_jogo)
         
         if self.estado_do_jogo == "pausado":
             self.teclas_especiais()
@@ -794,13 +819,10 @@ class Jogo:
             self.queda_automatica()
             
             if self.lock_tempo >= 30 or self.lock_movimentos == 15:
-                if self.ultima_acao_foi_rotacao and self.shape_atual == "shape_T":
-                    canto_f, canto_b = self.condicoes_do_t_spin(self.mapa)
-                    self.tipo_do_t_spin = self.retornar_tipo_do_t_spin(canto_f, canto_b)
-                
-                self.pontos_atual += self.quantos_soft_drops
+                self.verificar_t_spin(self.shape_pos_atual)
                 self.fixar(self.pegar_formato(), self.shape_pos_atual, self.mapa, SHAPES[self.shape_atual]["cor_letra"])
                 self.esta_em_are = True
+                self.pontos_atual += self.quantos_soft_drops
         
             if self.fixou_neste_frame:
                     self.segurou_neste_frame = False                 
@@ -916,19 +938,20 @@ class Jogo:
         pos_y = 80 - offset_fonte
         
         tempo_formatado = self.transformar_segundos()
-        frases = [
-            (f"{tempo_formatado}",),
+        frases_esqueda_1 = [
+            (f"{tempo_formatado}", None),
             ("LINHAS", f"{self.linhas_limpas}"),
             ("LEVEL",  f"{self.nivel_atual}"),
             ("PONTOS", f"{self.pontos_atual}"),
         ]
         
         pos_y += espaco
-        for index, tupla in enumerate(frases):
-            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(tupla[0], largura), pos_y + (movimento_y * TILE), tupla[0], cor[index], FONT_1)
-            if len(tupla) == 2:
+        for index, (frase, valor) in enumerate(frases_esqueda_1):
+            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(frase, largura), pos_y + (movimento_y * TILE), frase, cor[index], FONT_1)
+            
+            if valor != None:
                 pos_y += espacamento_entre_valores
-                px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(tupla[1], largura), pos_y + (movimento_y * TILE), tupla[1], cor[index], FONT_1)
+                px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(valor, largura), pos_y + (movimento_y * TILE), valor, cor[index], FONT_1)
             pos_y += espacamento
         self.comprimento_do_rect_esquerdo = pos_y - 80 + offset_fonte
     
@@ -941,26 +964,20 @@ class Jogo:
         offset_fonte = 1
         pos_y = (80 - offset_fonte) + self.comprimento_do_rect_esquerdo + margem
         
-        # pos_x = (TILE * 10) + BOARD_X
-        # comprimento_dir = TILE * (self.mostrar_quantos_shapes * self.distancia_rect_direita + self.offset_rect_direita)
-        # margem =  4
-        # offset_fonte = 1
-        # pos_y = comprimento_dir + (margem * 2) - offset_fonte
-        
-        frases = [
-            ("COMBO", f"{self.combo_atual}x"),
-            ("STREAK", f"{self.atual_back_to_back}x")
-        ]
-        
         cor_combo = cor[4] if self.combo_atual >= 1 else 0
         cor_streak = cor[5] if self.atual_back_to_back >= 1 else 0
         
+        frases_esqueda_2 = [
+            ("COMBO", f"{self.combo_atual}x"),
+            ("STREAK", f"{self.atual_back_to_back}x")
+        ]
         pos_y += espaco
-        for tupla in frases:
-            cor_final = cor_combo if tupla[0] == "COMBO" else cor_streak        
-            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(tupla[0], largura), pos_y + (movimento_y * TILE), tupla[0], cor_final, FONT_1)
+        for (frase, valor) in frases_esqueda_2:
+            cor_final = cor_combo if frase == "COMBO" else cor_streak        
+            
+            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(frase, largura), pos_y + (movimento_y * TILE), frase, cor_final, FONT_1)
             pos_y += espacamento_entre_valores
-            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(tupla[1], largura), pos_y + (movimento_y * TILE), tupla[1], cor_final, FONT_1)
+            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(valor, largura), pos_y + (movimento_y * TILE), valor, cor_final, FONT_1)
             pos_y += espacamento
         
         self.comprimento_do_rect_direita = pos_y - ((80 - offset_fonte) + self.comprimento_do_rect_esquerdo + margem)
@@ -976,63 +993,84 @@ class Jogo:
     
     def textos_apos_game_over(self, movimento_y, *, pos_y_negativo):
         tempo_formatado = self.transformar_segundos()
-        frases = [
-            (f"Tempo",           f"{tempo_formatado}"),
-            (f"Level Final",     f"{self.nivel_atual}"),
-            (f"Linhas | Pontos", f"{self.linhas_limpas:^-7}|{self.pontos_atual:^7}"),
-            (f"Singles|Doubles", f"{self.quantidade_singles:^-7}|{self.quantidade_doubles:^7}"),
-            (f"Triples| Quads ", f"{self.quantidade_triples:^-7}|{self.quantidade_quads:^7}"),
-            (f"T-spins",         f"{self.quantidade_t_spins}"),
-            (f"Perfect Clears",  f"{self.quantidade_perfect_clears}"),
-            (f"Combo Max",       f"{self.combo_maximo}"),
-            (f"Streak Max",      f"{self.streak_maximo}"),
+        frases_status = [
+            ("Tempo:",           f"{tempo_formatado}", 6),
+            ("Start Level:",     f"{self.nivel_atual}", 1),
+            ("Final Level:",     f"{self.nivel_atual}", 1),
+            ("Linhas:",          f"{self.linhas_limpas}", 2),
+            ("Pontos:",          f"{self.pontos_atual}", 2),
+            ("Singles:",         f"{self.quantidade_singles}", 3),
+            ("Doubles:",         f"{self.quantidade_doubles}", 3),
+            ("Triples:",         f"{self.quantidade_triples}", 3),
+            ("Tetris:",          f"{self.quantidade_quads}", 3),
+            ("T-Spins:",         f"{self.quantidade_t_spins}", 4),
+            ("Perfect Clears:",  f"{self.quantidade_perfect_clears}", 4),
+            ("Max combo:",       f"{self.combo_maximo}", 5),
+            ("Max streak:",      f"{self.streak_maximo}", 5),
+            ("Times Held:",      f"{self.quantidade_hold}", 6),
+            ("Times Pause:",     f"{self.streak_maximo}", 6),  
         ]
 
-        largura = TILE * LINHAS
-        espacamento = 32
-        espacamento_entre_valores = 10
+        cor = self.cores_aleatorias
         
-        altura_total = (len(frases)) * espacamento - (espacamento / 2) + espacamento_entre_valores / 2
+        espacamento = 20
+        espacamento_entre_valores = 11
+
+        altura_total = (len(frases_status)) * espacamento - (espacamento / 2)
         pos_y = ((TILE * LINHAS) / 2 - altura_total / 2) - pos_y_negativo
         
-        cores = [1, 2, 3, 4, 5, 6, 7]
-        cores_atual = 0
-        
-        for tupla in frases:
-            frase, valor = tupla
-            if cores_atual == 7:
-                cores_atual = 0
+        for tupla in frases_status:
+            frase, valor, cor_i = tupla
             
-            px.text(CENTRALIZAR(frase, largura), pos_y + (movimento_y * TILE), frase, cores[cores_atual], FONT_1)
-            px.text(CENTRALIZAR(valor, largura), pos_y + (movimento_y * TILE) + espacamento_entre_valores, valor, cores[cores_atual], FONT_1)
-            
+            px.text((BOARD_X + espacamento_entre_valores), pos_y + (movimento_y * TILE), frase, cor[cor_i], FONT_1)
+            px.text((BOARD_X + espacamento_entre_valores) + FONT_1.text_width(frase) + 2, pos_y + (movimento_y * TILE), valor, cor[cor_i], FONT_1)
             pos_y += espacamento
-            cores_atual += 1
     
-    def textos_status(self, movimento_x, movimento_y):
-        pass
-    
-    
-    #////
-    
-    def desenhar_fundo(self, pos, spritesheet_pos, tamanho, *, movimento_x=0, movimento_y=0):
-        px.bltm(
-            pos[0] + (movimento_x * TILE), 
-            pos[1] + (movimento_y * TILE), 
-            0, 
-            (TILE * spritesheet_pos[0]), (TILE * spritesheet_pos[1]), 
-            (TILE * tamanho[0]), (TILE * tamanho[1])
-        )
-    
-    def desenhar_shape(self, coluna_x, linha_y, spritesheet_x, spritesheet_y, *, movimento_x=0, movimento_y=0, offset=0, diminuir=0):
-        px.blt(
-            (TILE - diminuir) * (coluna_x + movimento_x) + BOARD_X, 
-            (TILE - diminuir) * ((linha_y + movimento_y) + offset), 
-            0, 
-            (TILE * spritesheet_x), (TILE * spritesheet_y), 
-            (TILE - diminuir), (TILE - diminuir)
-        )
+    def textos_dos_popup(self):
+        largura = TILE * LINHAS
+        altura_da_fonte = 14
+        #print(self.sequencia_dos_eventos)
         
+        for evento in self.sequencia_dos_eventos[:]:
+            tipo, linhas_limpas, duracao, cor = evento  
+            
+            match tipo: 
+                case "perfect_clear": frase = "PERFECT CLEAR!"
+                case "t_spin":
+                    if linhas_limpas > 0:
+                        frase = f"T-SPIN {linhas_limpas}"
+                    else:
+                        frase = "T-SPIN"
+                case "mini_t_spin":
+                    if linhas_limpas > 0:
+                        frase = f"MINI T-SPIN {linhas_limpas}"
+                    else:
+                        frase = "MINI T-SPIN"
+                case "4": frase = "TETRIS!"
+                case "3": frase = "TRIPLE"
+                case "2": frase = "DOUBLE"
+                case "1":
+                    self.sequencia_dos_eventos.remove(evento)
+                    continue
+            
+            if cor == None:
+                evento[3] = (SHAPES[self.shape_atual]["imagem_pos"] + 1)
+            
+            
+            progresso = (200 - duracao) / 200 # 1.0 a 0.0
+            extra = 40
+            range_animacao = 300 + altura_da_fonte + extra
+            pos_inicial = 30
+            pos_y = round(pos_inicial - int(progresso ** 2 * (range_animacao)) / 8) * 8
+            
+            px.dither((duracao/200) + 0.4)
+            px.text(CENTRALIZAR(frase, largura), pos_y, frase, evento[3], FONT_1)
+            px.dither(1)
+            
+            evento[2] -= 1
+            if duracao == 0:
+                self.sequencia_dos_eventos.remove(evento)
+    
     #////
 
     def verificar_pos_y_negativo(self, formato):
@@ -1057,6 +1095,26 @@ class Jogo:
                     return 2 - linha_i
         return 0
     
+    #////
+    
+    def desenhar_fundo(self, pos, spritesheet_pos, tamanho, *, movimento_x=0, movimento_y=0):
+        px.bltm(
+            pos[0] + (movimento_x * TILE), 
+            pos[1] + (movimento_y * TILE), 
+            0, 
+            (TILE * spritesheet_pos[0]), (TILE * spritesheet_pos[1]), 
+            (TILE * tamanho[0]), (TILE * tamanho[1])
+        )
+    
+    def desenhar_shape(self, coluna_x, linha_y, spritesheet_x, spritesheet_y, *, movimento_x=0, movimento_y=0, offset=0, diminuir=0):
+        px.blt(
+            (TILE - diminuir) * (coluna_x + movimento_x) + BOARD_X, 
+            (TILE - diminuir) * ((linha_y + movimento_y) + offset), 
+            0, 
+            (TILE * spritesheet_x), (TILE * spritesheet_y), 
+            (TILE - diminuir), (TILE - diminuir)
+        )
+        
     #////
     
     def desenhar_shape_fantasma(self, formato, movimento_x, movimento_y, offset):
@@ -1221,8 +1279,12 @@ class Jogo:
             self.tempo_animacao_limpar_linha += 1
             
         constante = self.constante_animacao_limpar_linha
-        _animacao_de_limpar_linha(0, COLUNAS // 2, constante, constante_na_pos_x=constante)
-        _animacao_de_limpar_linha(COLUNAS // 2, COLUNAS, constante)
+        if self.tipo_do_t_spin == None:
+            _animacao_de_limpar_linha(0,       COLUNAS // 2, constante, constante_na_pos_x=constante)
+            _animacao_de_limpar_linha(COLUNAS // 2, COLUNAS, constante)
+        else:
+            _animacao_de_limpar_linha(0,       COLUNAS // 2, constante)
+            _animacao_de_limpar_linha(COLUNAS // 2, COLUNAS, constante, constante_na_pos_x=constante)
     
     #
     
@@ -1290,8 +1352,7 @@ class Jogo:
         
         self.desenhar_shapes_fixados(self.mapa, movimento_x, movimento_y, offset)
         self.desenhar_shape_segurado_e_proximos(movimento_x_esquerda, movimento_x_direita)
-        
-        #self.textos_status(self, movimento_x, movimento_y)
+        self.textos_dos_popup()
         
     #
     
@@ -1307,7 +1368,7 @@ class Jogo:
         self.desenhar_shapes_fixados(self.mapa, movimento_x, movimento_y, offset)
         
         self.desenhar_shape_segurado_e_proximos(movimento_x_esquerda, movimento_x_direita, movimento_y)
-        
+        self.textos_dos_popup()
     
     #////
     
@@ -1343,6 +1404,6 @@ class Jogo:
             self.textos_apos_game_over(movimento_y, pos_y_negativo=0)
         
         self.tempo_inical_test_fim = time.perf_counter()
-        #(f"{((self.tempo_inical_test_fim - self.tempo_fps_ms) * 1000):.2f} MS")
+        print(f"{((self.tempo_inical_test_fim - self.tempo_fps_ms) * 1000):.2f} MS")
         
 Jogo()
