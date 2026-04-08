@@ -569,19 +569,43 @@ class Jogo:
     
     #////
     
-    def acrementar_os_status(self, *, linhas_limpas=0, tipo_do_t_spin=None, combo_atual=-1, atual_back_to_back=0):
-        if linhas_limpas != 0:
+    def anexar_eventos(self, ordem, tipo, linhas_limpas):
+        duracao_max = 180
+        cor = (SHAPES[self.shape_atual]["imagem_pos"] + 1)
+        informacoes = [tipo, linhas_limpas, duracao_max, cor]
+        self.sequencia_dos_eventos.insert(ordem, informacoes)
+    
+    def incrmentar_os_eventos(self, linhas_limpas=0, *, perfect_clear=False, tipo_do_t_spin=None):
+        if perfect_clear:
+            self.anexar_eventos(0, "perfect_clear", linhas_limpas)
+        
+        elif tipo_do_t_spin != None:
+            if linhas_limpas != 0:
+                    self.anexar_eventos(1, f"{self.tipo_do_t_spin}", linhas_limpas)
+            else:
+                self.anexar_eventos(2, f"{self.tipo_do_t_spin}", linhas_limpas)
+        
+        elif linhas_limpas > 0:
+            self.anexar_eventos(3, f"{linhas_limpas}", linhas_limpas)
+    
+    def incrementar_os_status(self, *, perfect_clear=False, tipo_do_t_spin=None, linhas_limpas=0, combo=-1, back_to_back=0):
+        if perfect_clear:
+            self.quantidade_perfect_clears += 1
+        
+        if tipo_do_t_spin != None:
+            self.quantidade_t_spins += 1
+        
+        if linhas_limpas > 0:
             match linhas_limpas:
                 case 1: self.quantidade_singles += 1
                 case 2: self.quantidade_doubles += 1
                 case 3: self.quantidade_triples += 1
                 case 4: self.quantidade_quads += 1
-        if tipo_do_t_spin != None:
-            self.quantidade_t_spins += 1
-        if combo_atual >= 1:
-            self.combo_maximo = combo_atual
-        if atual_back_to_back > 0:
-            self.streak_maximo = atual_back_to_back
+        
+        if combo >= 1:
+            self.combo_maximo = combo
+        if back_to_back > 0:
+            self.streak_maximo = back_to_back
     
     def verificar_linha(self, mapa):
         mapa_temp = mapa[::-1]
@@ -604,41 +628,36 @@ class Jogo:
         linhas_limpas = self.linhas_limpas_por_shape
         pontuacao = 0
         
-        self.acrementar_os_status(linhas_limpas=linhas_limpas, tipo_do_t_spin=self.tipo_do_t_spin)
-        
         if linhas_limpas == 0:
             self.combo_atual = -1
-            match self.tipo_do_t_spin:
-                case "t_spin": 
-                    self.sequencia_dos_eventos.insert(2, [f"{self.tipo_do_t_spin}", 0, 200, None])
-                    return 400 * self.nivel_atual
-                case "mini_t_spin": 
-                    self.sequencia_dos_eventos.insert(2, [f"{self.tipo_do_t_spin}", 0, 200, None])
-                    return 100 * self.nivel_atual
+            if self.tipo_do_t_spin != None:
+                self.incrementar_os_status(tipo_do_t_spin=self.tipo_do_t_spin)
+                self.incrmentar_os_eventos(linhas_limpas, tipo_do_t_spin=self.tipo_do_t_spin)
+                if self.tipo_do_t_spin == "t_spin": return 400 * self.nivel_atual
+                if self.tipo_do_t_spin == "mini_t_spin": return 100 * self.nivel_atual
             return 0
-        else:
-            self.combo_atual += 1  
-            pontuacao += self.verificar_combo(self.combo_atual)
+
+        self.combo_atual += 1  
+        pontuacao += self.verificar_combo(self.combo_atual)
+        
+        if linhas_limpas == 4 or self.tipo_do_t_spin != None: self.atual_back_to_back += 1
+        elif linhas_limpas in (1, 2, 3): self.atual_back_to_back = 0
+        aumento_do_back_to_back = 1.5 if self.atual_back_to_back >= 2 else 1
         
         if self.verificar_perfect_clear(self.mapa[::-1]):
             pontuacao += TABELA_PONTUACAO("perfect_clear", linhas_limpas, self.nivel_atual)
-            self.quantidade_perfect_clears += 1
-            self.sequencia_dos_eventos.insert(0, ["perfect_clear", None, 200, None])
-                        
-        if linhas_limpas == 4:
-            self.atual_back_to_back += 1
-            self.sequencia_dos_eventos.insert(3, [f"{linhas_limpas}", linhas_limpas, 200, None])
-        elif self.tipo_do_t_spin != None:
-            self.atual_back_to_back += 1
-            self.sequencia_dos_eventos.insert(1, [f"{self.tipo_do_t_spin}", linhas_limpas, 200, None])
-        elif linhas_limpas in (1, 2, 3):
-            self.atual_back_to_back = 0
-            self.sequencia_dos_eventos.insert(4, [f"{linhas_limpas}", linhas_limpas, 200, None])
+            self.incrementar_os_status(perfect_clear=True)
+            self.incrmentar_os_eventos(linhas_limpas, perfect_clear=True)
+        else:
+            self.incrmentar_os_eventos(linhas_limpas, tipo_do_t_spin=self.tipo_do_t_spin)
         
-        aumento_do_back_to_back = 1.5 if self.atual_back_to_back >= 2 else 1
-        
-        self.acrementar_os_status(combo_atual=self.combo_atual, atual_back_to_back=self.atual_back_to_back)
-    
+        self.incrementar_os_status(
+            tipo_do_t_spin=self.tipo_do_t_spin, 
+            linhas_limpas=linhas_limpas,
+            combo=self.combo_atual, 
+            back_to_back=self.atual_back_to_back, 
+        )
+      
         if self.tipo_do_t_spin == None:
             pontuacao += TABELA_PONTUACAO("normal", linhas_limpas, self.nivel_atual) * aumento_do_back_to_back
         else:
@@ -1034,38 +1053,40 @@ class Jogo:
         for evento in self.sequencia_dos_eventos[:]:
             tipo, linhas_limpas, duracao, cor = evento  
             
+            match linhas_limpas:
+                case 0: frase_linhas = ""
+                case 1: frase_linhas = " SINGLE"
+                case 2: frase_linhas = " DOUBLE"
+                case 3: frase_linhas = " TRIPLE"
+            
             match tipo: 
                 case "perfect_clear": frase = "PERFECT CLEAR!"
-                case "t_spin":
-                    if linhas_limpas > 0:
-                        frase = f"T-SPIN {linhas_limpas}"
-                    else:
-                        frase = "T-SPIN"
-                case "mini_t_spin":
-                    if linhas_limpas > 0:
-                        frase = f"MINI T-SPIN {linhas_limpas}"
-                    else:
-                        frase = "MINI T-SPIN"
+                
+                case "t_spin": frase = f"T-SPIN{frase_linhas}"
+                
+                case "mini_t_spin": frase = f"MINI T-SPIN{frase_linhas}"
+                
                 case "4": frase = "TETRIS!"
                 case "3": frase = "TRIPLE"
                 case "2": frase = "DOUBLE"
-                case "1":
-                    self.sequencia_dos_eventos.remove(evento)
-                    continue
+                case "1": frase = "single vey"
+                    # self.sequencia_dos_eventos.remove(evento)
+                    # continue
             
-            if cor == None:
-                evento[3] = (SHAPES[self.shape_atual]["imagem_pos"] + 1)
+            duracao_max = 180
+            progresso = (duracao_max - duracao) / duracao_max # 1.0 a 0.0
             
+            pos_inicial = 210
+            extra = 30
+            range_animacao = pos_inicial + altura_da_fonte + extra
             
-            progresso = (200 - duracao) / 200 # 1.0 a 0.0
-            extra = 40
-            range_animacao = 300 + altura_da_fonte + extra
-            pos_inicial = 30
-            pos_y = round(pos_inicial - int(progresso ** 2 * (range_animacao)) / 8) * 8
+            constante = 3
+            fator = (progresso/2) + 2 * (progresso ** constante)
             
-            px.dither((duracao/200) + 0.4)
-            px.text(CENTRALIZAR(frase, largura), pos_y, frase, evento[3], FONT_1)
-            px.dither(1)
+            bit = 8
+            pos_y = round((pos_inicial / bit) - int(fator * range_animacao) / bit) * bit
+            
+            px.text(CENTRALIZAR(frase, largura), pos_y, frase, cor, FONT_1)
             
             evento[2] -= 1
             if duracao == 0:
