@@ -330,6 +330,7 @@ class Jogo:
         # movimentar os desenhos
         self.foi_para_esquerda = False
         self.foi_para_direita = False
+        self.ultima_acao_foi_rotacao_animacao_lateral = False
         
         self.localizacao_das_linhas_limpas = []
         self.tempo_animacao_limpar_linha = 0
@@ -710,24 +711,24 @@ class Jogo:
         esquerda_puro = self.pegar_input("ESQUERDA", input_puro=True) and not self.pegar_input("DIREITA", input_puro=True)
         direita_puro = self.pegar_input("DIREITA", input_puro=True) and not self.pegar_input("ESQUERDA", input_puro=True)
         
-        if self.verificar_colisao_parede(self.pegar_formato(), self.shape_pos_atual, 1):
-            movimento = "direita"
-        elif self.verificar_colisao_parede(self.pegar_formato(), self.shape_pos_atual, -1):
-            movimento = "esquerda" 
+        dx = 2 if self.shape_atual != "shape_I" else 3
         
-        elif self.ultima_acao_foi_rotacao and direita_puro and self.verificar_colisao_parede(self.pegar_formato(), self.shape_pos_atual, 2):
-            movimento = "direita"
-        elif self.ultima_acao_foi_rotacao and esquerda_puro and self.verificar_colisao_parede(self.pegar_formato(), self.shape_pos_atual, -2):
-            movimento = "esquerda"
+        if self.verificar_colisao_parede(self.pegar_formato(), self.shape_pos_atual, 1):
+            self.foi_para_direita = True
+            self.ultima_acao_foi_rotacao_animacao_lateral = False
+        elif self.verificar_colisao_parede(self.pegar_formato(), self.shape_pos_atual, -1):
+            self.foi_para_esquerda = True
+            self.ultima_acao_foi_rotacao_animacao_lateral = False
+        
+        elif self.ultima_acao_foi_rotacao_animacao_lateral and direita_puro and self.verificar_colisao_parede(self.pegar_formato(), self.shape_pos_atual, dx):
+            self.foi_para_direita = True
+        elif self.ultima_acao_foi_rotacao_animacao_lateral and esquerda_puro and self.verificar_colisao_parede(self.pegar_formato(), self.shape_pos_atual, -dx):
+            self.foi_para_esquerda = True  
         
         else:
             self.foi_para_esquerda, self.foi_para_direita = False, False
-            return False   
-
-        if movimento == "esquerda":
-            self.foi_para_esquerda = True
-        if movimento == "direita":
-            self.foi_para_direita = True
+            self.ultima_acao_foi_rotacao_animacao_lateral = False
+            return False
     
     #////
     
@@ -771,12 +772,12 @@ class Jogo:
         if self.pegar_input("ROTACAO_ESQUERDA", input_puro=input_puro):
             self.rotacionar_shape("KEY_Q")
             self.aumentar_lock_reset()
-            self.ultima_acao_foi_rotacao = True
+            self.ultima_acao_foi_rotacao, self.ultima_acao_foi_rotacao_animacao_lateral = True, True
 
         if self.pegar_input("ROTACAO_DIREITA", input_puro=input_puro):
             self.rotacionar_shape("KEY_E")
             self.aumentar_lock_reset()
-            self.ultima_acao_foi_rotacao = True
+            self.ultima_acao_foi_rotacao, self.ultima_acao_foi_rotacao_animacao_lateral = True, True
     
     def recalcular_pos_fantasma(self):
          while not self.verificar_colisao(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, dy=1):
@@ -1276,6 +1277,7 @@ class Jogo:
         constante = 0.2
         
         if self.foi_para_esquerda:
+            self.movimento_x_direita = 0
             if self.movimento_x_esquerda > -self.movimento_padrao:
                 self.movimento_x_esquerda += -(inicio + abs(self.movimento_x_esquerda) * constante)
                 self.movimento_x_esquerda = max(self.movimento_x_esquerda, -self.movimento_padrao)
@@ -1284,10 +1286,12 @@ class Jogo:
             if self.movimento_x_esquerda < 0:
                 self.movimento_x_esquerda -= -(inicio + abs(self.movimento_x_esquerda) * constante)
                 self.movimento_x = self.movimento_x_esquerda
-            else:
-                self.movimento_x_esquerda = 0
+                if abs(self.movimento_x_esquerda) < 0.5:
+                    self.movimento_x_esquerda = 0
+                    self.movimento_x = 0
         #
         if self.foi_para_direita:
+            self.movimento_x_esquerda = 0
             if self.movimento_x_direita < self.movimento_padrao:
                 self.movimento_x_direita += (inicio + abs(self.movimento_x_direita) * constante)
                 self.movimento_x_direita = min(self.movimento_x_direita, self.movimento_padrao)
@@ -1296,8 +1300,9 @@ class Jogo:
             if self.movimento_x_direita > 0:
                 self.movimento_x_direita -= (inicio + abs(self.movimento_x_direita) * constante)
                 self.movimento_x = self.movimento_x_direita
-            else:
-                self.movimento_x_direita = 0
+                if abs(self.movimento_x_direita) < 0.5:
+                    self.movimento_x_direita = 0
+                    self.movimento_x = 0   
         #
         if self.acionou_hard_drop:
             if self.movimento_y_hard_drop < self.movimento_padrao - 1:
