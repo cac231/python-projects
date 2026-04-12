@@ -2,7 +2,6 @@ import pyxel as px
 import time
 import random
 import os
-import math
 
 SHAPES = {
     "shape_T": {
@@ -141,13 +140,7 @@ TABELA_G = {
     20:	36.6,
 }
 
-
-#todo: verifique se os t-spin esta funcionando corretamente, os incrementos dos status e os pop ups
-
 #todo: adicionar menu com um botao de começar, historico, configuracao e sair. Tela de pause, tela de game_over com as pontuações
-
-#todo: a animacao horizontal nao esta tao certa... as vezes fica com alguns pixels de diferença, com o shape_I
-
 
 def buscar_tabela_g(nivel):
     if nivel >= 20:
@@ -165,8 +158,8 @@ COLUNAS = 10
 LINHAS = 20
 TILE = 16
 
-ALTURA_DO_JOGO = 22
-CORRECAO_ALTURA = 2
+ALTURA_DO_JOGO = 23
+CORRECAO_ALTURA = 3
 
 BOARD_X = 80
 VAZIO = "_"
@@ -206,14 +199,16 @@ class Jogo:
         
         self.movimento_y_slide = 0
         self.movimento_exponencial_game_over = 0
+        
+        self.movimento_offset = 0
     
     def variaveis_velocidade_movimentacao(self):
         # das = 10
         self.das = 10
         # arr = 2
         self.arr = 2
-        # arr_soft_drop = 3
-        self.arr_soft_drop = 3
+        # arr_soft_drop = 2
+        self.arr_soft_drop = 2
    
     def inicializar_jogo(self):
         self.tempo_inicial = time.perf_counter()
@@ -221,7 +216,8 @@ class Jogo:
         self.mapa = [[VAZIO] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
         
         self.linhas_limpas = 0
-        self.nivel_atual = 1
+        self.nivel_inicial = 1
+        self.nivel_atual = self.nivel_inicial
         
         self.pontos_atual = 0
         self.combo_atual = -1
@@ -252,13 +248,13 @@ class Jogo:
         self.quantidade_perfect_clears = 0
         self.combo_maximo = 0
         self.streak_maximo = 0
-        self.quantidade_hold = 0
+        self.quantidade_holds = 0
         self.quantidade_pausadas = 0
         
         self.sequencia_dos_eventos = []
         
         # custumizacao
-        self.cores_aleatorias = [x for x in range(1, 8)]
+        self.cores_aleatorias = list(range(1, 8))
         random.shuffle(self.cores_aleatorias)
         
         self.distancia_rect_direita = 2.5
@@ -312,6 +308,8 @@ class Jogo:
         self.ultima_acao_foi_rotacao = False
         self.ultimo_srs_foi_1x2 = False
         self.tipo_do_t_spin = None
+        
+        self.ultimo_movimento_lateral = None        
         
         # gravidade
         self.gravidade_tempo_existe = 0
@@ -404,6 +402,7 @@ class Jogo:
                         mx = pos[0] + i_coluna 
                         my = pos[1] + i_linha + CORRECAO_ALTURA
                         mapa[my][mx] = cor
+                        self.verificar_game_over_teto()
             return True
         return False
 
@@ -700,6 +699,15 @@ class Jogo:
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa):
             self.estado_do_jogo = "game_over"
             self.shape_pos_atual = [0, 0]
+    
+    def verificar_game_over_teto(self):
+        for coluna in range(COLUNAS):
+            for linha in range(CORRECAO_ALTURA):
+                if self.mapa[linha][coluna] != VAZIO:
+                    self.estado_do_jogo = "game_over"
+                    self.shape_pos_atual = [0, 0]
+                    return True
+        return False
         
     def aumentar_lock_reset(self):
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
@@ -735,7 +743,7 @@ class Jogo:
     def segurar_shape(self, *, input_puro=False):
         if self.pegar_input("SEGURAR", input_puro=input_puro) and not self.segurou_neste_frame:
             self.segurou_neste_frame = True
-            self.quantidade_hold += 1
+            self.quantidade_holds += 1
             
             if self.shape_segurado == None:
                 self.shape_segurado = self.shape_atual
@@ -748,20 +756,27 @@ class Jogo:
         hold = self.das        
         repeticao = self.arr
         
-        esquerda = self.pegar_input("ESQUERDA", repeticao, hold)
         direita = self.pegar_input("DIREITA", repeticao, hold)
-
-        esquerda_puro = self.pegar_input("ESQUERDA", input_puro=True) and not self.pegar_input("DIREITA", input_puro=True)
-        direita_puro = self.pegar_input("DIREITA", input_puro=True) and not self.pegar_input("ESQUERDA", input_puro=True)
+        esquerda = self.pegar_input("ESQUERDA", repeticao, hold)
         
-        if esquerda_puro and esquerda:
+        if self.pegar_input("DIREITA"):
+            self.ultimo_movimento_lateral = "direita"
+        elif self.pegar_input("ESQUERDA"):
+            self.ultimo_movimento_lateral = "esquerda"
+        elif self.ultimo_movimento_lateral is None:
+            if self.pegar_input("DIREITA", input_puro=True):
+                self.ultimo_movimento_lateral = "direita"
+            elif self.pegar_input("ESQUERDA", input_puro=True):
+                self.ultimo_movimento_lateral = "esquerda"
+        
+        if self.ultimo_movimento_lateral == "esquerda" and esquerda:
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=-1):
                 self.shape_pos_atual[0] -= 1
                 self.shape_pos_fantasma = self.shape_pos_atual[:]
                 self.aumentar_lock_reset()
                 self.ultima_acao_foi_rotacao = False
         
-        elif direita_puro and direita:
+        elif self.ultimo_movimento_lateral == "direita" and direita:
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=1):
                 self.shape_pos_atual[0] += 1
                 self.shape_pos_fantasma = self.shape_pos_atual[:]
@@ -1011,7 +1026,7 @@ class Jogo:
         tempo_formatado = self.transformar_segundos()
         frases_status = [
             ("Tempo:",           f"{tempo_formatado}", 6),
-            ("Start Level:",     f"{self.nivel_atual}", 1),
+            ("Start Level:",     f"{self.nivel_inicial}", 1),
             ("Final Level:",     f"{self.nivel_atual}", 1),
             ("Linhas:",          f"{self.linhas_limpas}", 2),
             ("Pontos:",          f"{self.pontos_atual}", 2),
@@ -1023,8 +1038,8 @@ class Jogo:
             ("Perfect Clears:",  f"{self.quantidade_perfect_clears}", 4),
             ("Max Combo:",       f"{self.combo_maximo}", 5),
             ("Max Streak:",      f"{self.streak_maximo}", 5),
-            ("Times Held:",      f"{self.quantidade_hold}", 6),
-            ("Times Pause:",     f"{self.streak_maximo}", 6),  
+            ("Times Held:",      f"{self.quantidade_holds}", 6),
+            ("Times Pause:",     f"{self.quantidade_pausadas}", 6),  
         ]
 
         cor = self.cores_aleatorias
@@ -1094,6 +1109,7 @@ class Jogo:
             for i_coluna, _ in enumerate(e_linha):
                 if formato[i_linha][i_coluna] == 1:
                     match self.shape_pos_atual[1] + i_linha:
+                        case -3: return -3
                         case -2: return -2
                         case -1: return -1
         return 0
@@ -1105,10 +1121,10 @@ class Jogo:
         return 0
     
     def calcular_offset_pelo_mapa(self):
-        for linha_i in range(2):
+        for linha_i in range(CORRECAO_ALTURA):
             for espaco in self.mapa[linha_i]:
                 if espaco != VAZIO:
-                    return 2 - linha_i
+                    return CORRECAO_ALTURA - linha_i
         return 0
     
     #////
@@ -1129,7 +1145,8 @@ class Jogo:
             (TILE - diminuir) * ((linha_y + movimento_y) + offset), 
             0, 
             (TILE * spritesheet_x), (TILE * spritesheet_y), 
-            (TILE - diminuir), (TILE - diminuir)
+            (TILE - diminuir), (TILE - diminuir),
+            colkey=0
         )
         
     #////
@@ -1325,25 +1342,37 @@ class Jogo:
             
         if self.movimento_exponencial_game_over < limite:
             progresso = self.movimento_y_slide / (limite)
-            incremento = ((1 + self.movimento_y_slide) / velocidade) ** (0.5 + progresso ** 2)
+            incremento = ((1 + self.movimento_y_slide) / velocidade) ** (0.5 + progresso ** 1.5)
             self.movimento_exponencial_game_over += incremento
             self.movimento_exponencial_game_over = min(self.movimento_exponencial_game_over, limite)
        
         return self.movimento_exponencial_game_over
+    
+    def calcular_animacao_offset(self, offset_abs):
+        if offset_abs > self.movimento_offset:
+            self.movimento_offset = min(self.movimento_offset + 0.2, offset_abs)
+        elif offset_abs == 0 and self.movimento_offset > 0:
+            self.movimento_offset = max(self.movimento_offset - 0.2, 0)
+        if abs(self.movimento_offset) < 0.1:
+            self.movimento_offset = 0
+            
+        return self.movimento_offset
     
     #////
     
     def desenhar_tabuleiro_com_teto(self, *, movimento_x, movimento_y, offset):
         self.desenhar_fundo((BOARD_X, 0), (0, 0), (COLUNAS, LINHAS), movimento_x=movimento_x, movimento_y=movimento_y)
         if offset > 0:
-            px.dither(0.9)
+            px.dither(0.3)
             self.desenhar_fundo((BOARD_X, 0), (0, LINHAS * 2), (COLUNAS, offset), movimento_x=movimento_x, movimento_y=movimento_y)
             px.dither(1)
     
     #////
     
     def desenhar_tudo_em_jogo(self, movimento_x, movimento_x_esquerda, movimento_x_direita, movimento_y_hard_drop):
-        offset = self.calcular_offset()        
+        offset_abs = self.calcular_offset()
+        offset = self.calcular_animacao_offset(offset_abs)
+        print(offset)
             
         self.desenhar_tabuleiro_com_teto(movimento_x=movimento_x, movimento_y=movimento_y_hard_drop, offset=offset)
         
