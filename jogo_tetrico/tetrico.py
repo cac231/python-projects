@@ -62,6 +62,51 @@ SHAPES = {
     },
 }
 
+SHAPES_TITULO = {
+    "letra_T": {
+        "formato": [[1, 1, 1],
+                    [0, 1, 0],
+                    [0, 1, 0],
+                    [0, 1, 0],
+                    [0, 1, 0]],
+    },
+    "letra_E": {
+        "formato": [[1, 1, 1],
+                    [1, 0, 0],
+                    [1, 1, 1],
+                    [1, 0, 0],
+                    [1, 1, 1, 1]],
+    },
+    "letra_R": {
+        "formato": [[1, 1, 1],
+                    [1, 0, 1],
+                    [1, 1, 0],
+                    [1, 0, 1],
+                    [1, 0, 1]],
+    },
+    "letra_I": {
+        "formato": [[0, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [0, 1, 0],
+                    [0, 1, 0]],
+    },
+    "letra_C": {
+        "formato": [[1, 1, 1],
+                    [1, 0, 1],
+                    [1, 0, 0],
+                    [1, 0, 0],
+                    [1, 1, 1]],
+    },
+    "letra_O": {
+        "formato": [[1, 1, 1],
+                    [1, 0, 1],
+                    [1, 0, 1],
+                    [1, 0, 1],
+                    [1, 1, 1]],
+    },
+}
+
 COR_IMAGEM = {
     "p": 0,
     "c": 1,
@@ -147,11 +192,13 @@ def buscar_tabela_g(nivel):
         return TABELA_G[20]
     return TABELA_G[nivel]
 
-CENTRALIZAR = lambda string, largura: (largura / 2) - (FONT_1.text_width(string) / 2)
+CENTRALIZAR = lambda font, string, largura: (largura / 2) - (font.text_width(string) / 2)
 TRANSFORMAR_EM_DECIMAL = lambda num: num / 10
 
 CAMINHO = lambda caminho: os.path.join(os.path.dirname(os.path.abspath(__file__)), caminho)
 FONT_1 = px.Font(CAMINHO("assets/PublicPixel.ttf"), 8)
+FONT_2 = px.Font(CAMINHO("assets/PF Pixelscript Pro Regular.ttf"), 16)
+FONT_3 = px.Font(CAMINHO("assets/PublicPixel.ttf"), 16)
 
 COLUNAS = 10
 LINHAS = 20
@@ -183,17 +230,83 @@ class Jogo:
             
             "REINICIAR": [px.KEY_F1, px.GAMEPAD1_BUTTON_BACK],
             "PAUSAR": [px.KEY_ESCAPE, px.GAMEPAD1_BUTTON_START],
+            
+            "ACIONAR": [px.KEY_RETURN, px.GAMEPAD1_BUTTON_START],
+            "VOLTAR": [px.KEY_BACKSPACE, px.GAMEPAD1_BUTTON_GUIDE],
+            #
+            "PARA_CIMA": [px.KEY_UP, px.KEY_W, px.GAMEPAD1_BUTTON_DPAD_UP],
+            "PARA_BAIXO": [px.KEY_DOWN, px.KEY_S, px.GAMEPAD1_BUTTON_DPAD_DOWN],
         }   
         
-        self.inicializar_jogo()
+        self.iniciar_jogo()
+        
+        #self.iniciar_partida()
         px.run(self.atualizar, self.desenhar)
 
    #//// //// ////
+    
+    def iniciar_jogo(self):
+        self.estado_do_jogo = "em_menu"
+        self.variaveis_menu()
+
+    def navegar_menu(self, tela, opcao, *, clique=0, movimento=0):
+        self.tela_menu = {
+            "entrada": [False],
+            "inicio": [False, False, False, False]
+            # 
+        }
+        
+        self.tela = tela
+        self.posicao = opcao
+        
+        if clique != 0:
+            self.tela += clique
+            self.posicao = 0
+            if self.tela < 0:
+                self.tela = 0
+        
+        estados = ["entrada", "inicio"]
+        self.estado = estados[self.tela]
+        
+        quantidade_de_opcoes = len(self.tela_menu[self.estado])
+        
+        if movimento != 0:
+            self.posicao += movimento
+            if self.posicao % quantidade_de_opcoes == 0:
+                self.posicao = 0
+            if self.posicao < 0:
+                self.posicao = quantidade_de_opcoes - 1
+            
+        self.tela_menu[self.estado][self.posicao] = True
+        
+        dados_finais = {
+            "tela": self.tela, 
+            "posicao": self.posicao, 
+            "todas_as_opcoes": self.tela_menu[self.estado],
+        }
+        print(dados_finais)
+        
+        return dados_finais
+    
+    def variaveis_menu(self):
+        self.transparencia_do_fundo = 0.4
+        
+        # estados
+        self.tela_e_opcoes = self.navegar_menu(0 ,0)
+        
+        # cores
+        self.cores_aleatorias_titulo = list(range(0, 7))
+        random.shuffle(self.cores_aleatorias_titulo)
+        self.cor_aleatoria_titulo = random.choice(self.cores_aleatorias_titulo)
    
-    def inicializar_jogo(self):
+    #////
+    
+    def iniciar_partida(self):
         self.tempo_inicial = time.perf_counter()
         
         self.mapa = [[VAZIO] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
+        
+        self.transparencia_do_fundo = 0.6
         
         self.linhas_limpas = 0
         self.nivel_inicial = 1
@@ -233,8 +346,8 @@ class Jogo:
         self.sequencia_dos_eventos = []
         
         # cores
-        self.cores_aleatorias = list(range(1, 8))
-        random.shuffle(self.cores_aleatorias)
+        self.cores_aleatorias_texto = list(range(1, 8))
+        random.shuffle(self.cores_aleatorias_texto)
         
         # tamanho dos rects
         self.distancia_rect_direita = 2.5
@@ -823,7 +936,7 @@ class Jogo:
     
     def teclas_especiais(self):
         if self.pegar_input("REINICIAR"):
-            self.inicializar_jogo()
+            self.iniciar_partida()
         elif self.pegar_input("PAUSAR"):
             pass
     
@@ -837,10 +950,27 @@ class Jogo:
         self.hard_drop()
         self.teclas_especiais()
     
+    def teclas_navegacao(self):
+        if self.pegar_input("ACIONAR"):
+            self.tela_e_opcoes = self.navegar_menu(self.tela, self.posicao, clique=+1)
+        
+        if self.pegar_input("VOLTAR"):
+            self.tela_e_opcoes = self.navegar_menu(self.tela, self.posicao, clique=-1)
+
+        if self.pegar_input("PARA_CIMA"):
+            self.tela_e_opcoes = self.navegar_menu(self.tela, self.posicao, movimento=-1)
+        
+        if self.pegar_input("PARA_BAIXO"):
+            self.tela_e_opcoes = self.navegar_menu(self.tela, self.posicao, movimento=+1)
+        
     #////
 
     def atualizar(self):
         self.tempo_fps_ms = time.perf_counter()
+        
+        if self.estado_do_jogo == "em_menu":
+            self.teclas_navegacao()
+            return
         
         if self.estado_do_jogo == "pausado":
             self.teclas_especiais()
@@ -894,6 +1024,78 @@ class Jogo:
         #print(self.shape_pos_atual)
 
     #//// //// ////
+    
+    def desenhar_titulo_menu(self):
+        def _desenhar_letra(coluna_x, linha_y, spritesheet_x, spritesheet_y, *, movimento_x=0, movimento_y=0):
+            px.blt(
+                (coluna_x + movimento_x), (linha_y + movimento_y), 
+                0, 
+                (TILE * spritesheet_x), (TILE * spritesheet_y), 
+                TILE, TILE
+            )
+        
+        pos_x, pos_y = 2, 15
+        
+        ordem = ["letra_T", "letra_E", "letra_T", "letra_R", "letra_I", "letra_C", "letra_O"]
+        spritesheet_x = self.cores_aleatorias_titulo
+        
+        texto = "The Flow"
+        largura = TILE * LINHAS
+        
+        for index, letra in enumerate(ordem):
+            formato = SHAPES_TITULO[letra]["formato"]
+            for i_linha, e_linha in enumerate(formato):
+                for i_coluna, _ in enumerate(e_linha):
+                    if formato[i_linha][i_coluna] == 1:
+                            _desenhar_letra(
+                                pos_x + (i_coluna * TILE),
+                                pos_y + (i_linha * TILE), 
+                                spritesheet_x[index], 0,
+                            )
+            if index != (len(ordem) - 1) and ordem[index + 1] == "letra_I":
+                pos_x += 34
+            elif letra == "letra_I":
+                pos_x += 34
+            else:
+                pos_x += 50
+                
+        px.text(CENTRALIZAR(FONT_2, texto, largura), 110, texto, self.cor_aleatoria_titulo + 9, FONT_2)
+    
+    def desenhar_texto_menu(self, pos_y, frase, largura, cor, ativo, *, movimento_x=0, movimento_y=0):
+        def _desenhar_texto(*, dx=0, dy=0, soma=0):
+           px.text(
+                (movimento_x * TILE) + CENTRALIZAR(FONT_3, frase, largura) + dx, 
+                pos_y + (movimento_y * TILE) + dy, 
+                frase, cor + soma, FONT_3
+            )
+        
+        if ativo == True:
+            for dx in range(-1, 2):
+                for dy in range(-1, 2):
+                    if dx != 0 or dy != 0:
+                        _desenhar_texto(dx=dx, dy=dy, soma=8)
+            _desenhar_texto()
+        else:
+            px.dither(0.3)
+            _desenhar_texto()
+            px.dither(1)
+    
+    def desenhar_os_botoes(self):
+        if self.tela_e_opcoes["tela"] == 0:
+            frase = "PRESSIONE [ENTER]"
+            meio = 230 - (FONT_3.text_width(frase) / 2 / 16)
+            self.desenhar_texto_menu(meio, frase, (TILE * LINHAS), self.cor_aleatoria_titulo + 1, True)
+        
+        if self.tela_e_opcoes["tela"] == 1:
+            frase = ["JOGAR", "CONFIG", "SOBRE", "SAIR"]
+            ordem_ativo = self.tela_e_opcoes["todas_as_opcoes"]
+    
+            pos_y = 170
+            for frase, ativo in zip(frase, ordem_ativo):
+                self.desenhar_texto_menu(pos_y, frase, (TILE * LINHAS), self.cor_aleatoria_titulo + 1, ativo)
+                pos_y += 30
+    
+    #////
     
     def rects_da_esquerda(self, margem, largura, movimento_x_esquerda, movimento_y):
         if self.shape_segurado != None:
@@ -987,11 +1189,11 @@ class Jogo:
         
         pos_y += espaco
         for index, (frase, valor) in enumerate(frases_esqueda_1):
-            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(frase, largura), pos_y + (movimento_y * TILE), frase, cor[index], FONT_1)
+            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(FONT_1, frase, largura), pos_y + (movimento_y * TILE), frase, cor[index], FONT_1)
             
             if valor != None:
                 pos_y += espacamento_entre_valores
-                px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(valor, largura), pos_y + (movimento_y * TILE), valor, cor[index], FONT_1)
+                px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(FONT_1, valor, largura), pos_y + (movimento_y * TILE), valor, cor[index], FONT_1)
             pos_y += espacamento
         self.comprimento_do_rect_esquerdo = pos_y - 80 + offset_fonte
     
@@ -1015,9 +1217,9 @@ class Jogo:
         for (frase, valor) in frases_esqueda_2:
             cor_final = cor_combo if frase == "COMBO" else cor_streak        
             
-            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(frase, largura), pos_y + (movimento_y * TILE), frase, cor_final, FONT_1)
+            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(FONT_1, frase, largura), pos_y + (movimento_y * TILE), frase, cor_final, FONT_1)
             pos_y += espacamento_entre_valores
-            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(valor, largura), pos_y + (movimento_y * TILE), valor, cor_final, FONT_1)
+            px.text((movimento_x_esquerda * TILE) + CENTRALIZAR(FONT_1, valor, largura), pos_y + (movimento_y * TILE), valor, cor_final, FONT_1)
             pos_y += espacamento
         
         self.comprimento_do_rect_direita = pos_y - ((80 - offset_fonte) + self.comprimento_do_rect_esquerdo + margem)
@@ -1025,7 +1227,7 @@ class Jogo:
     def todos_os_textos(self, movimento_x_esquerda, movimento_y):
         largura = 80
         altura_da_fonte = 14 / 2 # 14 é a altura literal desta fonte
-        cor = self.cores_aleatorias
+        cor = self.cores_aleatorias_texto
         self.textos_da_esquerda_1(altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y)
         self.textos_da_esquerda_2(altura_da_fonte, largura, cor, movimento_x_esquerda, movimento_y)
     
@@ -1053,7 +1255,7 @@ class Jogo:
             ("Times Pause:",     f"{self.quantidade_pausadas}", 6),  
         ]
 
-        cor = self.cores_aleatorias
+        cor = self.cores_aleatorias_texto
         
         espacamento = 20
         espacamento_entre_valores = 11
@@ -1107,7 +1309,7 @@ class Jogo:
             bit = 8
             pos_y = round((pos_inicial / bit) - int(fator * range_animacao) / bit) * bit
             
-            px.text((movimento_x * TILE) + CENTRALIZAR(frase, largura), pos_y, frase, cor, FONT_1)
+            px.text((movimento_x * TILE) + CENTRALIZAR(FONT_1, frase, largura), pos_y, frase, cor, FONT_1)
             
             evento[2] -= 1
             if duracao == 0:
@@ -1268,9 +1470,9 @@ class Jogo:
             self.desenhar_shape_segurado(self.shape_segurado, movimento_x_esquerda, movimento_y)
     
     def desenhar_tabuleiro_e_teto(self, *, movimento_x, movimento_y, offset):
-        self.desenhar_fundo((BOARD_X, 0), (0, 0), (COLUNAS, LINHAS), movimento_x=movimento_x, movimento_y=movimento_y, colkey=1)
+        self.desenhar_fundo((BOARD_X, 0), (0, 0), (COLUNAS, LINHAS), movimento_x=movimento_x, movimento_y=movimento_y)
         if offset > 0:
-            px.dither(0.5)
+            px.dither(0.1)
             self.desenhar_fundo((BOARD_X, 0), (0, LINHAS * 2), (COLUNAS, offset), movimento_x=movimento_x, movimento_y=movimento_y)
             px.dither(1)
     
@@ -1307,7 +1509,7 @@ class Jogo:
             _animacao_de_limpar_linha(COLUNAS // 2, COLUNAS, constante, constante_na_pos_x=constante)
     
     def desenhar_animacao_hard_drop(self, movimento_x, movimento_y):
-        diminuicao = 1.8
+        diminuicao = 2
         duracao_total = 0.5
         duracao_diminuicao = 0.5
         
@@ -1427,6 +1629,12 @@ class Jogo:
     
     #////
     
+    def desenhar_tudo_em_menu(self):
+        self.desenhar_titulo_menu()        
+        self.desenhar_os_botoes()
+
+    #
+    
     def desenhar_tudo_em_jogo(self, movimento_x, movimento_x_esquerda, movimento_x_direita, movimento_y_hard_drop):
         offset_abs = self.calcular_offset()
         offset = self.calcular_animacao_offset(offset_abs)
@@ -1470,10 +1678,23 @@ class Jogo:
     
     def desenhar(self):
         px.cls(0)
+        
+        if self.estado_do_jogo == "em_menu":
+            px.dither(0.5)
+            px.rect(0, 0, LINHAS * TILE, 150, 8)
+            
+            px.dither(0.3)
+            px.rect(0, 150, LINHAS * TILE, 300, 8)
+            
+            px.dither(1)
+
+            self.desenhar_tudo_em_menu()
+            return
     
-        px.dither(0.9)
+        px.dither(self.transparencia_do_fundo)
         px.rect(0, 0, LINHAS * TILE, LINHAS * TILE, 8)
         px.dither(1)
+        
         
         if self.estado_do_jogo != "pausado":
             self.calcular_valores_das_animacoes()
