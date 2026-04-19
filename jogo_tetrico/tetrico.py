@@ -78,11 +78,11 @@ SHAPES_TITULO = {
                     [1, 1, 1, 1]],
     },
     "letra_R": {
-        "formato": [[1, 1, 1],
-                    [1, 0, 1],
-                    [1, 1, 0],
-                    [1, 0, 1],
-                    [1, 0, 1]],
+        "formato": [[0, 1, 1, 1],
+                    [0, 1, 0, 1],
+                    [0, 1, 1, 0],
+                    [0, 1, 0, 1],
+                    [1, 1, 0, 1]],
     },
     "letra_I": {
         "formato": [[0, 1, 0],
@@ -212,7 +212,7 @@ VAZIO = "_"
 
 class Jogo:
     def __init__(self):  
-        px.init(LINHAS * TILE, LINHAS * TILE, title="Tetrico: The Elegance", fps=60, display_scale=2, quit_key=False)
+        px.init(LINHAS * TILE, LINHAS * TILE, title="Tetrico: The Smoothness", fps=60, display_scale=2, quit_key=False)
         px.load("my_resource.pyxres")
         px.tilemaps[0].set(0, 32, ["0"])
         px.tilemaps[0].set(32, 32, ["1"])
@@ -246,67 +246,116 @@ class Jogo:
    #//// //// ////
     
     def iniciar_jogo(self):
-        self.estado_do_jogo = "em_menu"
+        self.estado_atual_do_jogo = "em_menu"
+        self.modo_do_jogo = None
+        
         self.variaveis_menu()
 
-    def navegar_menu(self, tela, opcao, *, clique=0, movimento=0):
-        self.tela_menu = {
-            "entrada": [False],
-            "inicio": [False, False, False, False]
-            # 
-        }
-        
-        self.tela = tela
-        self.posicao = opcao
-        
+    def navegar_verticalmente_menu(self, clique):
         if clique != 0:
-            self.tela += clique
-            self.posicao = 0
-            if self.tela < 0:
-                self.tela = 0
-        
-        estados = ["entrada", "inicio"]
-        self.estado = estados[self.tela]
-        
-        quantidade_de_opcoes = len(self.tela_menu[self.estado])
-        
-        if movimento != 0:
-            self.posicao += movimento
-            if self.posicao % quantidade_de_opcoes == 0:
-                self.posicao = 0
-            if self.posicao < 0:
-                self.posicao = quantidade_de_opcoes - 1
+            self.menu_atual_indice += clique
             
-        self.tela_menu[self.estado][self.posicao] = True
+            if self.menu_atual_indice < 0:
+                self.menu_atual_indice = 0
+            
+            elif clique == -1:
+                self.opcao_atual = self.pilha_menu[-1][1]
+                self.pilha_menu.pop()    
         
-        dados_finais = {
-            "tela": self.tela, 
-            "posicao": self.posicao, 
-            "todas_as_opcoes": self.tela_menu[self.estado],
-        }
-        print(dados_finais)
+            elif self.menu_atual_indice == 1:
+                self.pilha_menu.append(["inicio", self.opcao_atual])
+                self.opcao_atual = 0
+            
+            elif self.menu_atual_indice == 2:
+                match self.opcao_atual:
+                    case 0: self.pilha_menu.append(["jogar", self.opcao_atual])
+                    case 1: self.pilha_menu.append(["configuracao", self.opcao_atual])
+                    case 2: self.pilha_menu.append(["historico", self.opcao_atual])
+                    case 3: self.pilha_menu.append(["sobre", self.opcao_atual])
+                    case 4: self.pilha_menu.append(["sair", self.opcao_atual])
+                self.opcao_atual = 0
+            
+            elif self.menu_atual_indice == 3:
+                
+                if self.menu_ativo == "sobre" and clique == 1:
+                    self.menu_atual_indice -= clique
+                
+                elif self.menu_ativo == "sair":
+                    px.quit()
+                
+                elif self.menu_ativo == "jogar":
+                    match self.opcao_atual:
+                        case 0:
+                            self.estado_atual_do_jogo = "em_jogo"
+                            self.modo_do_jogo = "marathon"
+                            self.iniciar_partida()
+                        case 1:
+                            self.estado_atual_do_jogo = "em_jogo"
+                            self.modo_do_jogo = "40_lines"
+                            self.iniciar_partida()
+                        case 2:
+                            self.estado_atual_do_jogo = "em_jogo"
+                            self.modo_do_jogo = "ultra"
+                            self.iniciar_partida()
+                        case 3:
+                            self.estado_atual_do_jogo = "em_jogo"
+                            self.modo_do_jogo = "infinito"
+                            self.iniciar_partida()
+    
+    def navegar_horizontalmente_menu(self, deslize):
+        self.menu_ativo = self.pilha_menu[-1][0]
+        quantidade_de_opcoes = len(self.todos_os_menus[self.menu_ativo])
         
-        return dados_finais
+        if deslize != 0:
+            self.opcao_atual += deslize
+            if self.opcao_atual % quantidade_de_opcoes == 0:
+                self.opcao_atual = 0
+            if self.opcao_atual < 0:
+                self.opcao_atual = quantidade_de_opcoes - 1
+    
+    def navegar_menu(self, *, clique=0, deslize=0):
+        self.todos_os_menus = {
+            "entrada": [False],
+            "inicio": [False] * 5,
+            #
+            "jogar": [False] * 4,
+            "configuracao": [False] * 4,
+            "historico": [False] * 4,
+            "sobre": [True] * 4,
+            "sair": [True] * 2
+            #
+        }   
+        
+        self.navegar_verticalmente_menu(clique)
+        self.navegar_horizontalmente_menu(deslize)
+            
+        self.todos_os_menus[self.menu_ativo][self.opcao_atual] = True
+        self.todas_as_opcoes = self.todos_os_menus[self.menu_ativo]   
+    
+    #
     
     def variaveis_menu(self):
-        self.transparencia_do_fundo = 0.4
-        
         # estados
-        self.tela_e_opcoes = self.navegar_menu(0 ,0)
+        self.pilha_menu = [["entrada", 0]]
+        self.menu_atual_indice = 0
+        self.opcao_atual = 0
+        self.navegar_menu()
         
         # cores
         self.cores_aleatorias_titulo = list(range(0, 7))
         random.shuffle(self.cores_aleatorias_titulo)
         self.cor_aleatoria_titulo = random.choice(self.cores_aleatorias_titulo)
+        
+        # animacao
+        self.offset_menu = 0
    
     #////
     
     def iniciar_partida(self):
         self.tempo_inicial = time.perf_counter()
+        self.tempo_atual_em_segundos = 0
         
         self.mapa = [[VAZIO] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
-        
-        self.transparencia_do_fundo = 0.6
         
         self.linhas_limpas = 0
         self.nivel_inicial = 1
@@ -327,7 +376,7 @@ class Jogo:
         self.gerar_novo_shape()
        
         # estados
-        self.estado_do_jogo = "em_jogo"
+        self.estado_atual_do_jogo = "em_jogo"
         self.fixou_neste_frame = False
         self.segurou_neste_frame = False
         self.acionou_hard_drop = False
@@ -359,7 +408,7 @@ class Jogo:
         # CONFIGURAÇÃO DO USUÁRIO
         
         # movimento_padrao = 5
-        self.movimento_padrao = 5
+        self.movimento_padrao = 6
         self.variaveis_movimentos()
         self.variaveis_velocidade_movimentacao()
     
@@ -812,14 +861,14 @@ class Jogo:
 
     def verificar_game_over_colisao(self):
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa):
-            self.estado_do_jogo = "game_over"
+            self.estado_atual_do_jogo = "game_over"
             self.shape_pos_atual = [0, 0]
     
     def verificar_game_over_teto(self):
         for coluna in range(COLUNAS):
             for linha in range(CORRECAO_ALTURA):
                 if self.mapa[linha][coluna] != VAZIO:
-                    self.estado_do_jogo = "game_over"
+                    self.estado_atual_do_jogo = "game_over"
                     self.shape_pos_atual = [0, 0]
                     return True
         return False
@@ -952,39 +1001,39 @@ class Jogo:
     
     def teclas_navegacao(self):
         if self.pegar_input("ACIONAR"):
-            self.tela_e_opcoes = self.navegar_menu(self.tela, self.posicao, clique=+1)
+            self.navegar_menu(clique=+1)
         
         if self.pegar_input("VOLTAR"):
-            self.tela_e_opcoes = self.navegar_menu(self.tela, self.posicao, clique=-1)
+            self.navegar_menu(clique=-1)
 
         if self.pegar_input("PARA_CIMA"):
-            self.tela_e_opcoes = self.navegar_menu(self.tela, self.posicao, movimento=-1)
+            self.navegar_menu(deslize=-1)
         
         if self.pegar_input("PARA_BAIXO"):
-            self.tela_e_opcoes = self.navegar_menu(self.tela, self.posicao, movimento=+1)
+            self.navegar_menu(deslize=+1)
         
     #////
 
     def atualizar(self):
         self.tempo_fps_ms = time.perf_counter()
         
-        if self.estado_do_jogo == "em_menu":
+        if self.estado_atual_do_jogo == "em_menu":
             self.teclas_navegacao()
             return
         
-        if self.estado_do_jogo == "pausado":
+        if self.estado_atual_do_jogo == "pausado":
             self.teclas_especiais()
             return
         
         self.sistema_bag_7()
         
-        if self.estado_do_jogo == "game_over":
+        if self.estado_atual_do_jogo == "game_over":
             self.teclas_especiais()
             if self.movimento_y_slide >= LINHAS + 1:
-                self.estado_do_jogo = "apos_game_over"
+                self.estado_atual_do_jogo = "apos_game_over"
             return
 
-        if self.estado_do_jogo == "apos_game_over":
+        if self.estado_atual_do_jogo == "apos_game_over":
             self.teclas_especiais()
             return  
         
@@ -1039,7 +1088,7 @@ class Jogo:
         ordem = ["letra_T", "letra_E", "letra_T", "letra_R", "letra_I", "letra_C", "letra_O"]
         spritesheet_x = self.cores_aleatorias_titulo
         
-        texto = "The Flow"
+        texto = "The Smoothness"
         largura = TILE * LINHAS
         
         for index, letra in enumerate(ordem):
@@ -1053,48 +1102,91 @@ class Jogo:
                                 spritesheet_x[index], 0,
                             )
             if index != (len(ordem) - 1) and ordem[index + 1] == "letra_I":
+                pos_x += 34 + 16
+            elif index != (len(ordem) - 1) and ordem[index + 1] == "letra_R":
                 pos_x += 34
             elif letra == "letra_I":
                 pos_x += 34
             else:
                 pos_x += 50
                 
-        px.text(CENTRALIZAR(FONT_2, texto, largura), 110, texto, self.cor_aleatoria_titulo + 9, FONT_2)
+        px.text(CENTRALIZAR(FONT_2, texto, largura), 115, texto, self.cor_aleatoria_titulo + 9, FONT_2)
     
-    def desenhar_texto_menu(self, pos_y, frase, largura, cor, ativo, *, movimento_x=0, movimento_y=0):
-        def _desenhar_texto(*, dx=0, dy=0, soma=0):
+    def desenhar_texto_menu(self, pos_x, pos_y, largura, ativo, frase, *, movimento_x=0, movimento_y=0):
+        def _desenhar_texto(*, dx=0, dy=0, cor=0):
            px.text(
-                (movimento_x * TILE) + CENTRALIZAR(FONT_3, frase, largura) + dx, 
+                pos_x + (movimento_x * TILE) + CENTRALIZAR(FONT_3, frase, largura) + dx , 
                 pos_y + (movimento_y * TILE) + dy, 
-                frase, cor + soma, FONT_3
+                frase, cor, FONT_3
             )
         
-        if ativo == True:
+        if ativo != True:
+            px.dither(0.3)
+            _desenhar_texto(cor=self.cor_aleatoria_titulo + 9)
+            px.dither(1)    
+        else:
             for dx in range(-1, 2):
                 for dy in range(-1, 2):
                     if dx != 0 or dy != 0:
-                        _desenhar_texto(dx=dx, dy=dy, soma=8)
-            _desenhar_texto()
-        else:
-            px.dither(0.3)
-            _desenhar_texto()
-            px.dither(1)
+                        _desenhar_texto(dx=dx, dy=dy, cor=8)
+            _desenhar_texto(cor=self.cor_aleatoria_titulo + 1)
     
-    def desenhar_os_botoes(self):
-        if self.tela_e_opcoes["tela"] == 0:
-            frase = "PRESSIONE [ENTER]"
-            meio = 230 - (FONT_3.text_width(frase) / 2 / 16)
-            self.desenhar_texto_menu(meio, frase, (TILE * LINHAS), self.cor_aleatoria_titulo + 1, True)
+    def desenhar_os_botoes(self, offset):
+        maximo = LINHAS * TILE # 320
         
-        if self.tela_e_opcoes["tela"] == 1:
-            frase = ["JOGAR", "CONFIG", "SOBRE", "SAIR"]
-            ordem_ativo = self.tela_e_opcoes["todas_as_opcoes"]
-    
-            pos_y = 170
-            for frase, ativo in zip(frase, ordem_ativo):
-                self.desenhar_texto_menu(pos_y, frase, (TILE * LINHAS), self.cor_aleatoria_titulo + 1, ativo)
-                pos_y += 30
-    
+        altura_da_fonte = 18
+        centro_y = (maximo/2 + maximo) / 2
+        
+        #
+        
+        espacamento = 0
+        altura_total =  (len(self.todas_as_opcoes) - 1) * espacamento + altura_da_fonte
+        pos_y = centro_y - altura_total / 2
+       
+        frase = "Pressione [ENTER]"
+        self.desenhar_texto_menu(
+            -offset, pos_y, 
+            (TILE * LINHAS), True, frase, 
+        )   
+        
+        #
+        
+        espacamento = 28
+        altura_total =  (len(self.todas_as_opcoes) - 1) * espacamento + altura_da_fonte
+        pos_y = centro_y - altura_total / 2
+
+        frase = ["Modos", "Ajustes", "Histórico", "Sobre", "Sair"] 
+        for frase, ativo in zip(frase, self.todas_as_opcoes):
+            self.desenhar_texto_menu(
+                maximo - offset, pos_y, 
+                (TILE * LINHAS), ativo, frase, 
+            )
+            pos_y += espacamento
+
+        #
+        
+        if self.menu_atual_indice == 2:
+            frases = {
+                "jogar": (["MARATHON", "40 LINES", "ULTRA", "INFINITO"], 30),
+                "configuracao": (["XX", "FDS", "FDSF", "FSDFS"], 30),
+                "historico": (["XX", "FDS", "FDSF", "FSDFS"], 30),
+                "sobre": (["Feito pelo Cac", "Feito com Pyxel", "Feito com carinho", ":D"], 25),
+                "sair": (["Pressione [ENTER]", "para confirmar"], 25),
+            }
+            frases_atuais = frases[self.menu_ativo][0]
+        
+            espacamento = frases[self.menu_ativo][1]
+            altura_total =  (len(self.todas_as_opcoes) - 1) * espacamento + altura_da_fonte
+            pos_y = centro_y - altura_total / 2
+            
+            for frase, ativo in zip(frases_atuais, self.todas_as_opcoes):
+                self.desenhar_texto_menu(
+                    (maximo * 2) - offset, pos_y, 
+                    (TILE * LINHAS), ativo, frase,
+                )
+                pos_y += espacamento
+        
+        
     #////
     
     def rects_da_esquerda(self, margem, largura, movimento_x_esquerda, movimento_y):
@@ -1472,7 +1564,7 @@ class Jogo:
     def desenhar_tabuleiro_e_teto(self, *, movimento_x, movimento_y, offset):
         self.desenhar_fundo((BOARD_X, 0), (0, 0), (COLUNAS, LINHAS), movimento_x=movimento_x, movimento_y=movimento_y)
         if offset > 0:
-            px.dither(0.1)
+            px.dither(0.4)
             self.desenhar_fundo((BOARD_X, 0), (0, LINHAS * 2), (COLUNAS, offset), movimento_x=movimento_x, movimento_y=movimento_y)
             px.dither(1)
     
@@ -1627,11 +1719,18 @@ class Jogo:
         
         return self.movimento_offset
     
+    def calcular_animacao_menu(self):
+        pos_x_destino = self.menu_atual_indice * 320
+        distancia_restante = pos_x_destino - self.offset_menu
+        self.offset_menu += distancia_restante * 0.2
+        if abs(distancia_restante) < 1:
+            self.offset_menu = pos_x_destino
+    
     #////
     
     def desenhar_tudo_em_menu(self):
         self.desenhar_titulo_menu()        
-        self.desenhar_os_botoes()
+        self.desenhar_os_botoes(self.offset_menu)
 
     #
     
@@ -1679,26 +1778,30 @@ class Jogo:
     def desenhar(self):
         px.cls(0)
         
-        if self.estado_do_jogo == "em_menu":
-            px.dither(0.5)
-            px.rect(0, 0, LINHAS * TILE, 150, 8)
+        if self.estado_atual_do_jogo == "em_menu":
+            maximo = LINHAS * TILE # 320
             
-            px.dither(0.3)
-            px.rect(0, 150, LINHAS * TILE, 300, 8)
+            px.dither(0.4)
+            px.rect(0, 0, maximo, maximo / 2, 8)
+            
+            px.dither(0.1)
+            px.rect(0, maximo / 2, LINHAS * TILE, maximo / 2, 8)
             
             px.dither(1)
 
+            self.calcular_animacao_menu()
+            
             self.desenhar_tudo_em_menu()
             return
     
-        px.dither(self.transparencia_do_fundo)
+        px.dither(0.6)
         px.rect(0, 0, LINHAS * TILE, LINHAS * TILE, 8)
         px.dither(1)
         
         
-        if self.estado_do_jogo != "pausado":
+        if self.estado_atual_do_jogo != "pausado":
             self.calcular_valores_das_animacoes()
-            if self.estado_do_jogo == "game_over":
+            if self.estado_atual_do_jogo == "game_over":
                 self.movimento_y_slide = self.calcular_animacao_game_over_slide()
          
         movimento_x_esquerda = TRANSFORMAR_EM_DECIMAL(self.movimento_x_esquerda)
@@ -1706,17 +1809,17 @@ class Jogo:
         movimento_x = TRANSFORMAR_EM_DECIMAL(self.movimento_x)
         movimento_y_hard_drop = TRANSFORMAR_EM_DECIMAL(self.movimento_y_hard_drop)
         
-        if self.estado_do_jogo in ("em_jogo", "game_over", "apos_game_over"):
+        if self.estado_atual_do_jogo in ("em_jogo", "game_over", "apos_game_over"):
             self.todos_os_rects(movimento_x_esquerda, movimento_x_direita, self.movimento_y_slide)
             self.todos_os_textos(movimento_x_esquerda, self.movimento_y_slide)
         
-        if self.estado_do_jogo == "em_jogo":
+        if self.estado_atual_do_jogo == "em_jogo":
             self.desenhar_tudo_em_jogo(movimento_x, movimento_x_esquerda, movimento_x_direita, movimento_y_hard_drop) 
     
-        if self.estado_do_jogo == "game_over":
+        if self.estado_atual_do_jogo == "game_over":
             self.desenhar_tudo_no_game_over(movimento_x, movimento_x_esquerda, movimento_x_direita, movimento_y_hard_drop, self.movimento_y_slide)            
         
-        if self.estado_do_jogo == "apos_game_over":
+        if self.estado_atual_do_jogo == "apos_game_over":
             self.desenhar_fundo((BOARD_X, 0), (0, LINHAS), (COLUNAS, LINHAS), movimento_x=0, movimento_y=0)
             self.textos_estatisticas(movimento_y=0, pos_y_negativo=0)
         
