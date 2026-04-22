@@ -21,6 +21,15 @@ SHAPES = {
         "cor_letra": "c",        
         "centralizado": (0, -1),
     },
+    "shape_IL": {
+        "formato": [[0, 0, 0, 1],
+                    [1, 1, 1, 1],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]],
+        "imagem_pos": 1,
+        "cor_letra": "c",        
+        "centralizado": (0, -1),
+    },
     "shape_O": {
         "formato": [[1, 1],
                     [1, 1]],
@@ -196,9 +205,14 @@ CENTRALIZAR = lambda font, string, largura: (largura / 2) - (font.text_width(str
 TRANSFORMAR_EM_DECIMAL = lambda num: num / 10
 
 CAMINHO = lambda caminho: os.path.join(os.path.dirname(os.path.abspath(__file__)), caminho)
-FONT_1 = px.Font(CAMINHO("assets/PublicPixel.ttf"), 8)
-FONT_2 = px.Font(CAMINHO("assets/PF Pixelscript Pro Regular.ttf"), 16)
-FONT_3 = px.Font(CAMINHO("assets/PublicPixel.ttf"), 16)
+
+FONT_10 = px.Font(CAMINHO("assets/PublicPixel.ttf"), 8)
+ALTURA_DA_FONTE_10 = 14
+
+FONT_11 = px.Font(CAMINHO("assets/PublicPixel.ttf"), 16)
+ALTURA_DA_FONTE_11 = 18
+
+FONT_20 = px.Font(CAMINHO("assets/PF Pixelscript Pro Regular.ttf"), 16)
 
 COLUNAS = 10
 LINHAS = 20
@@ -268,6 +282,7 @@ class Jogo:
         self.cor_aleatoria_titulo = random.choice(self.cores_aleatorias_titulo)
         
         # animacao
+        self.offset_menu_scroll = 0
         self.offset_x_menu = 0
         self.offset_menu_para_jogo = 0
     
@@ -276,13 +291,15 @@ class Jogo:
     def navegar_menu(self, *, clique=0, deslize=0):
         self.todos_os_menus = {
             "entrada": [False],
-            "inicio": [False] * 5,
+            "inicio": [False] * 6
+            ,
             #
             "jogar": [False] * 4,
             "configuracao": [False] * 4,
             "historico": [False] * 4,
             "sobre": [True] * 4,
-            "sair": [True] * 2
+            "sair": [True] * 2,
+            "teste": [True]
             #
         }   
         
@@ -595,7 +612,7 @@ class Jogo:
             return True
         return False
 
-    def transformar_segundos(self):
+    def retornar_tempo_formatado(self):
         minutos = int(self.tempo_atual_em_segundos // 60)
         segundos = int(self.tempo_atual_em_segundos % 60)
         centesimos = int((self.tempo_atual_em_segundos - int(self.tempo_atual_em_segundos)) * 100)
@@ -1175,21 +1192,36 @@ class Jogo:
                 pos_x += 50
                 
         texto = "The Smoothness"
-        px.text(CENTRALIZAR(FONT_2, texto, largura) - offset, 115, texto, self.cor_aleatoria_titulo + 9, FONT_2)
+        px.text(CENTRALIZAR(FONT_20, texto, largura) - offset, 115, texto, self.cor_aleatoria_titulo + 9, FONT_20)
     
     #
     
-    def desenhar_texto_menu(self, pos_x, pos_y, largura, frase, ativo):
+    def desenhar_texto_menu(self, pos_x, pos_y, largura, frase, ativo, espacamento, todas_as_opcoes, itens_visiveis, animacao=True):
         offset_x = self.offset_menu_para_jogo
+        
+        offset_y = 0
+        if animacao:
+            if self.opcao_atual > (len(todas_as_opcoes) - 3):
+                scroll = max(0, len(todas_as_opcoes) - 5)
+            else:
+                scroll = max(0, self.opcao_atual - (itens_visiveis - 3))
+            print(scroll)
+            
+            pos_x_destino = scroll
+            distancia_restante = pos_x_destino - self.offset_menu_scroll
+            self.offset_menu_scroll += distancia_restante * 0.05
+            if abs(distancia_restante) < 0.1:
+                self.offset_menu_scroll = pos_x_destino
+            offset_y = self.offset_menu_scroll
+        
         def _desenhar_texto(*, dx=0, dy=0, cor=0):
            px.text(
-                pos_x + dx + CENTRALIZAR(FONT_3, frase, largura) - offset_x, 
-                pos_y + dy, 
-                frase, cor, FONT_3
+                pos_x + dx + CENTRALIZAR(FONT_11, frase, largura) - offset_x, 
+                pos_y + dy - (espacamento * offset_y), 
+                frase, cor, FONT_11
             )
         
         acertar_cor, cor_escura = 1, 9
-        
         if ativo != True:
             px.dither(0.3)
             _desenhar_texto(cor=self.cor_aleatoria_titulo + cor_escura)
@@ -1203,38 +1235,47 @@ class Jogo:
     
     def desenhar_os_botoes(self, offset_x):
         maximo = LINHAS * TILE # 320
-        altura_da_fonte = 18
         centro_y = (maximo/2 + maximo) / 2
         
         #
-        
+
         espacamento = 0
-        todas_as_opcoes = self.todos_os_menus["entrada"] 
         
-        altura_total =  (len(todas_as_opcoes) - 1) * espacamento + altura_da_fonte
+        todas_as_opcoes = self.todos_os_menus["entrada"] 
+        itens_visiveis = 5 if len(todas_as_opcoes) > 5 else len(todas_as_opcoes)
+        
+        altura_total =  ( - 1) * espacamento + ALTURA_DA_FONTE_11
         pos_y = centro_y - altura_total / 2
-       
+    
         frase = "Pressione [ENTER]"
         self.desenhar_texto_menu(
             -offset_x, pos_y, 
             (TILE * LINHAS), 
-            frase, True
+            frase, True,
+            espacamento, todas_as_opcoes, itens_visiveis,
+            animacao=False,
         )
         
         #
         
-        espacamento = 28
-        todas_as_opcoes = self.todos_os_menus["inicio"]  
+        espacamento = 30
+        frase = ["Modos", "Ajustes", "Histórico", "Sobre", "Sair", "teste"]
         
-        altura_total = (len(todas_as_opcoes) - 1) * espacamento + altura_da_fonte
+        todas_as_opcoes = self.todos_os_menus["inicio"]
+        itens_visiveis = 5 if len(todas_as_opcoes) > 5 else len(todas_as_opcoes)
+        
+        altura_total = (itens_visiveis - 1) * (espacamento) + ALTURA_DA_FONTE_11
         pos_y = centro_y - altura_total / 2
 
-        frase = ["Modos", "Ajustes", "Histórico", "Sobre", "Sair"] 
-        for frase, ativo in zip(frase, todas_as_opcoes):
+        
+        animacao = True if self.menu_atual_indice == 1 else False
+        
+        for (frase, ativo) in zip(frase, todas_as_opcoes):
             self.desenhar_texto_menu(
                 maximo - offset_x, pos_y, 
-                (TILE * LINHAS), 
-                frase, ativo
+                (TILE * LINHAS),
+                frase, ativo,
+                espacamento, todas_as_opcoes, itens_visiveis,
             )
             pos_y += espacamento
 
@@ -1247,22 +1288,29 @@ class Jogo:
                 "historico": (["1", "2"], 30),
                 "sobre": (["Feito pelo Cac", "Feito com Pyxel", "Feito com carinho", ":D"], 25),
                 "sair": (["Pressione [ENTER]", "para confirmar"], 25),
+                "teste": [("2"), 10]
             }
             
             proximo_menu = list(frases.keys())[self.opcao_anterior]
             
             frases_atuais = frases[proximo_menu][0]
             espacamento = frases[proximo_menu][1]
-            todas_as_opcoes = self.todos_os_menus[proximo_menu]
             
-            altura_total =  (len(todas_as_opcoes) - 1) * espacamento + altura_da_fonte
+            todas_as_opcoes = self.todos_os_menus[proximo_menu]
+            itens_visiveis = 5 if len(todas_as_opcoes) > 5 else len(todas_as_opcoes)
+            
+            altura_total =  (itens_visiveis - 1) * espacamento + ALTURA_DA_FONTE_11
             pos_y = centro_y - altura_total / 2
 
-            for frase, ativo in zip(frases_atuais, todas_as_opcoes):
+            animacao = True if self.menu_atual_indice == 2 else False
+            
+            for (frase, ativo)in zip(frases_atuais, todas_as_opcoes):
                 self.desenhar_texto_menu(
                     (maximo * 2) - offset_x, pos_y, 
                     (TILE * LINHAS), 
-                    frase, ativo
+                    frase, ativo,
+                    espacamento, todas_as_opcoes, itens_visiveis,
+                    animacao=animacao,
                 ) 
                 pos_y += espacamento
         
@@ -1270,7 +1318,8 @@ class Jogo:
     
     def desenhar_rect(self, pos_x, pos_y, largura, comprimento, cor, *, mov_x=0, mov_x_esquerda=0, mov_x_direita=0, mov_y=0):
         px.rect(
-            pos_x + ((mov_x_esquerda + mov_x_direita + mov_x) * TILE), pos_y + (mov_y * TILE), 
+            (TILE * (mov_x_esquerda + mov_x_direita + mov_x)) + pos_x, 
+            (TILE * mov_y) + pos_y, 
             largura, comprimento, 
             cor
         )
@@ -1352,6 +1401,22 @@ class Jogo:
 
     #////
     
+    def desenhar_texto(self, pos, largura, frase, cor, *, mov_x_esquerda=0, mov_x_direita=0, mov_y, offset_x=0):
+        pos_x, pos_y = pos
+        px.text(
+            (TILE * (mov_x_esquerda + mov_x_direita)) + pos_x + CENTRALIZAR(FONT_10, frase, largura) + offset_x, 
+            (TILE * mov_y) + pos_y, 
+            frase, cor, FONT_10
+        )
+           
+    def todos_os_textos(self, mov_x_esquerda, mov_x_direita, mov_y, *, offset_x):
+        largura = 80
+        cor = self.cores_aleatorias_texto
+        self.textos_da_esquerda((ALTURA_DA_FONTE_10 / 2), largura, mov_x_esquerda, mov_y, cor, offset_x)
+        self.textos_da_direita((ALTURA_DA_FONTE_10 / 2), largura, mov_x_direita, mov_y, offset_x)
+    
+    #
+    
     def textos_da_esquerda(self, altura_da_fonte, largura, mov_x_esquerda, mov_y, cor, offset_x):
         espaco = 8
         espacamento = altura_da_fonte + espaco
@@ -1360,9 +1425,8 @@ class Jogo:
         
         pos_y_1 = 80 - offset_fonte
         
-        tempo_formatado = self.transformar_segundos()
         frases_esqueda_1 = [
-            (f"{tempo_formatado}", None),
+            (f"{self.retornar_tempo_formatado()}", None),
             ("LINHAS", f"{self.linhas_limpas}"),
             ("LEVEL",  f"{self.nivel_atual}"),
             ("PONTOS", f"{self.pontos_atual}"),
@@ -1370,12 +1434,12 @@ class Jogo:
         
         pos_y_1 += espaco
         for index, (frase, valor) in enumerate(frases_esqueda_1):
-            px.text((mov_x_esquerda * TILE) + CENTRALIZAR(FONT_1, frase, largura) + offset_x, pos_y_1 + (mov_y * TILE), frase, cor[index], FONT_1)
+            self.desenhar_texto((0, pos_y_1), largura, frase, cor[index], mov_x_esquerda=mov_x_esquerda, mov_y=mov_y, offset_x=offset_x)
+            
             if valor != None:
                 pos_y_1 += espacamento_entre_valores
-                px.text((mov_x_esquerda * TILE) + CENTRALIZAR(FONT_1, valor, largura) + offset_x, pos_y_1 + (mov_y * TILE), valor, cor[index], FONT_1)
+                self.desenhar_texto((0, pos_y_1), largura, valor, cor[index], mov_x_esquerda=mov_x_esquerda, mov_y=mov_y, offset_x=offset_x)
             pos_y_1 += espacamento
-        
         self.comprimento_do_rect_esquerdo_1 = pos_y_1 - 80 + offset_fonte
         
         #/
@@ -1395,11 +1459,10 @@ class Jogo:
         for (frase, valor) in frases_esqueda_2:
             cor_final = cor_combo if frase == "COMBO" else cor_streak        
             
-            px.text((mov_x_esquerda * TILE) + CENTRALIZAR(FONT_1, frase, largura) + offset_x, pos_y_2 + (mov_y * TILE), frase, cor_final, FONT_1)
+            self.desenhar_texto((0, pos_y_2), largura, frase, cor_final, mov_x_esquerda=mov_x_esquerda, mov_y=mov_y, offset_x=offset_x)
             pos_y_2 += espacamento_entre_valores
-            px.text((mov_x_esquerda * TILE) + CENTRALIZAR(FONT_1, valor, largura) + offset_x, pos_y_2 + (mov_y * TILE), valor, cor_final, FONT_1)
+            self.desenhar_texto((0, pos_y_2), largura, valor, cor_final, mov_x_esquerda=mov_x_esquerda, mov_y=mov_y, offset_x=offset_x)
             pos_y_2 += espacamento
-        
         self.comprimento_do_rect_esquerdo_2 = pos_y_2 - ((80 - offset_fonte) + self.comprimento_do_rect_esquerdo_1 + margem)
     
     def textos_da_direita(self, altura_da_fonte, largura, mov_x_direita, mov_y, offset_x):
@@ -1415,23 +1478,14 @@ class Jogo:
         cor = self.cor_aleatoria_titulo + 1
         
         pos_y += espacamento
-        px.text((mov_x_direita * TILE) + pos_x + CENTRALIZAR(FONT_1, frase, largura) + offset_x, pos_y + (mov_y * TILE), frase, cor, FONT_1)
-        
+        self.desenhar_texto((pos_x, pos_y), largura, frase, cor, mov_x_direita=mov_x_direita, mov_y=mov_y, offset_x=offset_x)
         self.comprimento_do_rect_direito = pos_y - comprimento_dir + (espacamento / 2)
-    
-    def todos_os_textos(self, mov_x_esquerda, mov_x_direita, mov_y, *, offset_x):
-        largura = 80
-        altura_da_fonte = (14 / 2) # 14 é a altura literal desta fonte
-        cor = self.cores_aleatorias_texto
-        self.textos_da_esquerda(altura_da_fonte, largura, mov_x_esquerda, mov_y, cor, offset_x)
-        self.textos_da_direita(altura_da_fonte, largura, mov_x_direita, mov_y, offset_x)
-    
+   
     #
     
     def textos_estatisticas(self, *, pos_y_negativo, mov_y, offset_x):
-        tempo_formatado = self.transformar_segundos()
         frases_status = [
-            ("Tempo:",           f"{tempo_formatado}", 6),
+            ("Tempo:",           f"{self.retornar_tempo_formatado()}", 6),
             ("Start Level:",     f"{self.nivel_inicial}", 1),
             ("Final Level:",     f"{self.nivel_atual}", 1),
             ("Linhas:",          f"{self.linhas_limpas}", 2),
@@ -1458,13 +1512,20 @@ class Jogo:
         
         for tupla in frases_status:
             frase, valor, cor_i = tupla
-            px.text((BOARD_X + espacamento_entre_valores) + offset_x,                            pos_y + (mov_y * TILE), frase, cor[cor_i], FONT_1)
-            px.text((BOARD_X + espacamento_entre_valores) + offset_x + FONT_1.text_width(frase), pos_y + (mov_y * TILE), valor, cor[cor_i], FONT_1)
+            px.text((BOARD_X + espacamento_entre_valores) + offset_x,                            pos_y + (mov_y * TILE), frase, cor[cor_i], FONT_10)
+            px.text((BOARD_X + espacamento_entre_valores) + offset_x + FONT_10.text_width(frase), pos_y + (mov_y * TILE), valor, cor[cor_i], FONT_10)
             pos_y += espacamento
     
     def textos_dos_popups(self, mov_x, offset_x):
         largura = TILE * LINHAS
-        altura_da_fonte = 14
+        duracao_max = 180
+        
+        pos_inicial = 210
+        extra = 30
+        range_animacao = pos_inicial + ALTURA_DA_FONTE_10 + extra
+            
+        constante = 3 
+        bit = 8
         
         for evento in self.sequencia_dos_eventos[:]:
             tipo, linhas_limpas, duracao, cor = evento  
@@ -1488,20 +1549,11 @@ class Jogo:
                     self.sequencia_dos_eventos.remove(evento)
                     continue
             
-            duracao_max = 180
             progresso = (duracao_max - duracao) / duracao_max # 1.0 a 0.0
-            
-            pos_inicial = 210
-            extra = 30
-            range_animacao = pos_inicial + altura_da_fonte + extra
-            
-            constante = 3
             fator = (progresso/2) + 2 * (progresso ** constante)
-            
-            bit = 8
             pos_y = round((pos_inicial / bit) - int(fator * range_animacao) / bit) * bit
             
-            px.text((mov_x * TILE) + CENTRALIZAR(FONT_1, frase, largura) + offset_x, pos_y, frase, cor, FONT_1)
+            px.text((mov_x * TILE) + CENTRALIZAR(FONT_10, frase, largura) + offset_x, pos_y, frase, cor, FONT_10)
             
             if not self.esta_pausado:
                 evento[2] -= 1
@@ -1852,11 +1904,6 @@ class Jogo:
     
     #////
     
-    def desenhar_tudo_em_menu(self):
-        self.desenhar_titulo_menu()        
-        self.desenhar_os_botoes(self.offset_x_menu)
-    
-    
     def desenhar_shape_segurado_e_proximos(self, mov_x_esquerda, mov_x_direita, mov_y, offset_x, offset_y):
         self.desenhar_shapes_proximos(self.proximos_shapes, mov_x_direita, mov_y, offset_x, offset_y)
         if self.shape_segurado != None:
@@ -1926,15 +1973,19 @@ class Jogo:
         if self.estado_atual_do_jogo in ("em_menu", "antes_do_jogo"):
             maximo = LINHAS * TILE
             offset = self.offset_menu_para_jogo
+            self.calcular_animacao_menu() 
             
-            px.dither(0.4)
-            px.rect((0 - offset), 0, maximo, (maximo / 2), 8)
             px.dither(0.1)
             px.rect((0 - offset), (maximo / 2), maximo, (maximo / 2), 8)
             px.dither(1)
-
-            self.calcular_animacao_menu() 
-            self.desenhar_tudo_em_menu()
+            
+            self.desenhar_os_botoes(self.offset_x_menu)
+            
+            px.dither(0.4)
+            px.rect((0 - offset), 0, maximo, (maximo / 2), 8)
+            px.dither(1)
+            
+            self.desenhar_titulo_menu()
         
         #/
         
