@@ -274,6 +274,17 @@ class Jogo:
         self.menu_atual_indice = 0
         self.opcao_atual = 0
         self.opcao_anterior = 0
+        
+        self.frases_1 = ["Modos", "Ajustes", "Histórico", "Sobre", "Sair"]
+        
+        self.frases_2 = {
+            "jogar": (["MARATHON 15", "40 LINES", "ULTRA", "INFINITO"], 30),
+            "configuracao": (["XX", "FDS", "FDSF", "FSDFS"], 30),
+            "historico": (["1", "2"], 30),
+            "sobre": (["Feito pelo Cac", "Feito com Pyxel", "Feito com carinho"], 25),
+            "sair": (["Pressione [ENTER]", "para confirmar"], 25),
+        }
+        
         self.navegar_menu()
         
         # cores
@@ -282,7 +293,7 @@ class Jogo:
         self.cor_aleatoria_titulo = random.choice(self.cores_aleatorias_titulo)
         
         # animacao
-        self.offset_menu_scroll = 0
+        self.offset_menu_scroll = [0, 0, 0]
         self.offset_x_menu = 0
         self.offset_menu_para_jogo = 0
     
@@ -291,15 +302,13 @@ class Jogo:
     def navegar_menu(self, *, clique=0, deslize=0):
         self.todos_os_menus = {
             "entrada": [False],
-            "inicio": [False] * 6
-            ,
+            "inicio": [False] * len(self.frases_1),
             #
-            "jogar": [False] * 4,
-            "configuracao": [False] * 4,
-            "historico": [False] * 4,
-            "sobre": [True] * 4,
-            "sair": [True] * 2,
-            "teste": [True]
+            "jogar": [False] * len(self.frases_2["jogar"][0]),
+            "configuracao": [False] * len(self.frases_2["configuracao"][0]),
+            "historico": [False] * len(self.frases_2["historico"][0]),
+            "sobre": [True] * len(self.frases_2["sobre"][0]),
+            "sair": [True] * len(self.frases_2["sair"][0]),
             #
         }   
         
@@ -320,7 +329,7 @@ class Jogo:
             
             elif clique == -1:
                 self.opcao_atual = self.pilha_menu[-1][1]
-                self.pilha_menu.pop()    
+                self.pilha_menu.pop()
         
             elif self.menu_atual_indice == 1:
                 self.pilha_menu.append(["inicio", self.opcao_atual])
@@ -335,6 +344,7 @@ class Jogo:
                     case 3: self.pilha_menu.append(["sobre", self.opcao_atual])
                     case 4: self.pilha_menu.append(["sair", self.opcao_atual])
                 self.opcao_atual = 0
+                self.offset_menu_scroll[2] = 0
             
             elif self.menu_atual_indice == 3:
                 
@@ -1196,33 +1206,38 @@ class Jogo:
     
     #
     
-    def desenhar_texto_menu(self, pos_x, pos_y, largura, frase, ativo, espacamento, todas_as_opcoes, itens_visiveis, animacao=True):
-        offset_x = self.offset_menu_para_jogo
+    def calcular_animacao_scroll(self, menu_atual_indice, todas_as_opcoes, itens_visiveis):
+        valor_offset_scroll = self.offset_menu_scroll[menu_atual_indice]
         
-        offset_y = 0
-        if animacao:
+        if len(todas_as_opcoes) > 5:
             if self.opcao_atual > (len(todas_as_opcoes) - 3):
                 scroll = max(0, len(todas_as_opcoes) - 5)
             else:
-                scroll = max(0, self.opcao_atual - (itens_visiveis - 3))
-            print(scroll)
+                scroll = max(0, self.opcao_atual - (itens_visiveis - 3))   
+            
+            scroll = min(scroll, len(todas_as_opcoes) - itens_visiveis)
             
             pos_x_destino = scroll
-            distancia_restante = pos_x_destino - self.offset_menu_scroll
-            self.offset_menu_scroll += distancia_restante * 0.05
+            distancia_restante = pos_x_destino - valor_offset_scroll
+            self.offset_menu_scroll[menu_atual_indice] += distancia_restante * 0.2
+            
             if abs(distancia_restante) < 0.1:
-                self.offset_menu_scroll = pos_x_destino
-            offset_y = self.offset_menu_scroll
-        
+                self.offset_menu_scroll[menu_atual_indice] = pos_x_destino
+    
+    def desenhar_texto_menu(self, pos, largura, frase, ativo, *, espacamento, menu_atual_indice, offset_y):
         def _desenhar_texto(*, dx=0, dy=0, cor=0):
-           px.text(
+            pos_x, pos_y = pos 
+            px.text(
                 pos_x + dx + CENTRALIZAR(FONT_11, frase, largura) - offset_x, 
                 pos_y + dy - (espacamento * offset_y), 
                 frase, cor, FONT_11
             )
         
+        offset_x = self.offset_menu_para_jogo
         acertar_cor, cor_escura = 1, 9
-        if ativo != True:
+        
+        condicao_primeira_opcao_offset = (self.offset_menu_scroll[menu_atual_indice] > 0.4 and self.opcao_atual == 0)
+        if ativo != True or condicao_primeira_opcao_offset:
             px.dither(0.3)
             _desenhar_texto(cor=self.cor_aleatoria_titulo + cor_escura)
             px.dither(1)    
@@ -1234,83 +1249,77 @@ class Jogo:
             _desenhar_texto(cor=self.cor_aleatoria_titulo + acertar_cor)
     
     def desenhar_os_botoes(self, offset_x):
-        maximo = LINHAS * TILE # 320
+        maximo = LINHAS * TILE
         centro_y = (maximo/2 + maximo) / 2
         
         #
-
-        espacamento = 0
         
-        todas_as_opcoes = self.todos_os_menus["entrada"] 
-        itens_visiveis = 5 if len(todas_as_opcoes) > 5 else len(todas_as_opcoes)
-        
-        altura_total =  ( - 1) * espacamento + ALTURA_DA_FONTE_11
+        altura_total = ALTURA_DA_FONTE_11
         pos_y = centro_y - altura_total / 2
     
         frase = "Pressione [ENTER]"
         self.desenhar_texto_menu(
-            -offset_x, pos_y, 
+            (-offset_x, pos_y), 
             (TILE * LINHAS), 
             frase, True,
-            espacamento, todas_as_opcoes, itens_visiveis,
-            animacao=False,
+            espacamento=0,
+            menu_atual_indice=0,
+            offset_y=0,
         )
         
         #
         
-        espacamento = 30
-        frase = ["Modos", "Ajustes", "Histórico", "Sobre", "Sair", "teste"]
+        frases = self.frases_1
         
         todas_as_opcoes = self.todos_os_menus["inicio"]
-        itens_visiveis = 5 if len(todas_as_opcoes) > 5 else len(todas_as_opcoes)
+        itens_visiveis = min(5, len(todas_as_opcoes))
         
+        espacamento = 30
         altura_total = (itens_visiveis - 1) * (espacamento) + ALTURA_DA_FONTE_11
+        
+        if self.menu_atual_indice == 1:
+            self.calcular_animacao_scroll(1, todas_as_opcoes, itens_visiveis)
+        
         pos_y = centro_y - altura_total / 2
-
         
-        animacao = True if self.menu_atual_indice == 1 else False
-        
-        for (frase, ativo) in zip(frase, todas_as_opcoes):
+        for (frase, ativo) in zip(frases, todas_as_opcoes):
             self.desenhar_texto_menu(
-                maximo - offset_x, pos_y, 
+                (maximo - offset_x, pos_y), 
                 (TILE * LINHAS),
                 frase, ativo,
-                espacamento, todas_as_opcoes, itens_visiveis,
+                espacamento=espacamento,
+                menu_atual_indice=1,
+                offset_y=self.offset_menu_scroll[1],
+                
             )
             pos_y += espacamento
 
         #
         
         if self.menu_atual_indice >= 1:
-            frases = {
-                "jogar": (["MARATHON 15", "40 LINES", "ULTRA", "INFINITO"], 30),
-                "configuracao": (["XX", "FDS", "FDSF", "FSDFS"], 30),
-                "historico": (["1", "2"], 30),
-                "sobre": (["Feito pelo Cac", "Feito com Pyxel", "Feito com carinho", ":D"], 25),
-                "sair": (["Pressione [ENTER]", "para confirmar"], 25),
-                "teste": [("2"), 10]
-            }
-            
+            frases = self.frases_2
             proximo_menu = list(frases.keys())[self.opcao_anterior]
-            
             frases_atuais = frases[proximo_menu][0]
-            espacamento = frases[proximo_menu][1]
             
             todas_as_opcoes = self.todos_os_menus[proximo_menu]
-            itens_visiveis = 5 if len(todas_as_opcoes) > 5 else len(todas_as_opcoes)
+            itens_visiveis = min(5, len(todas_as_opcoes))
             
+            espacamento = frases[proximo_menu][1]
             altura_total =  (itens_visiveis - 1) * espacamento + ALTURA_DA_FONTE_11
-            pos_y = centro_y - altura_total / 2
 
-            animacao = True if self.menu_atual_indice == 2 else False
+            if self.menu_atual_indice == 2:
+                self.calcular_animacao_scroll(2, todas_as_opcoes, itens_visiveis)
+            
+            pos_y = centro_y - altura_total / 2
             
             for (frase, ativo)in zip(frases_atuais, todas_as_opcoes):
                 self.desenhar_texto_menu(
-                    (maximo * 2) - offset_x, pos_y, 
+                    ((maximo * 2) - offset_x, pos_y), 
                     (TILE * LINHAS), 
                     frase, ativo,
-                    espacamento, todas_as_opcoes, itens_visiveis,
-                    animacao=animacao,
+                    espacamento=espacamento,
+                    menu_atual_indice=2,
+                    offset_y=self.offset_menu_scroll[2],
                 ) 
                 pos_y += espacamento
         
