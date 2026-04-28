@@ -196,6 +196,14 @@ TABELA_G = {
 
 #todo: adicionar menu com um botao de começar, historico, configuracao e sair. Tela de pause, tela de game_over com as pontuações
 
+#todo: organizar a funcao dos rects e principalmente do desenhar dos botoes do menu, esta tudo junto
+
+#todo: organizar as funcoes de navegacao do menu e organizar as variaveis que podem ser configuradas
+
+#todo: testar validade dos ajustes possiveis das variaveis
+
+#todo: unificar tudo dos ajustar_configuracao_menu
+
 def buscar_tabela_g(nivel):
     if nivel >= 20:
         return TABELA_G[20]
@@ -247,10 +255,13 @@ class Jogo:
             "PAUSAR": [px.KEY_ESCAPE, px.GAMEPAD1_BUTTON_START],
             
             "ACIONAR": [px.KEY_RETURN, px.GAMEPAD1_BUTTON_START],
-            "VOLTAR": [px.KEY_BACKSPACE, px.GAMEPAD1_BUTTON_GUIDE, px.KEY_A, px.KEY_LEFT, px.GAMEPAD1_BUTTON_DPAD_LEFT],
+            "VOLTAR": [px.KEY_BACKSPACE, px.GAMEPAD1_BUTTON_BACK],
             #
             "PARA_CIMA": [px.KEY_UP, px.KEY_W, px.GAMEPAD1_BUTTON_DPAD_UP],
             "PARA_BAIXO": [px.KEY_DOWN, px.KEY_S, px.GAMEPAD1_BUTTON_DPAD_DOWN],
+            #
+            "OPCAO_AUMENTAR": [px.KEY_RIGHT, px.GAMEPAD1_BUTTON_DPAD_RIGHT],
+            "OPCAO_DIMINUIR": [px.KEY_LEFT, px.GAMEPAD1_BUTTON_DPAD_LEFT],
         }   
         
         self.iniciar_jogo()
@@ -259,6 +270,23 @@ class Jogo:
 
    #//// //// ////
     
+    def variaveis_configuracao(self):
+        # nivel_inicial_config = 1
+        self.nivel_inicial_config = 1
+        # mostrar_quantos_shapes_config = 4
+        self.mostrar_quantos_shapes_config = 4
+        # movimento_padrao_config = 6
+        self.movimento_padrao_config = 6
+        # are_duracao_config = 20
+        self.are_duracao_config = 20
+        
+        # das_config = 10
+        self.das_config = 10
+        # arr_config = 2
+        self.arr_config = 2
+        # arr_soft_drop_config = 2
+        self.arr_soft_drop_config = 2
+    
     def iniciar_jogo(self):
         self.estado_atual_do_jogo = "em_menu"
         self.modo_do_jogo = None
@@ -266,6 +294,7 @@ class Jogo:
         self.despausando = False
         self.resetou_jogo = False
         
+        self.variaveis_configuracao()
         self.variaveis_menu()
 
     def variaveis_menu(self):
@@ -278,10 +307,17 @@ class Jogo:
         self.frases_1 = ["Modos", "Ajustes", "Histórico", "Sobre", "Sair"]
         
         self.frases_2 = {
-            "jogar": (["MARATHON 15", "40 LINES", "ULTRA", "INFINITO"], 30),
-            "configuracao": (["XX", "FDS", "FDSF", "FSDFS"], 30),
+            "modos": (["MARATHON 15", "40 LINES", "ULTRA", "INFINITO"], 30),
+            "ajustes": ([
+                f"Nível Inicial: {self.nivel_inicial_config}", 
+                f"Preview: {self.mostrar_quantos_shapes_config} shapes", 
+                f"Animação: {self.movimento_padrao_config}",
+                f"ARE: {self.are_duracao_config}s",
+                f"DAS: {self.das_config} hold", 
+                f"ARR: {self.arr_config} rep",
+                f"ARR Soft Drop: {self.arr_soft_drop_config}"], 30),
             "historico": (["1", "2"], 30),
-            "sobre": (["Feito pelo Cac", "Feito com Pyxel", "Feito com carinho"], 25),
+            "sobre": (["Feito pelo Cac", "Feito com Pyxel", "Feito com carinho", ":D"], 25),
             "sair": (["Pressione [ENTER]", "para confirmar"], 25),
         }
         
@@ -299,13 +335,13 @@ class Jogo:
     
     #////
     
-    def navegar_menu(self, *, clique=0, deslize=0):
+    def navegar_menu(self, *, clique=0, deslize=0, config=0):
         self.todos_os_menus = {
             "entrada": [False],
             "inicio": [False] * len(self.frases_1),
             #
-            "jogar": [False] * len(self.frases_2["jogar"][0]),
-            "configuracao": [False] * len(self.frases_2["configuracao"][0]),
+            "modos": [False] * len(self.frases_2["modos"][0]),
+            "ajustes": [False] * len(self.frases_2["ajustes"][0]),
             "historico": [False] * len(self.frases_2["historico"][0]),
             "sobre": [True] * len(self.frases_2["sobre"][0]),
             "sair": [True] * len(self.frases_2["sair"][0]),
@@ -316,6 +352,8 @@ class Jogo:
         
         self.menu_ativo = self.pilha_menu[-1][0]
         self.navegar_verticalmente_menu(deslize)
+        
+        self.ajustar_configuracao_menu(config)
             
         self.todos_os_menus[self.menu_ativo][self.opcao_atual] = True
         self.todas_as_opcoes = self.todos_os_menus[self.menu_ativo]  
@@ -338,8 +376,8 @@ class Jogo:
             
             elif self.menu_atual_indice == 2:
                 match self.opcao_atual:
-                    case 0: self.pilha_menu.append(["jogar", self.opcao_atual])
-                    case 1: self.pilha_menu.append(["configuracao", self.opcao_atual])
+                    case 0: self.pilha_menu.append(["modos", self.opcao_atual])
+                    case 1: self.pilha_menu.append(["ajustes", self.opcao_atual])
                     case 2: self.pilha_menu.append(["historico", self.opcao_atual])
                     case 3: self.pilha_menu.append(["sobre", self.opcao_atual])
                     case 4: self.pilha_menu.append(["sair", self.opcao_atual])
@@ -348,7 +386,7 @@ class Jogo:
             
             elif self.menu_atual_indice == 3:
                 
-                if self.menu_ativo == "jogar":
+                if self.menu_ativo == "modos":
                     match self.opcao_atual:
                         case 0:
                             self.estado_atual_do_jogo = "antes_do_jogo"
@@ -370,8 +408,8 @@ class Jogo:
                 elif self.menu_ativo == "sobre" and clique == 1:
                     self.menu_atual_indice -= clique
                 
-                elif self.menu_ativo == "configuracao" and clique == 1:
-                    pass
+                elif self.menu_ativo == "ajustes":
+                    self.menu_atual_indice -= clique 
                 
                 elif self.menu_ativo == "historico" and clique == 1:
                     pass
@@ -392,6 +430,60 @@ class Jogo:
             if self.menu_atual_indice == 1:
                 self.opcao_anterior = self.opcao_atual 
    
+    def ajustar_configuracao_menu(self, config):
+        if self.menu_ativo == "ajustes":
+            match self.opcao_atual:
+                case 0:
+                    if self.nivel_inicial_config + config >= 1 and self.nivel_inicial_config + config <= 20:
+                        self.nivel_inicial_config += config
+                    else:
+                        self.nivel_inicial_config = 1 if self.nivel_inicial_config + config == 20 + config else 20
+                
+                case 1:
+                    if self.mostrar_quantos_shapes_config + config >= 1 and self.mostrar_quantos_shapes_config + config <= 7:
+                        self.mostrar_quantos_shapes_config += config
+                    else:
+                        self.mostrar_quantos_shapes_config = 1 if self.mostrar_quantos_shapes_config + config == 7 + config else 7
+                
+                case 2:
+                    if self.movimento_padrao_config + config >= 0 and self.movimento_padrao_config + config <= 15:
+                        self.movimento_padrao_config += config
+                    else:
+                        self.movimento_padrao_config = 0 if self.movimento_padrao_config + config == 15 + config else 15
+                
+                case 3:
+                    if self.are_duracao_config + config >= 0 and self.are_duracao_config + config <= 200:
+                        self.are_duracao_config += config
+                    else:
+                        self.are_duracao_config = 0 if self.are_duracao_config + config == 200 + config else 200
+                
+                case 4:
+                    if self.das_config + config >= 0 and self.das_config + config <= 50:
+                        self.das_config += config
+                    else:
+                        self.das_config = 0 if self.das_config + config == 50 + config else 50
+                
+                case 5:
+                    if self.arr_config + config >= 0 and self.arr_config + config <= 10:
+                        self.arr_config += config
+                    else:
+                        self.arr_config = 0 if self.arr_config + config == 10 + config else 10
+                
+                case 6:
+                    if self.arr_soft_drop_config + config >= 0 and self.arr_soft_drop_config + config <= 10:
+                        self.arr_soft_drop_config += config
+                    else:
+                        self.arr_soft_drop_config = 0 if self.arr_soft_drop_config + config == 10 + config else 10                          
+   
+            self.frases_2["ajustes"] = ([
+                f"Nível Inicial:{self.nivel_inicial_config:02d}", 
+                f"Preview:{self.mostrar_quantos_shapes_config} shape(s)", 
+                f"Animação:{self.movimento_padrao_config:02d}",
+                f"ARE:{self.are_duracao_config:02d}s",
+                f"DAS:{self.das_config:02d} hold", 
+                f"ARR:{self.arr_config:02d} rep",
+                f"ARR Soft Drop:{self.arr_soft_drop_config:02d}"], 30)
+   
     #////
     
     def iniciar_contagem_do_tempo(self):
@@ -406,16 +498,17 @@ class Jogo:
         
         self.mapa = [[VAZIO] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
         
-        self.linhas_limpas = 0
-        self.nivel_inicial = 1
+        # nivel_inicial = 1
+        self.nivel_inicial = self.nivel_inicial_config
         self.nivel_atual = self.nivel_inicial
         
+        self.linhas_limpas = 0
         self.pontos_atual = 0
         self.combo_atual = -1
         self.atual_back_to_back = 0
         
         # mostrar_quantos_shapes = 4
-        self.mostrar_quantos_shapes = 4
+        self.mostrar_quantos_shapes = self.mostrar_quantos_shapes_config
         self.proximos_shapes = []
         self.bag_7 = []
         self.sistema_bag_7()
@@ -457,7 +550,7 @@ class Jogo:
         # CONFIGURAÇÃO DO USUÁRIO
         
         # movimento_padrao = 6
-        self.movimento_padrao = 6
+        self.movimento_padrao = self.movimento_padrao_config
         self.variaveis_movimentos()
         self.variaveis_velocidade_movimentacao()
     
@@ -470,37 +563,18 @@ class Jogo:
         self.mov_y_slide = 0
         self.movimento_exponencial_game_over = 0
         
-        self.movimento_offset_teto = 0
-        
         self.variaveis_animacao_hard_drop = []
         
+        self.movimento_offset_teto = 0
         self.offset_pausado = 0
     
     def variaveis_velocidade_movimentacao(self):
         # das = 10
-        self.das = 10
+        self.das = self.das_config
         # arr = 2
-        self.arr = 2
+        self.arr = self.arr_config 
         # arr_soft_drop = 2
-        self.arr_soft_drop = 2
-    
-    #
-    
-    def desovar_shape(self, formato):       
-       return [4, 0] if formato == "shape_O" else [3, 0]
-
-    def ajustar_desovação(self):
-        if (self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa) or 
-            self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1)):
-            self.shape_pos_atual[1] -= 1
-            self.shape_pos_fantasma = self.shape_pos_atual[:]
-   
-    def gerar_novo_shape(self):
-        self.shape_atual = self.proximos_shapes.pop(0)
-        self.reiniciar_shape()
-        
-    def pegar_formato(self):
-        return self.shape_matriz_atual
+        self.arr_soft_drop = self.arr_soft_drop_config 
     
     #
    
@@ -548,10 +622,29 @@ class Jogo:
     
     def variaveis_are(self):
         # are_duracao = 20
-        self.are_duracao = 20
+        self.are_duracao = self.are_duracao_config
         self.tempo_do_are = 0
         self.esta_em_are = False
         self.limpou_linha = False # Se False, sem ARE
+    
+    #
+    
+    def desovar_shape(self, formato):
+       return [4, 0] if formato == "shape_O" else [3, 0]
+
+    def ajustar_desovação(self):
+        if (self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa) or 
+            self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1)):
+            self.shape_pos_atual[1] -= 1
+            self.shape_pos_fantasma = self.shape_pos_atual[:]
+   
+    def gerar_novo_shape(self):
+        self.shape_atual = self.proximos_shapes.pop(0)
+        self.reiniciar_shape()
+        self.sistema_bag_7()
+        
+    def pegar_formato(self):
+        return self.shape_matriz_atual
     
     #//// //// ////
 
@@ -1016,7 +1109,10 @@ class Jogo:
         repeticao = self.arr_soft_drop
         
         if self.pegar_input("SOFT_DROP", repeticao):
-            if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
+            if self.arr_soft_drop_config == 0:
+                self.shape_pos_atual = self.shape_pos_fantasma[:]
+            
+            elif not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
                 self.gravidade_tempo_existe = self.gravidade_tempo_simulado + (1 / 60)
                 self.quantos_soft_drops += 1        
                 self.ultima_acao_foi_rotacao = False
@@ -1046,7 +1142,6 @@ class Jogo:
                 self.quantidade_pausadas += 1
             else:
                 self.despausando = True
-
     
     def input_tecla(self):
         self.segurar_shape()
@@ -1059,16 +1154,23 @@ class Jogo:
     
     def teclas_navegacao(self):
         if self.pegar_input("ACIONAR"):
-            self.navegar_menu(clique=+1)
+            self.navegar_menu(clique=1)
         
-        if self.pegar_input("VOLTAR"):
+        elif self.pegar_input("VOLTAR"):
             self.navegar_menu(clique=-1)
 
-        if self.pegar_input("PARA_CIMA"):
+        elif self.pegar_input("PARA_CIMA"):
             self.navegar_menu(deslize=-1)
         
-        if self.pegar_input("PARA_BAIXO"):
-            self.navegar_menu(deslize=+1)
+        elif self.pegar_input("PARA_BAIXO"):
+            self.navegar_menu(deslize=1)
+        
+        elif self.pegar_input("OPCAO_AUMENTAR", repeticao=5):
+            self.navegar_menu(config=1)
+
+        elif self.pegar_input("OPCAO_DIMINUIR", repeticao=5):
+            self.navegar_menu(config=-1)
+    
     
     def verificar_estado_do_modo(self):
         if self.modo_do_jogo == "marathon":
@@ -1093,8 +1195,6 @@ class Jogo:
         if self.estado_atual_do_jogo == "em_menu":
             self.teclas_navegacao()
             return
-        
-        self.sistema_bag_7()
         
         if self.estado_atual_do_jogo == "antes_do_jogo":
             if self.offset_menu_para_jogo >= GAME_OFFSET_X:
@@ -1400,8 +1500,9 @@ class Jogo:
             mov_y=mov_y
         )
         
+        extra = 2
         self.desenhar_rect(
-            pos_x + offset_x, comprimento_dir + (margem * 2), 
+            pos_x + offset_x, comprimento_dir + (margem + extra), 
             largura, self.comprimento_do_rect_direito,
             0,
             mov_x_direita=mov_x_direita,
@@ -1481,7 +1582,8 @@ class Jogo:
         pos_x = ((TILE * 10) + BOARD_X)
         
         comprimento_dir = TILE * (self.mostrar_quantos_shapes * self.distancia_rect_direita + self.offset_rect_direita)
-        pos_y = comprimento_dir
+        extra = 4
+        pos_y = comprimento_dir - extra
         
         frase = f"{self.modo_do_jogo.upper().replace("_", " ")}"
         cor = self.cor_aleatoria_titulo + 1
