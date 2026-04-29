@@ -300,28 +300,9 @@ class Jogo:
     def variaveis_menu(self):
         # menu
         self.pilha_menu = [["entrada", 0]]
-        self.menu_atual_indice = 0
+        self.profundidade_menu = 0
         self.opcao_atual = 0
-        self.opcao_anterior = 0
-        
-        self.frases_1 = ["Modos", "Ajustes", "Histórico", "Sobre", "Sair"]
-        
-        self.frases_2 = {
-            "modos": (["MARATHON 15", "40 LINES", "ULTRA", "INFINITO"], 30),
-            "ajustes": ([
-                f"Nível Inicial: {self.nivel_inicial_config}", 
-                f"Preview: {self.mostrar_quantos_shapes_config} shapes", 
-                f"Animação: {self.movimento_padrao_config}",
-                f"ARE: {self.are_duracao_config}s",
-                f"DAS: {self.das_config} hold", 
-                f"ARR: {self.arr_config} rep",
-                f"ARR Soft Drop: {self.arr_soft_drop_config}"], 30),
-            "historico": (["1", "2"], 30),
-            "sobre": (["Feito pelo Cac", "Feito com Pyxel", "Feito com carinho", ":D"], 25),
-            "sair": (["Pressione [ENTER]", "para confirmar"], 25),
-        }
-        
-        self.navegar_menu()
+        self.opcao_inicio_salva = 0
         
         # cores
         self.cores_aleatorias_titulo = list(range(0, 7))
@@ -330,21 +311,47 @@ class Jogo:
         
         # animacao
         self.offset_menu_scroll = [0, 0, 0]
-        self.offset_x_menu = 0
+        self.offset_entre_menus = 0
         self.offset_menu_para_jogo = 0
+        
+        # frases
+        self.opcoes_menu_inicio = ["Modos", "Ajustes", "Controle", "Histórico", "Sobre", "Sair"]
+        
+        self.opcoes_submenus = {
+            "modos": (["MARATHON 150", "40 LINES", "ULTRA", "INFINITO"], 30),
+            
+            "ajustes": ([
+                f"Nível Inicial:{self.nivel_inicial_config:02d}", 
+                f"Peças Visíveis:{self.mostrar_quantos_shapes_config}", 
+                f"Fluidez:{self.movimento_padrao_config:02d}s",
+                f"ARE:{self.are_duracao_config:02d}s",
+                f"DAS:{self.das_config:02d}ms", 
+                f"ARR:{self.arr_config:02d}ms",
+                f"ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
+                f"", 
+                f"RESETAR VALORES!"], 30),
+            
+            "controle": (["True"], 30),
+            "historico": (["1", "2"], 30),
+            "sobre": (["Feito pelo Cac", "Feito com Pyxel", "Feito com carinho", ":D"], 25),
+            "sair": (["Pressione [ENTER]", "para confirmar"], 25),
+        }
+    
+        self.navegar_menu()
     
     #////
     
     def navegar_menu(self, *, clique=0, deslize=0, config=0):
-        self.todos_os_menus = {
+        self.menus = {
             "entrada": [False],
-            "inicio": [False] * len(self.frases_1),
+            "inicio": [False] * len(self.opcoes_menu_inicio),
             #
-            "modos": [False] * len(self.frases_2["modos"][0]),
-            "ajustes": [False] * len(self.frases_2["ajustes"][0]),
-            "historico": [False] * len(self.frases_2["historico"][0]),
-            "sobre": [True] * len(self.frases_2["sobre"][0]),
-            "sair": [True] * len(self.frases_2["sair"][0]),
+            "modos": [False] * len(self.opcoes_submenus["modos"][0]),
+            "ajustes": [False] * len(self.opcoes_submenus["ajustes"][0]),
+            "controle": [False] * len(self.opcoes_submenus["controle"][0]),
+            "historico": [False] * len(self.opcoes_submenus["historico"][0]),
+            "sobre": [True] * len(self.opcoes_submenus["sobre"][0]),
+            "sair": [True] * len(self.opcoes_submenus["sair"][0]),
             #
         }   
         
@@ -355,42 +362,43 @@ class Jogo:
         
         self.ajustar_configuracao_menu(config)
             
-        self.todos_os_menus[self.menu_ativo][self.opcao_atual] = True
-        self.todas_as_opcoes = self.todos_os_menus[self.menu_ativo]  
+        self.menus[self.menu_ativo][self.opcao_atual] = True
+        self.opcoes_ativas = self.menus[self.menu_ativo]  
     
     def navegar_horizontalmente_menu(self, clique):
         if clique != 0:
-            self.menu_atual_indice += clique
+            self.profundidade_menu += clique
             
-            if self.menu_atual_indice < 0:
-                self.menu_atual_indice = 0
+            if self.profundidade_menu < 0:
+                self.profundidade_menu = 0
             
             elif clique == -1:
                 self.opcao_atual = self.pilha_menu[-1][1]
                 self.pilha_menu.pop()
         
-            elif self.menu_atual_indice == 1:
+            elif self.profundidade_menu == 1:
                 self.pilha_menu.append(["inicio", self.opcao_atual])
-                self.opcao_anterior = self.opcao_atual
+                self.opcao_inicio_salva = self.opcao_atual
                 self.opcao_atual = 0
             
-            elif self.menu_atual_indice == 2:
+            elif self.profundidade_menu == 2:
                 match self.opcao_atual:
                     case 0: self.pilha_menu.append(["modos", self.opcao_atual])
                     case 1: self.pilha_menu.append(["ajustes", self.opcao_atual])
-                    case 2: self.pilha_menu.append(["historico", self.opcao_atual])
-                    case 3: self.pilha_menu.append(["sobre", self.opcao_atual])
-                    case 4: self.pilha_menu.append(["sair", self.opcao_atual])
+                    case 2: self.pilha_menu.append(["controle", self.opcao_atual])
+                    case 3: self.pilha_menu.append(["historico", self.opcao_atual])
+                    case 4: self.pilha_menu.append(["sobre", self.opcao_atual])
+                    case 5: self.pilha_menu.append(["sair", self.opcao_atual])
                 self.opcao_atual = 0
                 self.offset_menu_scroll[2] = 0
             
-            elif self.menu_atual_indice == 3:
+            elif self.profundidade_menu == 3:
                 
                 if self.menu_ativo == "modos":
                     match self.opcao_atual:
                         case 0:
                             self.estado_atual_do_jogo = "antes_do_jogo"
-                            self.modo_do_jogo = "marathon"
+                            self.modo_do_jogo = "marathon_150"
                             self.iniciar_partida()
                         case 1:
                             self.estado_atual_do_jogo = "antes_do_jogo"
@@ -406,19 +414,22 @@ class Jogo:
                             self.iniciar_partida()
                 
                 elif self.menu_ativo == "sobre" and clique == 1:
-                    self.menu_atual_indice -= clique
+                    self.profundidade_menu -= clique
                 
                 elif self.menu_ativo == "ajustes":
-                    self.menu_atual_indice -= clique 
+                    self.profundidade_menu -= clique 
+                
+                elif self.menu_ativo == "controle":
+                    self.profundidade_menu -= clique 
                 
                 elif self.menu_ativo == "historico" and clique == 1:
-                    pass
+                    self.profundidade_menu -= clique
                 
                 elif self.menu_ativo == "sair":
                     px.quit()
                 
     def navegar_verticalmente_menu(self, deslize):
-        quantidade_de_opcoes = len(self.todos_os_menus[self.menu_ativo])
+        quantidade_de_opcoes = len(self.menus[self.menu_ativo])
         
         if deslize != 0:
             self.opcao_atual += deslize
@@ -427,62 +438,47 @@ class Jogo:
             if self.opcao_atual < 0:
                 self.opcao_atual = quantidade_de_opcoes - 1
             
-            if self.menu_atual_indice == 1:
-                self.opcao_anterior = self.opcao_atual 
+            if self.profundidade_menu == 1:
+                self.opcao_inicio_salva = self.opcao_atual 
    
     def ajustar_configuracao_menu(self, config):
-        if self.menu_ativo == "ajustes":
+        def _alterar_valor(valor, config, *, min, max):
+            novo = valor + config
+            if min <= novo <= max:
+                return novo
+            return min if novo > max else max
+        
+        if self.menu_ativo == "ajustes" and config != 0:
             match self.opcao_atual:
                 case 0:
-                    if self.nivel_inicial_config + config >= 1 and self.nivel_inicial_config + config <= 20:
-                        self.nivel_inicial_config += config
-                    else:
-                        self.nivel_inicial_config = 1 if self.nivel_inicial_config + config == 20 + config else 20
-                
+                    self.nivel_inicial_config = _alterar_valor(self.nivel_inicial_config, config, min=1, max=20)
                 case 1:
-                    if self.mostrar_quantos_shapes_config + config >= 1 and self.mostrar_quantos_shapes_config + config <= 7:
-                        self.mostrar_quantos_shapes_config += config
-                    else:
-                        self.mostrar_quantos_shapes_config = 1 if self.mostrar_quantos_shapes_config + config == 7 + config else 7
-                
+                    self.mostrar_quantos_shapes_config = _alterar_valor(self.mostrar_quantos_shapes_config, config, min=1, max=7)
                 case 2:
-                    if self.movimento_padrao_config + config >= 0 and self.movimento_padrao_config + config <= 15:
-                        self.movimento_padrao_config += config
-                    else:
-                        self.movimento_padrao_config = 0 if self.movimento_padrao_config + config == 15 + config else 15
-                
+                    self.movimento_padrao_config = _alterar_valor(self.movimento_padrao_config, config, min=0, max=15)
                 case 3:
-                    if self.are_duracao_config + config >= 0 and self.are_duracao_config + config <= 200:
-                        self.are_duracao_config += config
-                    else:
-                        self.are_duracao_config = 0 if self.are_duracao_config + config == 200 + config else 200
-                
+                    self.are_duracao_config = _alterar_valor(self.are_duracao_config, config, min=0, max=200)
                 case 4:
-                    if self.das_config + config >= 0 and self.das_config + config <= 50:
-                        self.das_config += config
-                    else:
-                        self.das_config = 0 if self.das_config + config == 50 + config else 50
-                
+                    self.das_config = _alterar_valor(self.das_config, config, min=0, max=50)
                 case 5:
-                    if self.arr_config + config >= 0 and self.arr_config + config <= 10:
-                        self.arr_config += config
-                    else:
-                        self.arr_config = 0 if self.arr_config + config == 10 + config else 10
-                
+                    self.arr_config = _alterar_valor(self.arr_config, config, min=0, max=10)
                 case 6:
-                    if self.arr_soft_drop_config + config >= 0 and self.arr_soft_drop_config + config <= 10:
-                        self.arr_soft_drop_config += config
-                    else:
-                        self.arr_soft_drop_config = 0 if self.arr_soft_drop_config + config == 10 + config else 10                          
-   
-            self.frases_2["ajustes"] = ([
+                    self.arr_soft_drop_config = _alterar_valor(self.arr_soft_drop_config, config, min=0, max=10)
+                case 7:                          
+                    pass
+                case 8:                          
+                    self.variaveis_configuracao()
+                    
+            self.opcoes_submenus["ajustes"] = ([
                 f"Nível Inicial:{self.nivel_inicial_config:02d}", 
-                f"Preview:{self.mostrar_quantos_shapes_config} shape(s)", 
-                f"Animação:{self.movimento_padrao_config:02d}",
+                f"Peças Visíveis:{self.mostrar_quantos_shapes_config}", 
+                f"Fluidez:{self.movimento_padrao_config:02d}s",
                 f"ARE:{self.are_duracao_config:02d}s",
-                f"DAS:{self.das_config:02d} hold", 
-                f"ARR:{self.arr_config:02d} rep",
-                f"ARR Soft Drop:{self.arr_soft_drop_config:02d}"], 30)
+                f"DAS:{self.das_config:02d}ms", 
+                f"ARR:{self.arr_config:02d}ms",
+                f"ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
+                f"", 
+                f"RESETAR VALORES!"], 30)
    
     #////
     
@@ -498,17 +494,15 @@ class Jogo:
         
         self.mapa = [[VAZIO] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
         
-        # nivel_inicial = 1
-        self.nivel_inicial = self.nivel_inicial_config
-        self.nivel_atual = self.nivel_inicial
+        self.nivel_inicial = self.nivel_inicial_config # CONFIG
+        self.nivel_atual = self.nivel_inicial # CONFIGA
         
         self.linhas_limpas = 0
         self.pontos_atual = 0
         self.combo_atual = -1
         self.atual_back_to_back = 0
         
-        # mostrar_quantos_shapes = 4
-        self.mostrar_quantos_shapes = self.mostrar_quantos_shapes_config
+        self.mostrar_quantos_shapes = self.mostrar_quantos_shapes_config # CONFIG
         self.proximos_shapes = []
         self.bag_7 = []
         self.sistema_bag_7()
@@ -547,10 +541,8 @@ class Jogo:
         self.comprimento_do_rect_esquerdo_2 = 0
         self.comprimento_do_rect_direito = 0
         
-        # CONFIGURAÇÃO DO USUÁRIO
-        
-        # movimento_padrao = 6
-        self.movimento_padrao = self.movimento_padrao_config
+        # animacao
+        self.movimento_padrao = self.movimento_padrao_config # CONFIG
         self.variaveis_movimentos()
         self.variaveis_velocidade_movimentacao()
     
@@ -560,7 +552,7 @@ class Jogo:
         self.mov_x = 0
         self.mov_y_hard_drop = 0
         
-        self.mov_y_slide = 0
+        self.mov_y_slide_gameover = 0
         self.movimento_exponencial_game_over = 0
         
         self.variaveis_animacao_hard_drop = []
@@ -569,12 +561,9 @@ class Jogo:
         self.offset_pausado = 0
     
     def variaveis_velocidade_movimentacao(self):
-        # das = 10
-        self.das = self.das_config
-        # arr = 2
-        self.arr = self.arr_config 
-        # arr_soft_drop = 2
-        self.arr_soft_drop = self.arr_soft_drop_config 
+        self.das = self.das_config # CONFIG
+        self.arr = self.arr_config # CONFIG
+        self.arr_soft_drop = self.arr_soft_drop_config # CONFIG
     
     #
    
@@ -582,7 +571,7 @@ class Jogo:
         self.shape_pos_atual = self.desovar_shape(self.shape_atual)
         self.shape_matriz_atual = SHAPES[self.shape_atual]["formato"]
         self.shape_pos_fantasma = self.shape_pos_atual[:]
-        self.ajustar_desovação()
+        self.ajustar_desovacao()
         self.recalcular_pos_fantasma()
         
         # rotacao e movimentacao
@@ -617,12 +606,10 @@ class Jogo:
         self.tempo_animacao_limpar_linha = 0
         self.constante_animacao_limpar_linha = 0
         
-        # CONFIGURAÇÃO DO JOGO
         self.variaveis_are()
     
     def variaveis_are(self):
-        # are_duracao = 20
-        self.are_duracao = self.are_duracao_config
+        self.are_duracao = self.are_duracao_config  # CONFIG
         self.tempo_do_are = 0
         self.esta_em_are = False
         self.limpou_linha = False # Se False, sem ARE
@@ -632,7 +619,7 @@ class Jogo:
     def desovar_shape(self, formato):
        return [4, 0] if formato == "shape_O" else [3, 0]
 
-    def ajustar_desovação(self):
+    def ajustar_desovacao(self):
         if (self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa) or 
             self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1)):
             self.shape_pos_atual[1] -= 1
@@ -715,7 +702,7 @@ class Jogo:
             return True
         return False
 
-    def retornar_tempo_formatado(self):
+    def tempo_formatado(self):
         minutos = int(self.tempo_atual_em_segundos // 60)
         segundos = int(self.tempo_atual_em_segundos % 60)
         centesimos = int((self.tempo_atual_em_segundos - int(self.tempo_atual_em_segundos)) * 100)
@@ -763,7 +750,7 @@ class Jogo:
                 return (True, (dx, dy))
         return (False, (0, 0)) 
                     
-    def retornar_novo_estado_da_rotacao(self, direcao):
+    def proximo_estado_rotacao(self, direcao):
         estados = ["0", "R", "2", "L"]
         if direcao == "direita":
             soma = +1
@@ -782,13 +769,13 @@ class Jogo:
             case "KEY_Q":
                 nova_matriz = [list(linha) for linha in list(zip(*self.pegar_formato()))[::-1]]
                 self.shape_matriz_atual = nova_matriz
-                novo_estado_da_rotacao = self.retornar_novo_estado_da_rotacao("esquerda")
+                novo_estado_da_rotacao = self.proximo_estado_rotacao("esquerda")
                 correcao = self.sistema_de_super_rotacao(novo_estado_da_rotacao)
         
             case "KEY_E": 
                 nova_matriz = [list(linha) for linha in list(zip(*self.pegar_formato()[::-1]))]
                 self.shape_matriz_atual = nova_matriz  
-                novo_estado_da_rotacao = self.retornar_novo_estado_da_rotacao("direita")
+                novo_estado_da_rotacao = self.proximo_estado_rotacao("direita")
                 correcao = self.sistema_de_super_rotacao(novo_estado_da_rotacao)
             
             case _: raise("Erro ao rotacionar")
@@ -798,8 +785,8 @@ class Jogo:
             self.shape_pos_atual[1] += correcao[1][1]
             self.shape_pos_fantasma = self.shape_pos_atual[:]
             match direcao:
-                case "KEY_Q": self.estado_rotacao = self.retornar_novo_estado_da_rotacao("esquerda")
-                case "KEY_E": self.estado_rotacao = self.retornar_novo_estado_da_rotacao("direita")
+                case "KEY_Q": self.estado_rotacao = self.proximo_estado_rotacao("esquerda")
+                case "KEY_E": self.estado_rotacao = self.proximo_estado_rotacao("direita")
         else:
             self.shape_matriz_atual = backup
 
@@ -1139,7 +1126,8 @@ class Jogo:
             if self.esta_pausado == False:
                 self.esta_pausado = True
                 self.tempo_pausado = time.perf_counter()
-                self.quantidade_pausadas += 1
+                if self.estado_atual_do_jogo == "em_jogo":
+                    self.quantidade_pausadas += 1
             else:
                 self.despausando = True
     
@@ -1165,16 +1153,16 @@ class Jogo:
         elif self.pegar_input("PARA_BAIXO"):
             self.navegar_menu(deslize=1)
         
-        elif self.pegar_input("OPCAO_AUMENTAR", repeticao=5):
+        elif self.pegar_input("OPCAO_AUMENTAR", repeticao=7):
             self.navegar_menu(config=1)
 
-        elif self.pegar_input("OPCAO_DIMINUIR", repeticao=5):
+        elif self.pegar_input("OPCAO_DIMINUIR", repeticao=7):
             self.navegar_menu(config=-1)
     
     
     def verificar_estado_do_modo(self):
-        if self.modo_do_jogo == "marathon":
-            if self.nivel_atual >= 15:
+        if self.modo_do_jogo == "marathon_150":
+            if self.linhas_limpas >= 150:
                 self.estado_atual_do_jogo = "game_over"
         
         elif self.modo_do_jogo == "40_lines":
@@ -1218,7 +1206,7 @@ class Jogo:
             return
         
         if self.estado_atual_do_jogo == "game_over":
-            if self.mov_y_slide >= LINHAS + 1:
+            if self.mov_y_slide_gameover >= LINHAS + 1:
                 self.estado_atual_do_jogo = "apos_game_over"
             return
 
@@ -1306,25 +1294,25 @@ class Jogo:
     
     #
     
-    def calcular_animacao_scroll(self, menu_atual_indice, todas_as_opcoes, itens_visiveis):
-        valor_offset_scroll = self.offset_menu_scroll[menu_atual_indice]
+    def calcular_animacao_scroll(self, profundidade_menu, opcoes_ativas, itens_visiveis):
+        valor_offset_scroll = self.offset_menu_scroll[profundidade_menu]
         
-        if len(todas_as_opcoes) > 5:
-            if self.opcao_atual > (len(todas_as_opcoes) - 3):
-                scroll = max(0, len(todas_as_opcoes) - 5)
+        if len(opcoes_ativas) > 5:
+            if self.opcao_atual > (len(opcoes_ativas) - 3):
+                scroll = max(0, len(opcoes_ativas) - 5)
             else:
                 scroll = max(0, self.opcao_atual - (itens_visiveis - 3))   
             
-            scroll = min(scroll, len(todas_as_opcoes) - itens_visiveis)
+            scroll = min(scroll, len(opcoes_ativas) - itens_visiveis)
             
             pos_x_destino = scroll
             distancia_restante = pos_x_destino - valor_offset_scroll
-            self.offset_menu_scroll[menu_atual_indice] += distancia_restante * 0.2
+            self.offset_menu_scroll[profundidade_menu] += distancia_restante * 0.2
             
             if abs(distancia_restante) < 0.1:
-                self.offset_menu_scroll[menu_atual_indice] = pos_x_destino
+                self.offset_menu_scroll[profundidade_menu] = pos_x_destino
     
-    def desenhar_texto_menu(self, pos, largura, frase, ativo, *, espacamento, menu_atual_indice, offset_y):
+    def desenhar_texto_menu(self, pos, largura, frase, ativo, *, espacamento, profundidade_menu, offset_y):
         def _desenhar_texto(*, dx=0, dy=0, cor=0):
             pos_x, pos_y = pos 
             px.text(
@@ -1336,7 +1324,7 @@ class Jogo:
         offset_x = self.offset_menu_para_jogo
         acertar_cor, cor_escura = 1, 9
         
-        condicao_primeira_opcao_offset = (self.offset_menu_scroll[menu_atual_indice] > 0.4 and self.opcao_atual == 0)
+        condicao_primeira_opcao_offset = (self.offset_menu_scroll[profundidade_menu] > 0.4 and self.opcao_atual == 0)
         if ativo != True or condicao_primeira_opcao_offset:
             px.dither(0.3)
             _desenhar_texto(cor=self.cor_aleatoria_titulo + cor_escura)
@@ -1363,32 +1351,32 @@ class Jogo:
             (TILE * LINHAS), 
             frase, True,
             espacamento=0,
-            menu_atual_indice=0,
+            profundidade_menu=0,
             offset_y=0,
         )
         
         #
         
-        frases = self.frases_1
+        frases = self.opcoes_menu_inicio
         
-        todas_as_opcoes = self.todos_os_menus["inicio"]
-        itens_visiveis = min(5, len(todas_as_opcoes))
+        opcoes_ativas = self.menus["inicio"]
+        itens_visiveis = min(5, len(opcoes_ativas))
         
         espacamento = 30
         altura_total = (itens_visiveis - 1) * (espacamento) + ALTURA_DA_FONTE_11
         
-        if self.menu_atual_indice == 1:
-            self.calcular_animacao_scroll(1, todas_as_opcoes, itens_visiveis)
+        if self.profundidade_menu == 1:
+            self.calcular_animacao_scroll(1, opcoes_ativas, itens_visiveis)
         
         pos_y = centro_y - altura_total / 2
         
-        for (frase, ativo) in zip(frases, todas_as_opcoes):
+        for (frase, ativo) in zip(frases, opcoes_ativas):
             self.desenhar_texto_menu(
                 (maximo - offset_x, pos_y), 
                 (TILE * LINHAS),
                 frase, ativo,
                 espacamento=espacamento,
-                menu_atual_indice=1,
+                profundidade_menu=1,
                 offset_y=self.offset_menu_scroll[1],
                 
             )
@@ -1396,29 +1384,29 @@ class Jogo:
 
         #
         
-        if self.menu_atual_indice >= 1:
-            frases = self.frases_2
-            proximo_menu = list(frases.keys())[self.opcao_anterior]
+        if self.profundidade_menu >= 1:
+            frases = self.opcoes_submenus
+            proximo_menu = list(frases.keys())[self.opcao_inicio_salva]
             frases_atuais = frases[proximo_menu][0]
             
-            todas_as_opcoes = self.todos_os_menus[proximo_menu]
-            itens_visiveis = min(5, len(todas_as_opcoes))
+            opcoes_ativas = self.menus[proximo_menu]
+            itens_visiveis = min(5, len(opcoes_ativas))
             
             espacamento = frases[proximo_menu][1]
             altura_total =  (itens_visiveis - 1) * espacamento + ALTURA_DA_FONTE_11
 
-            if self.menu_atual_indice == 2:
-                self.calcular_animacao_scroll(2, todas_as_opcoes, itens_visiveis)
+            if self.profundidade_menu == 2:
+                self.calcular_animacao_scroll(2, opcoes_ativas, itens_visiveis)
             
             pos_y = centro_y - altura_total / 2
             
-            for (frase, ativo)in zip(frases_atuais, todas_as_opcoes):
+            for (frase, ativo)in zip(frases_atuais, opcoes_ativas):
                 self.desenhar_texto_menu(
                     ((maximo * 2) - offset_x, pos_y), 
                     (TILE * LINHAS), 
                     frase, ativo,
                     espacamento=espacamento,
-                    menu_atual_indice=2,
+                    profundidade_menu=2,
                     offset_y=self.offset_menu_scroll[2],
                 ) 
                 pos_y += espacamento
@@ -1536,7 +1524,7 @@ class Jogo:
         pos_y_1 = 80 - offset_fonte
         
         frases_esqueda_1 = [
-            (f"{self.retornar_tempo_formatado()}", None),
+            (f"{self.tempo_formatado()}", None),
             ("LINHAS", f"{self.linhas_limpas}"),
             ("LEVEL",  f"{self.nivel_atual}"),
             ("PONTOS", f"{self.pontos_atual}"),
@@ -1585,7 +1573,12 @@ class Jogo:
         extra = 4
         pos_y = comprimento_dir - extra
         
-        frase = f"{self.modo_do_jogo.upper().replace("_", " ")}"
+        match self.modo_do_jogo:
+            case "marathon_150": frase = "MARATHON"
+            case "40_lines": frase = "40 LINES"
+            case "ultra": frase = "ULTRA"
+            case "infinito": frase = "INFINITO"
+        
         cor = self.cor_aleatoria_titulo + 1
         
         pos_y += espacamento
@@ -1596,7 +1589,7 @@ class Jogo:
     
     def textos_estatisticas(self, *, pos_y_negativo, mov_y, offset_x):
         frases_status = [
-            ("Tempo:",           f"{self.retornar_tempo_formatado()}", 6),
+            ("Tempo:",           f"{self.tempo_formatado()}", 6),
             ("Start Level:",     f"{self.nivel_inicial}", 1),
             ("Final Level:",     f"{self.nivel_atual}", 1),
             ("Linhas:",          f"{self.linhas_limpas}", 2),
@@ -1674,7 +1667,7 @@ class Jogo:
     
     #////
 
-    def verificar_pos_y_negativo(self, formato):
+    def posicao_y_acima_do_teto(self, formato):
         for i_linha, e_linha in enumerate(formato):
             for i_coluna, _ in enumerate(e_linha):
                 if formato[i_linha][i_coluna] == 1:
@@ -1685,7 +1678,7 @@ class Jogo:
         return 0
     
     def calcular_offset(self):
-        pos_y_alto = self.verificar_pos_y_negativo(self.pegar_formato())
+        pos_y_alto = self.posicao_y_acima_do_teto(self.pegar_formato())
         if pos_y_alto < 0:
             return abs(pos_y_alto)
         return 0
@@ -1910,11 +1903,11 @@ class Jogo:
     #////
     
     def calcular_animacao_menu(self):
-        pos_x_destino = self.menu_atual_indice * 320
-        distancia_restante = pos_x_destino - self.offset_x_menu
-        self.offset_x_menu += distancia_restante * 0.1
+        pos_x_destino = self.profundidade_menu * 320
+        distancia_restante = pos_x_destino - self.offset_entre_menus
+        self.offset_entre_menus += distancia_restante * 0.1
         if abs(distancia_restante) < 1:
-            self.offset_x_menu = pos_x_destino
+            self.offset_entre_menus = pos_x_destino
     
     def calcular_animacao_menu_para_jogo(self):
         pos_x_destino = 320
@@ -2000,22 +1993,22 @@ class Jogo:
             return 0
             
         if self.movimento_exponencial_game_over < limite:
-            progresso = self.mov_y_slide / (limite)
-            incremento = ((1 + self.mov_y_slide) / velocidade) ** (0.5 + progresso ** 1.5)
+            progresso = self.mov_y_slide_gameover / (limite)
+            incremento = ((1 + self.mov_y_slide_gameover) / velocidade) ** (0.5 + progresso ** 1.5)
             self.movimento_exponencial_game_over = min(self.movimento_exponencial_game_over + incremento, limite)
        
         return self.movimento_exponencial_game_over
     
-    def retornar_valores_das_animacao_em_jogo(self):
+    def valores_animacao(self):
         mov_x = TRANSFORMAR_EM_DECIMAL(self.mov_x)
         mov_x_esquerda = TRANSFORMAR_EM_DECIMAL(self.mov_x_esquerda)
         mov_x_direita = TRANSFORMAR_EM_DECIMAL(self.mov_x_direita)
         mov_y_hard_drop = TRANSFORMAR_EM_DECIMAL(self.mov_y_hard_drop)
-        return mov_x, mov_x_esquerda, mov_x_direita, mov_y_hard_drop, self.mov_y_slide
+        return mov_x, mov_x_esquerda, mov_x_direita, mov_y_hard_drop, self.mov_y_slide_gameover
     
     #////
     
-    def desenhar_shape_segurado_e_proximos(self, mov_x_esquerda, mov_x_direita, mov_y, offset_x, offset_y):
+    def desenhar_shape_segurado_e_proximos(self, mov_x_esquerda, mov_x_direita, mov_y, offset_x, offset_y=0):
         self.desenhar_shapes_proximos(self.proximos_shapes, mov_x_direita, mov_y, offset_x, offset_y)
         if self.shape_segurado != None:
             self.desenhar_shape_segurado(self.shape_segurado, mov_x_esquerda, mov_y, offset_x, offset_y)
@@ -2030,15 +2023,15 @@ class Jogo:
     
     
     def desenhar_todos_os_rects_textos(self, *, offset_x):
-        mov_x, mov_x_esquerda, mov_x_direita, mov_y_hard_drop, mov_y_slide = self.retornar_valores_das_animacao_em_jogo()
+        mov_x, mov_x_esquerda, mov_x_direita, mov_y_hard_drop, mov_y_slide_gameover = self.valores_animacao()
             
-        self.todos_os_rects(mov_x_esquerda, mov_x_direita, mov_y_slide, offset_x=offset_x)
-        self.todos_os_textos(mov_x_esquerda, mov_x_direita, mov_y_slide, offset_x=offset_x)
+        self.todos_os_rects(mov_x_esquerda, mov_x_direita, mov_y_slide_gameover, offset_x=offset_x)
+        self.todos_os_textos(mov_x_esquerda, mov_x_direita, mov_y_slide_gameover, offset_x=offset_x)
 
     
     def desenhar_tudo_em_jogo(self, *, offset_x):
         offset_y_teto = self.calcular_animacao_offset_teto(self.calcular_offset())
-        mov_x, mov_x_esquerda, mov_x_direita, mov_y_hard_drop, mov_y_slide = self.retornar_valores_das_animacao_em_jogo()
+        mov_x, mov_x_esquerda, mov_x_direita, mov_y_hard_drop, mov_y_slide_gameover = self.valores_animacao()
         #
         self.desenhar_tabuleiro_e_teto(mov_x, mov_y_hard_drop, offset_x, offset_y_teto)
         
@@ -2054,26 +2047,26 @@ class Jogo:
             self.desenhar_animacao_limpar_linha(mov_x, mov_y_hard_drop, offset_x, offset_y_teto)
         
         self.desenhar_shapes_fixados(self.mapa, mov_x, mov_y_hard_drop, offset_x, offset_y_teto)
-        self.desenhar_shape_segurado_e_proximos(mov_x_esquerda, mov_x_direita, 0, offset_x, 0)
+        self.desenhar_shape_segurado_e_proximos(mov_x_esquerda, mov_x_direita, 0, offset_x)
         self.textos_dos_popups(mov_x, offset_x)
     
         
     def desenhar_tudo_no_game_over(self, *, offset_x):
         offset_y_teto = self.calcular_offset_pelo_mapa()
-        mov_x, mov_x_esquerda, mov_x_direita, mov_y_hard_drop, mov_y_slide = self.retornar_valores_das_animacao_em_jogo()
+        mov_x, mov_x_esquerda, mov_x_direita, mov_y_hard_drop, mov_y_slide_gameover = self.valores_animacao()
         #
         if mov_y_hard_drop > 0:
             self.desenhar_tabuleiro_e_teto(mov_x, mov_y_hard_drop, offset_x, offset_y_teto)
             self.desenhar_shapes_fixados(self.mapa, mov_x, mov_y_hard_drop, offset_x, offset_y_teto)
         else:
-            self.desenhar_tabuleiro_e_teto(mov_x, mov_y_slide, offset_x, offset_y_teto)
-            self.desenhar_shapes_fixados(self.mapa, mov_x, mov_y_slide, offset_x, offset_y_teto)
+            self.desenhar_tabuleiro_e_teto(mov_x, mov_y_slide_gameover, offset_x, offset_y_teto)
+            self.desenhar_shapes_fixados(self.mapa, mov_x, mov_y_slide_gameover, offset_x, offset_y_teto)
             
-        self.desenhar_shape_segurado_e_proximos(mov_x_esquerda, mov_x_direita, mov_y_slide, offset_x, offset_y_teto)
+        self.desenhar_shape_segurado_e_proximos(mov_x_esquerda, mov_x_direita, mov_y_slide_gameover, offset_x)
         self.textos_dos_popups(mov_x, offset_x)
          
-        self.desenhar_fundo((BOARD_X, (-LINHAS - 1) * TILE), (0, LINHAS), (COLUNAS, LINHAS), mov_x=0, mov_y=mov_y_slide, offset_x=offset_x)
-        self.textos_estatisticas(pos_y_negativo=(-(-LINHAS - 1) * TILE), mov_y=mov_y_slide, offset_x=offset_x)
+        self.desenhar_fundo((BOARD_X, (-LINHAS - 1) * TILE), (0, LINHAS), (COLUNAS, LINHAS), mov_x=0, mov_y=mov_y_slide_gameover, offset_x=offset_x)
+        self.textos_estatisticas(pos_y_negativo=(-(-LINHAS - 1) * TILE), mov_y=mov_y_slide_gameover, offset_x=offset_x)
     
     #////
     
@@ -2090,7 +2083,7 @@ class Jogo:
             px.rect((0 - offset), (maximo / 2), maximo, (maximo / 2), 8)
             px.dither(1)
             
-            self.desenhar_os_botoes(self.offset_x_menu)
+            self.desenhar_os_botoes(self.offset_entre_menus)
             
             px.dither(0.4)
             px.rect((0 - offset), 0, maximo, (maximo / 2), 8)
@@ -2103,7 +2096,7 @@ class Jogo:
         if self.estado_atual_do_jogo != "em_menu" and not self.esta_pausado:
             self.calcular_valores_das_animacoes()
             if self.estado_atual_do_jogo == "game_over":
-                self.mov_y_slide = self.calcular_animacao_game_over_slide()
+                self.mov_y_slide_gameover = self.calcular_animacao_game_over_slide()
 
         offset_x = 0        
         
