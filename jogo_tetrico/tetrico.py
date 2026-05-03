@@ -348,8 +348,10 @@ class Jogo:
             "modos": (["MARATHON 150", "40 LINES", "ULTRA", "CRAZY", "INFINITO"], 30),
             "ajustes": ([
                 f"Nível Inicial:{self.nivel_inicial_config:02d}", 
-                f"Peças Visíveis:{self.shapes_visiveis_config}", 
-                f"Fluidez:{self.movimento_padrao_config:02d}s",
+                f"Peças Visíveis:{self.shapes_visiveis_config}",
+                f"•Fluidez:{self.movimento_padrao_config:02d}s",
+                f"•Ínicio:{self.movimento_padrao_config:02d}",
+                f"•Constante:{self.movimento_padrao_config:02d}",
                 f"ARE:{self.are_duracao_config:02d}s",
                 f"DAS:{self.das_config:02d}ms", 
                 f"ARR:{self.arr_config:02d}ms",
@@ -448,17 +450,16 @@ class Jogo:
         self.movimento_padrao = self.movimento_padrao_config # CONFIG
         
         self.offset_em_jogo = {
-            "esquerda": 0,
-            "direita": 0,
-            
-            "hard_drop": 0,
-            "tabuleiro_shapes": 0,
+            "mov_x": 0,
+            "mov_esquerda": 0,
+            "mov_direita": 0,
+            "mov_hard_drop": 0,
             
             "teto": 0,
             "pause": 0,
         }
         
-        self.offset_y_slide_gameover = 0
+        self.mov_slide_gameover = 0
         self.valor_exponencial_gameover = 0
         
         self.variaveis_animacao_hard_drop = []
@@ -649,22 +650,28 @@ class Jogo:
                 case 2:
                     self.movimento_padrao_config = _alterar_valor(self.movimento_padrao_config, config, min=0, max=15)
                 case 3:
-                    self.are_duracao_config = _alterar_valor(self.are_duracao_config, config, min=0, max=200)
+                    self.movimento_padrao_config = _alterar_valor(self.movimento_padrao_config, config, min=0, max=15)
                 case 4:
-                    self.das_config = _alterar_valor(self.das_config, config, min=0, max=50)
+                    self.movimento_padrao_config = _alterar_valor(self.movimento_padrao_config, config, min=0, max=15)
                 case 5:
-                    self.arr_config = _alterar_valor(self.arr_config, config, min=0, max=10)
+                    self.are_duracao_config = _alterar_valor(self.are_duracao_config, config, min=0, max=200)
                 case 6:
+                    self.das_config = _alterar_valor(self.das_config, config, min=0, max=50)
+                case 7:
+                    self.arr_config = _alterar_valor(self.arr_config, config, min=0, max=10)
+                case 8:
                     self.arr_soft_drop_config = _alterar_valor(self.arr_soft_drop_config, config, min=0, max=10)
-                case 7:                          
+                case 9:                          
                     pass
-                case 8:                          
+                case 10:                          
                     self.variaveis_configuracao()
                     
             self.opcoes_submenus["ajustes"] = ([
                 f"Nível Inicial:{self.nivel_inicial_config:02d}", 
-                f"Peças Visíveis:{self.shapes_visiveis_config}", 
-                f"Fluidez:{self.movimento_padrao_config:02d}s",
+                f"Peças Visíveis:{self.shapes_visiveis_config}",
+                f"-Fluidez:{self.movimento_padrao_config:02d}s",
+                f"-Ínicio:{self.movimento_padrao_config:02d}",
+                f"-Constante:{self.movimento_padrao_config:02d}",
                 f"ARE:{self.are_duracao_config:02d}s",
                 f"DAS:{self.das_config:02d}ms", 
                 f"ARR:{self.arr_config:02d}ms",
@@ -1254,7 +1261,7 @@ class Jogo:
             return
         
         if self.estado_atual_do_jogo == "game_over":
-            if self.offset_y_slide_gameover >= LINHAS + 1:
+            if self.mov_slide_gameover >= LINHAS + 1:
                 self.estado_atual_do_jogo = "apos_game_over"
             return
 
@@ -1365,11 +1372,13 @@ class Jogo:
             valor = self.offset_menu["scroll"][profundidade_menu]
             self.offset_menu["scroll"][profundidade_menu] = self.calcular_interpolacao(valor, scroll, 0.2, 0.01)
     
-    def desenhar_texto_dos_botoes_menu(self, pos, largura, frase, ativo, fonte, *, espacamento, profundidade_menu, offset_y):
+    def desenhar_texto_dos_botoes_menu(self, pos, largura, frase, ativo, fonte, *, somar_y=0, espacamento, profundidade_menu, offset_y):
+        somar_y = somar_y if somar_y != 0 else CENTRALIZAR(fonte, frase, largura) 
+        
         def _desenhar_texto(*, dx=0, dy=0, cor=0):
             pos_x, pos_y = pos 
             px.text(
-                pos_x + dx + CENTRALIZAR(fonte, frase, largura) - offset_x, 
+                pos_x + dx + somar_y - offset_x, 
                 pos_y + dy - round(espacamento * offset_y), 
                 frase, cor, fonte
             )
@@ -1449,13 +1458,17 @@ class Jogo:
 
         if self.profundidade_menu == 2:
             self.calcular_animacao_scroll(2, opcoes_ativas, itens_visiveis)
-            
-        pos_y = centro_y - altura_total / 2 
-        for (frase, ativo)in zip(frases_atuais, opcoes_ativas):
+        
+        somas_y = [0, 12, 12, 12, 0, 0]
+        somar_y = somas_y[self.opcao_atual[1]]
+        
+        pos_y = centro_y - (altura_total / 2) 
+        for (frase, ativo) in zip(frases_atuais, opcoes_ativas):
             self.desenhar_texto_dos_botoes_menu(
                 ((limite_da_tela * 2) - offset_x, pos_y), 
                 (TILE * LINHAS), 
                 frase, ativo, FONT_11,
+                somar_y=somar_y,
                 espacamento=espacamento,
                 profundidade_menu=2,
                 offset_y=self.offset_menu["scroll"][2],
@@ -1505,24 +1518,24 @@ class Jogo:
     
     #////
     
-    def desenhar_rect(self, pos_x, pos_y, largura, comprimento, cor, *, mov_x=0, offset_esquerda=0, offset_direita=0, mov_y=0):
+    def desenhar_rect(self, pos_x, pos_y, largura, comprimento, cor, *, mov_x=0, mov_esquerda=0, mov_direita=0, mov_y=0):
         px.rect(
-            (TILE * (offset_esquerda + offset_direita + mov_x)) + pos_x, 
+            (TILE * (mov_esquerda + mov_direita + mov_x)) + pos_x, 
             (TILE * mov_y) + pos_y, 
             largura, comprimento, 
             cor
         )
     
-    def desenhar_todos_rects(self, offset_esquerda, offset_direita, mov_y, *, offset_x):
+    def desenhar_todos_rects(self, mov_esquerda, mov_direita, mov_y, *, offset_x):
         margem = 4
         largura_do_espaco = 80
         largura_final = largura_do_espaco - (margem * 2)
-        self.rects_da_esquerda(margem, largura_final, offset_esquerda, mov_y, offset_x)
-        self.rects_da_direita(margem, largura_final, offset_direita, mov_y, offset_x)
+        self.rects_da_esquerda(margem, largura_final, mov_esquerda, mov_y, offset_x)
+        self.rects_da_direita(margem, largura_final, mov_direita, mov_y, offset_x)
     
     #
     
-    def rects_da_esquerda(self, margem, largura, offset_esquerda, mov_y, offset_x):
+    def rects_da_esquerda(self, margem, largura, mov_esquerda, mov_y, offset_x):
         if self.shape_segurado != None:
             imagem_do_shape_segurado = SHAPES[self.shape_segurado]["imagem_pos"] + 1
         else:
@@ -1532,7 +1545,7 @@ class Jogo:
             margem + offset_x, 0, 
             largura, 4, 
             imagem_do_shape_segurado, 
-            offset_esquerda=offset_esquerda,
+            mov_esquerda=mov_esquerda,
             mov_y=mov_y
         )
         
@@ -1540,7 +1553,7 @@ class Jogo:
             margem + offset_x, margem, 
             largura, largura, 
             0, 
-            offset_esquerda=offset_esquerda,
+            mov_esquerda=mov_esquerda,
             mov_y=mov_y
         )
         
@@ -1548,7 +1561,7 @@ class Jogo:
             margem + offset_x, largura + (margem * 2), 
             largura, self.comprimento_rect_esquerdo_1, 
             0, 
-            offset_esquerda=offset_esquerda,
+            mov_esquerda=mov_esquerda,
             mov_y=mov_y
         )
         
@@ -1556,11 +1569,11 @@ class Jogo:
             margem + offset_x, largura + self.comprimento_rect_esquerdo_1 + (margem * 3), 
             largura, self.comprimento_rect_esquerdo_2, 
             0, 
-            offset_esquerda=offset_esquerda,
+            mov_esquerda=mov_esquerda,
             mov_y=mov_y
         )
     
-    def rects_da_direita(self, margem, largura, offset_direita, mov_y, offset_x):
+    def rects_da_direita(self, margem, largura, mov_direita, mov_y, offset_x):
         pos_x = ((TILE * 10) + BOARD_X) + margem
         extra = 0.5 if self.modo_do_jogo == "crazy" else 0
         comprimento_dir = TILE * ((self.shapes_visiveis + extra) * self.distancia_entre_shapes_proximos + self.distancia_minima_shape_proximo)
@@ -1569,7 +1582,7 @@ class Jogo:
             pos_x + offset_x, 0, 
             largura, 4,
             SHAPES[self.proximos_shapes[0]]["imagem_pos"] + 1,
-            offset_direita=offset_direita,
+            mov_direita=mov_direita,
             mov_y=mov_y
         )
         
@@ -1577,7 +1590,7 @@ class Jogo:
             pos_x + offset_x, margem, 
             largura, comprimento_dir,
             0,
-            offset_direita=offset_direita,
+            mov_direita=mov_direita,
             mov_y=mov_y
         )
         
@@ -1585,29 +1598,29 @@ class Jogo:
             pos_x + offset_x, comprimento_dir + (margem * 2), 
             largura , self.comprimento_rect_direito,
             0,
-            offset_direita=offset_direita,
+            mov_direita=mov_direita,
             mov_y=mov_y
         )
 
     #////
     
-    def desenhar_texto(self, pos, largura, frase, cor, *, offset_esquerda=0, offset_direita=0, mov_y, offset_x=0):
+    def desenhar_texto(self, pos, largura, frase, cor, *, mov_esquerda=0, mov_direita=0, mov_y, offset_x=0):
         pos_x, pos_y = pos
         px.text(
-            (TILE * (offset_esquerda + offset_direita)) + pos_x + CENTRALIZAR(FONT_10, frase, largura) + offset_x, 
+            (TILE * (mov_esquerda + mov_direita)) + pos_x + CENTRALIZAR(FONT_10, frase, largura) + offset_x, 
             (TILE * mov_y) + pos_y, 
             frase, cor, FONT_10
         )
            
-    def desenhar_todos_textos(self, offset_esquerda, offset_direita, mov_y, *, offset_x):
+    def desenhar_todos_textos(self, mov_esquerda, mov_direita, mov_y, *, offset_x):
         largura = 80
         cor = CORES_ALEATORIAS_TETRIS
-        self.textos_da_esquerda((ALTURA_DA_FONTE_10 / 2), largura, cor, offset_esquerda, mov_y, offset_x)
-        self.textos_da_direita((ALTURA_DA_FONTE_10 / 2), largura, offset_direita, mov_y, offset_x)
+        self.textos_da_esquerda((ALTURA_DA_FONTE_10 / 2), largura, cor, mov_esquerda, mov_y, offset_x)
+        self.textos_da_direita((ALTURA_DA_FONTE_10 / 2), largura, mov_direita, mov_y, offset_x)
     
     #
     
-    def textos_da_esquerda(self, altura_da_fonte, largura, cor, offset_esquerda, mov_y, offset_x):
+    def textos_da_esquerda(self, altura_da_fonte, largura, cor, mov_esquerda, mov_y, offset_x):
         espaco = 8
         espacamento = altura_da_fonte + espaco
         espacamento_entre_valores = altura_da_fonte + 3
@@ -1624,11 +1637,11 @@ class Jogo:
         
         pos_y_1 += espaco
         for index, (frase, valor) in enumerate(frases_esqueda_1):
-            self.desenhar_texto((0, pos_y_1), largura, frase, cor[index], offset_esquerda=offset_esquerda, mov_y=mov_y, offset_x=offset_x)
+            self.desenhar_texto((0, pos_y_1), largura, frase, cor[index], mov_esquerda=mov_esquerda, mov_y=mov_y, offset_x=offset_x)
             
             if valor != None:
                 pos_y_1 += espacamento_entre_valores
-                self.desenhar_texto((0, pos_y_1), largura, valor, cor[index], offset_esquerda=offset_esquerda, mov_y=mov_y, offset_x=offset_x)
+                self.desenhar_texto((0, pos_y_1), largura, valor, cor[index], mov_esquerda=mov_esquerda, mov_y=mov_y, offset_x=offset_x)
             pos_y_1 += espacamento
         self.comprimento_rect_esquerdo_1 = pos_y_1 - 80 + offset_fonte
         
@@ -1649,13 +1662,13 @@ class Jogo:
         for (frase, valor) in frases_esqueda_2:
             cor_final = cor_combo if frase == "COMBO" else cor_streak        
             
-            self.desenhar_texto((0, pos_y_2), largura, frase, cor_final, offset_esquerda=offset_esquerda, mov_y=mov_y, offset_x=offset_x)
+            self.desenhar_texto((0, pos_y_2), largura, frase, cor_final, mov_esquerda=mov_esquerda, mov_y=mov_y, offset_x=offset_x)
             pos_y_2 += espacamento_entre_valores
-            self.desenhar_texto((0, pos_y_2), largura, valor, cor_final, offset_esquerda=offset_esquerda, mov_y=mov_y, offset_x=offset_x)
+            self.desenhar_texto((0, pos_y_2), largura, valor, cor_final, mov_esquerda=mov_esquerda, mov_y=mov_y, offset_x=offset_x)
             pos_y_2 += espacamento
         self.comprimento_rect_esquerdo_2 = pos_y_2 - ((80 - offset_fonte) + self.comprimento_rect_esquerdo_1 + margem)
     
-    def textos_da_direita(self, altura_da_fonte, largura, offset_direita, mov_y, offset_x):
+    def textos_da_direita(self, altura_da_fonte, largura, mov_direita, mov_y, offset_x):
         espaco = 8
         espacamento = altura_da_fonte + espaco
         
@@ -1675,7 +1688,7 @@ class Jogo:
         cor = self.cor_principal_aleatoria
         
         pos_y += espacamento
-        self.desenhar_texto((pos_x, pos_y), largura, frase, cor, offset_direita=offset_direita, mov_y=mov_y, offset_x=offset_x)
+        self.desenhar_texto((pos_x, pos_y), largura, frase, cor, mov_direita=mov_direita, mov_y=mov_y, offset_x=offset_x)
         self.comprimento_rect_direito = pos_y - comprimento_dir + (espacamento / 2)
    
     #////
@@ -1863,7 +1876,7 @@ class Jogo:
     
     #////
     
-    def desenhar_shapes_proximos(self, proximos_shapes, offset_direita, mov_y, offset_x, offset_y):
+    def desenhar_shapes_proximos(self, proximos_shapes, mov_direita, mov_y, offset_x, offset_y):
         ajustar_valor_x = 10.5
         ajustar_valor_y = self.distancia_minima_shape_proximo  
         
@@ -1884,14 +1897,14 @@ class Jogo:
                             ajustar_valor_x + i_coluna + SHAPES[proximo_shape]["centralizado"][0],
                             ajustar_valor_y + i_linha + acrescimo_distancia + aumentar, 
                             (spritesheet_x, 0),
-                            mov_x=offset_direita,
+                            mov_x=mov_direita,
                             mov_y=mov_y,
                             offset_x=offset_x,
                             offset_y=offset_y
                         )
             acrescimo_distancia += self.distancia_entre_shapes_proximos + extra_do_modo_crazy
     
-    def desenhar_shape_segurado(self, shape_segurado, offset_esquerda, mov_y, offset_x, offset_y):
+    def desenhar_shape_segurado(self, shape_segurado, mov_esquerda, mov_y, offset_x, offset_y):
         ajustar_valor_x = -3.5
         
         inicio, fim = (0.05 * 5), 4.5
@@ -1909,7 +1922,7 @@ class Jogo:
                         ajustar_valor_x + i_coluna + SHAPES[shape_segurado]["centralizado"][1], 
                         ajustar_valor_y + i_linha + aumentar, 
                         (spritesheet_x, 0),
-                        mov_x=offset_esquerda,
+                        mov_x=mov_esquerda,
                         mov_y=mov_y,
                         offset_x=offset_x,
                         offset_y=offset_y
@@ -2035,74 +2048,74 @@ class Jogo:
         constante = 0.2
         
         if self.foi_esquerda:
-            self.offset_em_jogo["direita"] = 0
-            if self.offset_em_jogo["esquerda"] > -self.movimento_padrao:
-                self.offset_em_jogo["esquerda"] += -(inicio + abs(self.offset_em_jogo["esquerda"]) * constante)
-                self.offset_em_jogo["esquerda"] = max(self.offset_em_jogo["esquerda"], -self.movimento_padrao)
-                self.offset_em_jogo["tabuleiro_shapes"] = self.offset_em_jogo["esquerda"]
+            self.offset_em_jogo["mov_direita"] = 0
+            if self.offset_em_jogo["mov_esquerda"] > -self.movimento_padrao:
+                self.offset_em_jogo["mov_esquerda"] += -(inicio + abs(self.offset_em_jogo["mov_esquerda"]) * constante)
+                self.offset_em_jogo["mov_esquerda"] = max(self.offset_em_jogo["mov_esquerda"], -self.movimento_padrao)
+                self.offset_em_jogo["mov_x"] = self.offset_em_jogo["mov_esquerda"]
         else:
-            if self.offset_em_jogo["esquerda"] < 0:
-                self.offset_em_jogo["esquerda"] -= -(inicio + abs(self.offset_em_jogo["esquerda"]) * constante)
-                self.offset_em_jogo["tabuleiro_shapes"] = self.offset_em_jogo["esquerda"]
+            if self.offset_em_jogo["mov_esquerda"] < 0:
+                self.offset_em_jogo["mov_esquerda"] -= -(inicio + abs(self.offset_em_jogo["mov_esquerda"]) * constante)
+                self.offset_em_jogo["mov_x"] = self.offset_em_jogo["mov_esquerda"]
                 
-                if abs(self.offset_em_jogo["esquerda"]) < 0.5:
-                    self.offset_em_jogo["esquerda"] = 0
-                    self.offset_em_jogo["tabuleiro_shapes"] = 0
+                if abs(self.offset_em_jogo["mov_esquerda"]) < 0.5:
+                    self.offset_em_jogo["mov_esquerda"] = 0
+                    self.offset_em_jogo["mov_x"] = 0
         
         if self.foi_direita:
-            self.offset_em_jogo["esquerda"] = 0
-            if self.offset_em_jogo["direita"] < self.movimento_padrao:
-                self.offset_em_jogo["direita"] += (inicio + abs(self.offset_em_jogo["direita"]) * constante)
-                self.offset_em_jogo["direita"] = min(self.offset_em_jogo["direita"], self.movimento_padrao)
-                self.offset_em_jogo["tabuleiro_shapes"] = self.offset_em_jogo["direita"]
+            self.offset_em_jogo["mov_esquerda"] = 0
+            if self.offset_em_jogo["mov_direita"] < self.movimento_padrao:
+                self.offset_em_jogo["mov_direita"] += (inicio + abs(self.offset_em_jogo["mov_direita"]) * constante)
+                self.offset_em_jogo["mov_direita"] = min(self.offset_em_jogo["mov_direita"], self.movimento_padrao)
+                self.offset_em_jogo["mov_x"] = self.offset_em_jogo["mov_direita"]
         else:
-            if self.offset_em_jogo["direita"] > 0:
-                self.offset_em_jogo["direita"] -= (inicio + abs(self.offset_em_jogo["direita"]) * constante)
-                self.offset_em_jogo["tabuleiro_shapes"] = self.offset_em_jogo["direita"]
+            if self.offset_em_jogo["mov_direita"] > 0:
+                self.offset_em_jogo["mov_direita"] -= (inicio + abs(self.offset_em_jogo["mov_direita"]) * constante)
+                self.offset_em_jogo["mov_x"] = self.offset_em_jogo["mov_direita"]
                 
-                if abs(self.offset_em_jogo["direita"]) < 0.5:
-                    self.offset_em_jogo["direita"] = 0
-                    self.offset_em_jogo["tabuleiro_shapes"] = 0   
+                if abs(self.offset_em_jogo["mov_direita"]) < 0.5:
+                    self.offset_em_jogo["mov_direita"] = 0
+                    self.offset_em_jogo["mov_x"] = 0   
         
         if self.acionou_hard_drop:
-            if self.offset_em_jogo["hard_drop"] < (self.movimento_padrao - 1): # diminuir 1
-                self.offset_em_jogo["hard_drop"] += (inicio + abs(self.offset_em_jogo["hard_drop"]) * constante)
-                self.offset_em_jogo["hard_drop"] = min(self.offset_em_jogo["hard_drop"], (self.movimento_padrao - 1)) # diminuir 1
+            if self.offset_em_jogo["mov_hard_drop"] < (self.movimento_padrao - 1): # diminui 1
+                self.offset_em_jogo["mov_hard_drop"] += (inicio + abs(self.offset_em_jogo["mov_hard_drop"]) * constante)
+                self.offset_em_jogo["mov_hard_drop"] = min(self.offset_em_jogo["mov_hard_drop"], (self.movimento_padrao - 1)) # diminui 1
             else:
                 self.acionou_hard_drop = False
         else:
-            if self.offset_em_jogo["hard_drop"] > 0:
-                self.offset_em_jogo["hard_drop"] -= (inicio + abs(self.offset_em_jogo["hard_drop"]) * constante)
+            if self.offset_em_jogo["mov_hard_drop"] > 0:
+                self.offset_em_jogo["mov_hard_drop"] -= (inicio + abs(self.offset_em_jogo["mov_hard_drop"]) * constante)
             else:
-                self.offset_em_jogo["hard_drop"] = 0
+                self.offset_em_jogo["mov_hard_drop"] = 0
 
     def calcular_animacao_gameover_slide(self):
         velocidade = 100
         limite = LINHAS + 1
         
-        if self.offset_em_jogo["hard_drop"] > 0:
+        if self.offset_em_jogo["mov_hard_drop"] > 0:
             return 0
             
         if self.valor_exponencial_gameover < limite:
-            progresso = self.offset_y_slide_gameover / (limite)
-            incremento = ((1 + self.offset_y_slide_gameover) / velocidade) ** (0.5 + progresso ** 1.5)
+            progresso = self.mov_slide_gameover / (limite)
+            incremento = ((1 + self.mov_slide_gameover) / velocidade) ** (0.5 + progresso ** 1.5)
             self.valor_exponencial_gameover = min(self.valor_exponencial_gameover + incremento, limite)
        
         return self.valor_exponencial_gameover
     
     def valores_animacao(self):
-        mov_x = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["tabuleiro_shapes"])
-        offset_esquerda = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["esquerda"])
-        offset_direita = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["direita"])
-        offset_y_hard_drop = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["hard_drop"])
-        return mov_x, offset_esquerda, offset_direita, offset_y_hard_drop, self.offset_y_slide_gameover
+        mov_x = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["mov_x"])
+        mov_esquerda = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["mov_esquerda"])
+        mov_direita = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["mov_direita"])
+        mov_hard_drop = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["mov_hard_drop"])
+        return mov_x, mov_esquerda, mov_direita, mov_hard_drop, self.mov_slide_gameover
     
     #////
     
-    def desenhar_shape_segurado_e_proximos(self, offset_esquerda, offset_direita, mov_y, offset_x, offset_y=0):
-        self.desenhar_shapes_proximos(self.proximos_shapes, offset_direita, mov_y, offset_x, offset_y)
+    def desenhar_shape_segurado_e_proximos(self, mov_esquerda, mov_direita, mov_y, offset_x, offset_y=0):
+        self.desenhar_shapes_proximos(self.proximos_shapes, mov_direita, mov_y, offset_x, offset_y)
         if self.shape_segurado != None:
-            self.desenhar_shape_segurado(self.shape_segurado, offset_esquerda, mov_y, offset_x, offset_y)
+            self.desenhar_shape_segurado(self.shape_segurado, mov_esquerda, mov_y, offset_x, offset_y)
     
     #
     
@@ -2116,52 +2129,52 @@ class Jogo:
     #
     
     def desenhar_todos_rects_textos(self, *, offset_x):
-        mov_x, offset_esquerda, offset_direita, offset_y_hard_drop, offset_y_slide_gameover = self.valores_animacao()
+        mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_animacao()
             
-        self.desenhar_todos_rects(offset_esquerda, offset_direita, offset_y_slide_gameover, offset_x=offset_x)
-        self.desenhar_todos_textos(offset_esquerda, offset_direita, offset_y_slide_gameover, offset_x=offset_x)
+        self.desenhar_todos_rects(mov_esquerda, mov_direita, mov_slide_gameover, offset_x=offset_x)
+        self.desenhar_todos_textos(mov_esquerda, mov_direita, mov_slide_gameover, offset_x=offset_x)
 
     #
     
     def desenhar_tudo_em_jogo(self, *, offset_x):
         offset_y_teto = self.calcular_animacao_offset_teto(self.calcular_offset_teto())
-        mov_x, offset_esquerda, offset_direita, offset_y_hard_drop, offset_y_slide_gameover = self.valores_animacao()
+        mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_animacao()
         #
-        self.desenhar_tabuleiro_e_teto(mov_x, offset_y_hard_drop, offset_x, offset_y_teto)
+        self.desenhar_tabuleiro_e_teto(mov_x, mov_hard_drop, offset_x, offset_y_teto)
         
         if self.acionou_hard_drop or len(self.variaveis_animacao_hard_drop) > 0:
-            self.desenhar_animacao_hard_drop(mov_x, offset_y_hard_drop, offset_x)
+            self.desenhar_animacao_hard_drop(mov_x, mov_hard_drop, offset_x)
         
         if not self.esta_em_are:
-            self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, offset_y_hard_drop, offset_x, offset_y_teto)
+            self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_hard_drop, offset_x, offset_y_teto)
             if self.nivel_atual < (len(TABELA_G) - 3):
-                self.desenhar_shape_atual(self.pegar_formato(), self.shape_pos_atual, mov_x, offset_y_hard_drop, offset_x, offset_y_teto)
+                self.desenhar_shape_atual(self.pegar_formato(), self.shape_pos_atual, mov_x, mov_hard_drop, offset_x, offset_y_teto)
         
         if self.limpou_linha:
-            self.desenhar_animacao_limpar_linha(mov_x, offset_y_hard_drop, offset_x, offset_y_teto)
+            self.desenhar_animacao_limpar_linha(mov_x, mov_hard_drop, offset_x, offset_y_teto)
         
-        self.desenhar_shapes_fixados(self.mapa, mov_x, offset_y_hard_drop, offset_x, offset_y_teto)
-        self.desenhar_shape_segurado_e_proximos(offset_esquerda, offset_direita, 0, offset_x)
+        self.desenhar_shapes_fixados(self.mapa, mov_x, mov_hard_drop, offset_x, offset_y_teto)
+        self.desenhar_shape_segurado_e_proximos(mov_esquerda, mov_direita, 0, offset_x)
         self.desenhar_popups(mov_x, offset_x)
     
     #
         
     def desenhar_tudo_no_game_over(self, *, offset_x):
         offset_y_teto = self.calcular_offset_teto_gameover()
-        mov_x, offset_esquerda, offset_direita, offset_y_hard_drop, offset_y_slide_gameover = self.valores_animacao()
+        mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_animacao()
         #
-        if offset_y_hard_drop > 0:
-            self.desenhar_tabuleiro_e_teto(mov_x, offset_y_hard_drop, offset_x, offset_y_teto)
-            self.desenhar_shapes_fixados(self.mapa, mov_x, offset_y_hard_drop, offset_x, offset_y_teto)
+        if mov_hard_drop > 0:
+            self.desenhar_tabuleiro_e_teto(mov_x, mov_hard_drop, offset_x, offset_y_teto)
+            self.desenhar_shapes_fixados(self.mapa, mov_x, mov_hard_drop, offset_x, offset_y_teto)
         else:
-            self.desenhar_tabuleiro_e_teto(mov_x, offset_y_slide_gameover, offset_x, offset_y_teto)
-            self.desenhar_shapes_fixados(self.mapa, mov_x, offset_y_slide_gameover, offset_x, offset_y_teto)
+            self.desenhar_tabuleiro_e_teto(mov_x, mov_slide_gameover, offset_x, offset_y_teto)
+            self.desenhar_shapes_fixados(self.mapa, mov_x, mov_slide_gameover, offset_x, offset_y_teto)
             
-        self.desenhar_shape_segurado_e_proximos(offset_esquerda, offset_direita, offset_y_slide_gameover, offset_x)
+        self.desenhar_shape_segurado_e_proximos(mov_esquerda, mov_direita, mov_slide_gameover, offset_x)
         self.desenhar_popups(mov_x, offset_x)
          
-        self.desenhar_fundo((BOARD_X, (-LINHAS - 1) * TILE), (0, LINHAS), (COLUNAS, LINHAS), mov_x=0, mov_y=offset_y_slide_gameover, offset_x=offset_x)
-        self.desenhar_texto_estatisticas(pos_y_negativo=(-(-LINHAS - 1) * TILE), mov_y=offset_y_slide_gameover, offset_x=offset_x)
+        self.desenhar_fundo((BOARD_X, (-LINHAS - 1) * TILE), (0, LINHAS), (COLUNAS, LINHAS), mov_x=0, mov_y=mov_slide_gameover, offset_x=offset_x)
+        self.desenhar_texto_estatisticas(pos_y_negativo=(-(-LINHAS - 1) * TILE), mov_y=mov_slide_gameover, offset_x=offset_x)
     
     #////
     
@@ -2173,7 +2186,7 @@ class Jogo:
         if (self.estado_atual_do_jogo != "em_menu") and (not self.esta_pausado):
             self.calcular_valores_das_animacoes()
             if self.estado_atual_do_jogo == "game_over":
-                self.offset_y_slide_gameover = self.calcular_animacao_gameover_slide()
+                self.mov_slide_gameover = self.calcular_animacao_gameover_slide()
 
         #/
         
@@ -2185,7 +2198,7 @@ class Jogo:
         
         if self.estado_atual_do_jogo in ("em_jogo", "game_over", "apos_game_over"):
             self.calcular_animacao_pausado()
-            offset_x = self.offset_em_jogo["pause"]  
+            offset_x = self.offset_em_jogo["pause"]
         
         #/
         
@@ -2238,9 +2251,9 @@ class Jogo:
         
         if self.esta_pausado:
             limite_da_tela = LINHAS * TILE
-            if self.offset_em_jogo["esquerda"] < 0:
-                self.offset_em_jogo["esquerda"] += 1
-                self.offset_em_jogo["tabuleiro_shapes"] = self.offset_em_jogo["esquerda"]
+            if self.offset_em_jogo["mov_esquerda"] < 0:
+                self.offset_em_jogo["mov_esquerda"] += 1
+                self.offset_em_jogo["mov_x"] = self.offset_em_jogo["mov_esquerda"]
             
             px.dither(0.5)
             px.rect((-self.distancia_do_pause + offset_x), 0, self.distancia_do_pause , limite_da_tela, 0)
