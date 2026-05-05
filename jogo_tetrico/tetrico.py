@@ -298,7 +298,7 @@ class Jogo:
             #
             "OPCAO_AUMENTAR": [px.KEY_RIGHT, px.GAMEPAD1_BUTTON_DPAD_RIGHT],
             "OPCAO_DIMINUIR": [px.KEY_LEFT, px.GAMEPAD1_BUTTON_DPAD_LEFT],
-        }   
+        }
         
         self.iniciar_jogo()
         
@@ -315,20 +315,17 @@ class Jogo:
         self.despausando = False
         
     def variaveis_configuracao(self):
-        # nivel_inicial_config = 1
-        self.nivel_inicial_config = 1
-        # shapes_visiveis_config = 4
-        self.shapes_visiveis_config = 3
-        # movimento_padrao_config = 6
-        self.movimento_padrao_config = 6
-        # are_duracao_config = 20
-        self.are_duracao_config = 20
-        # das_config = 10
-        self.das_config = 10
-        # arr_config = 2
-        self.arr_config = 2
-        # arr_soft_drop_config = 2
-        self.arr_soft_drop_config = 2
+        self.nivel_inicial_config = 1 # nivel_inicial_config = 1
+        self.shapes_visiveis_config = 3 # shapes_visiveis_config = 4
+        
+        self.movimento_duracao_config = 6 # movimento_duracao_config = 6
+        self.movimento_inicio_config = 0.5 # movimento_inicio_config = 0.5
+        self.movimento_constante_config = 0.2 # movimento_constante_config = 0.2   
+        
+        self.are_duracao_config = 20 # are_duracao_config = 20
+        self.das_config = 10 # das_config = 10
+        self.arr_config = 2 # arr_config = 2
+        self.arr_soft_drop_config = 2 # arr_soft_drop_config = 2
 
     def variaveis_menu(self):
         self.pilha_menu = ["entrada"]
@@ -349,15 +346,15 @@ class Jogo:
             "ajustes": ([
                 f"Nível Inicial:{self.nivel_inicial_config:02d}", 
                 f"Peças Visíveis:{self.shapes_visiveis_config}",
-                f"•Fluidez:{self.movimento_padrao_config:02d}s",
-                f"•Ínicio:{self.movimento_padrao_config:02d}",
-                f"•Constante:{self.movimento_padrao_config:02d}",
+                f"FLUIDEZ:{self.movimento_duracao_config:02d}s",
+                f" Ínicio:{self.movimento_inicio_config:0.2f}",
+                f" Constante:{self.movimento_constante_config:0.2f}",
                 f"ARE:{self.are_duracao_config:02d}s",
                 f"DAS:{self.das_config:02d}ms", 
                 f"ARR:{self.arr_config:02d}ms",
-                f"ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
+                f" ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
                 f"", 
-                f"RESETAR VALORES!"], 30),
+                f"RESETAR VALORES"], 30),
             "controle": (["True"], 30),
             "historico": (["1", "2"], 30),
             "sobre": (["Feito pelo Cac", "Feito com Pyxel", "Feito com carinho", ":D"], 25),
@@ -447,14 +444,17 @@ class Jogo:
         self.variaveis_velocidade_movimentacao()
     
     def variaveis_movimentos(self):
-        self.movimento_padrao = self.movimento_padrao_config # CONFIG
+        self.movimento_duracao = self.movimento_duracao_config # CONFIG
         
-        self.offset_em_jogo = {
+        # offset para mov e criar um so pros dois ultimos
+        self.mov_em_jogo = {
             "mov_x": 0,
             "mov_esquerda": 0,
             "mov_direita": 0,
             "mov_hard_drop": 0,
-            
+        }
+        
+        self.offset_em_jogo = {    
             "teto": 0,
             "pause": 0,
         }
@@ -648,11 +648,11 @@ class Jogo:
                 case 1:
                     self.shapes_visiveis_config = _alterar_valor(self.shapes_visiveis_config, config, min=1, max=5)
                 case 2:
-                    self.movimento_padrao_config = _alterar_valor(self.movimento_padrao_config, config, min=0, max=15)
+                    self.movimento_duracao_config = _alterar_valor(self.movimento_duracao_config, config, min=0, max=15)
                 case 3:
-                    self.movimento_padrao_config = _alterar_valor(self.movimento_padrao_config, config, min=0, max=15)
+                    self.movimento_inicio_config = _alterar_valor(self.movimento_inicio_config, (config/10), min=0, max=1)
                 case 4:
-                    self.movimento_padrao_config = _alterar_valor(self.movimento_padrao_config, config, min=0, max=15)
+                    self.movimento_constante_config = _alterar_valor(self.movimento_constante_config, (config/20), min=0, max=0.5)
                 case 5:
                     self.are_duracao_config = _alterar_valor(self.are_duracao_config, config, min=0, max=200)
                 case 6:
@@ -665,19 +665,21 @@ class Jogo:
                     pass
                 case 10:                          
                     self.variaveis_configuracao()
-                    
+
             self.opcoes_submenus["ajustes"] = ([
                 f"Nível Inicial:{self.nivel_inicial_config:02d}", 
                 f"Peças Visíveis:{self.shapes_visiveis_config}",
-                f"-Fluidez:{self.movimento_padrao_config:02d}s",
-                f"-Ínicio:{self.movimento_padrao_config:02d}",
-                f"-Constante:{self.movimento_padrao_config:02d}",
+                f"FLUIDEZ:{self.movimento_duracao_config:02d}s",
+                f" Ínicio:{self.movimento_inicio_config:0.2f}",
+                f" Constante:{self.movimento_constante_config:0.2f}",
                 f"ARE:{self.are_duracao_config:02d}s",
                 f"DAS:{self.das_config:02d}ms", 
                 f"ARR:{self.arr_config:02d}ms",
-                f"ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
+                f" ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
                 f"", 
-                f"RESETAR VALORES!"], 30)
+                f"RESETAR VALORES"], 30)
+            if self.opcao_atual[2] == len(self.opcoes_submenus["ajustes"][0]) - 1:
+                self.opcoes_submenus["ajustes"][0][-1] = f"RESETADO"
     
     #////
     
@@ -1316,6 +1318,8 @@ class Jogo:
                 return destino_x
         valor += distancia_restante * velocidade
         return valor
+    
+    #///
     
     def desenhar_letra_titulo(self, coluna_x, linha_y, spritesheet_pos):
         spritesheet_x, spritesheet_y = spritesheet_pos
@@ -2044,56 +2048,56 @@ class Jogo:
     #
     
     def calcular_valores_das_animacoes(self):
-        inicio = 0.5
-        constante = 0.2
+        inicio = self.movimento_inicio_config
+        constante = self.movimento_constante_config
         
         if self.foi_esquerda:
-            self.offset_em_jogo["mov_direita"] = 0
-            if self.offset_em_jogo["mov_esquerda"] > -self.movimento_padrao:
-                self.offset_em_jogo["mov_esquerda"] += -(inicio + abs(self.offset_em_jogo["mov_esquerda"]) * constante)
-                self.offset_em_jogo["mov_esquerda"] = max(self.offset_em_jogo["mov_esquerda"], -self.movimento_padrao)
-                self.offset_em_jogo["mov_x"] = self.offset_em_jogo["mov_esquerda"]
+            self.mov_em_jogo["mov_direita"] = 0
+            if self.mov_em_jogo["mov_esquerda"] > -self.movimento_duracao:
+                self.mov_em_jogo["mov_esquerda"] += -(inicio + abs(self.mov_em_jogo["mov_esquerda"]) * constante)
+                self.mov_em_jogo["mov_esquerda"] = max(self.mov_em_jogo["mov_esquerda"], -self.movimento_duracao)
+                self.mov_em_jogo["mov_x"] = self.mov_em_jogo["mov_esquerda"]
         else:
-            if self.offset_em_jogo["mov_esquerda"] < 0:
-                self.offset_em_jogo["mov_esquerda"] -= -(inicio + abs(self.offset_em_jogo["mov_esquerda"]) * constante)
-                self.offset_em_jogo["mov_x"] = self.offset_em_jogo["mov_esquerda"]
+            if self.mov_em_jogo["mov_esquerda"] < 0:
+                self.mov_em_jogo["mov_esquerda"] -= -(inicio + abs(self.mov_em_jogo["mov_esquerda"]) * constante)
+                self.mov_em_jogo["mov_x"] = self.mov_em_jogo["mov_esquerda"]
                 
-                if abs(self.offset_em_jogo["mov_esquerda"]) < 0.5:
-                    self.offset_em_jogo["mov_esquerda"] = 0
-                    self.offset_em_jogo["mov_x"] = 0
+                if abs(self.mov_em_jogo["mov_esquerda"]) < 0.5:
+                    self.mov_em_jogo["mov_esquerda"] = 0
+                    self.mov_em_jogo["mov_x"] = 0
         
         if self.foi_direita:
-            self.offset_em_jogo["mov_esquerda"] = 0
-            if self.offset_em_jogo["mov_direita"] < self.movimento_padrao:
-                self.offset_em_jogo["mov_direita"] += (inicio + abs(self.offset_em_jogo["mov_direita"]) * constante)
-                self.offset_em_jogo["mov_direita"] = min(self.offset_em_jogo["mov_direita"], self.movimento_padrao)
-                self.offset_em_jogo["mov_x"] = self.offset_em_jogo["mov_direita"]
+            self.mov_em_jogo["mov_esquerda"] = 0
+            if self.mov_em_jogo["mov_direita"] < self.movimento_duracao:
+                self.mov_em_jogo["mov_direita"] += (inicio + abs(self.mov_em_jogo["mov_direita"]) * constante)
+                self.mov_em_jogo["mov_direita"] = min(self.mov_em_jogo["mov_direita"], self.movimento_duracao)
+                self.mov_em_jogo["mov_x"] = self.mov_em_jogo["mov_direita"]
         else:
-            if self.offset_em_jogo["mov_direita"] > 0:
-                self.offset_em_jogo["mov_direita"] -= (inicio + abs(self.offset_em_jogo["mov_direita"]) * constante)
-                self.offset_em_jogo["mov_x"] = self.offset_em_jogo["mov_direita"]
+            if self.mov_em_jogo["mov_direita"] > 0:
+                self.mov_em_jogo["mov_direita"] -= (inicio + abs(self.mov_em_jogo["mov_direita"]) * constante)
+                self.mov_em_jogo["mov_x"] = self.mov_em_jogo["mov_direita"]
                 
-                if abs(self.offset_em_jogo["mov_direita"]) < 0.5:
-                    self.offset_em_jogo["mov_direita"] = 0
-                    self.offset_em_jogo["mov_x"] = 0   
+                if abs(self.mov_em_jogo["mov_direita"]) < 0.5:
+                    self.mov_em_jogo["mov_direita"] = 0
+                    self.mov_em_jogo["mov_x"] = 0   
         
         if self.acionou_hard_drop:
-            if self.offset_em_jogo["mov_hard_drop"] < (self.movimento_padrao - 1): # diminui 1
-                self.offset_em_jogo["mov_hard_drop"] += (inicio + abs(self.offset_em_jogo["mov_hard_drop"]) * constante)
-                self.offset_em_jogo["mov_hard_drop"] = min(self.offset_em_jogo["mov_hard_drop"], (self.movimento_padrao - 1)) # diminui 1
+            if self.mov_em_jogo["mov_hard_drop"] < (self.movimento_duracao - 1): # diminui 1
+                self.mov_em_jogo["mov_hard_drop"] += (inicio + abs(self.mov_em_jogo["mov_hard_drop"]) * constante)
+                self.mov_em_jogo["mov_hard_drop"] = min(self.mov_em_jogo["mov_hard_drop"], (self.movimento_duracao - 1)) # diminui 1
             else:
                 self.acionou_hard_drop = False
         else:
-            if self.offset_em_jogo["mov_hard_drop"] > 0:
-                self.offset_em_jogo["mov_hard_drop"] -= (inicio + abs(self.offset_em_jogo["mov_hard_drop"]) * constante)
+            if self.mov_em_jogo["mov_hard_drop"] > 0:
+                self.mov_em_jogo["mov_hard_drop"] -= (inicio + abs(self.mov_em_jogo["mov_hard_drop"]) * constante)
             else:
-                self.offset_em_jogo["mov_hard_drop"] = 0
+                self.mov_em_jogo["mov_hard_drop"] = 0
 
     def calcular_animacao_gameover_slide(self):
         velocidade = 100
         limite = LINHAS + 1
         
-        if self.offset_em_jogo["mov_hard_drop"] > 0:
+        if self.mov_em_jogo["mov_hard_drop"] > 0:
             return 0
             
         if self.valor_exponencial_gameover < limite:
@@ -2103,11 +2107,11 @@ class Jogo:
        
         return self.valor_exponencial_gameover
     
-    def valores_animacao(self):
-        mov_x = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["mov_x"])
-        mov_esquerda = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["mov_esquerda"])
-        mov_direita = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["mov_direita"])
-        mov_hard_drop = TRANSFORMAR_EM_DECIMAL(self.offset_em_jogo["mov_hard_drop"])
+    def valores_movimentos(self):
+        mov_x = TRANSFORMAR_EM_DECIMAL(self.mov_em_jogo["mov_x"])
+        mov_esquerda = TRANSFORMAR_EM_DECIMAL(self.mov_em_jogo["mov_esquerda"])
+        mov_direita = TRANSFORMAR_EM_DECIMAL(self.mov_em_jogo["mov_direita"])
+        mov_hard_drop = TRANSFORMAR_EM_DECIMAL(self.mov_em_jogo["mov_hard_drop"])
         return mov_x, mov_esquerda, mov_direita, mov_hard_drop, self.mov_slide_gameover
     
     #////
@@ -2129,7 +2133,7 @@ class Jogo:
     #
     
     def desenhar_todos_rects_textos(self, *, offset_x):
-        mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_animacao()
+        mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_movimentos()
             
         self.desenhar_todos_rects(mov_esquerda, mov_direita, mov_slide_gameover, offset_x=offset_x)
         self.desenhar_todos_textos(mov_esquerda, mov_direita, mov_slide_gameover, offset_x=offset_x)
@@ -2138,7 +2142,7 @@ class Jogo:
     
     def desenhar_tudo_em_jogo(self, *, offset_x):
         offset_y_teto = self.calcular_animacao_offset_teto(self.calcular_offset_teto())
-        mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_animacao()
+        mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_movimentos()
         #
         self.desenhar_tabuleiro_e_teto(mov_x, mov_hard_drop, offset_x, offset_y_teto)
         
@@ -2161,7 +2165,7 @@ class Jogo:
         
     def desenhar_tudo_no_game_over(self, *, offset_x):
         offset_y_teto = self.calcular_offset_teto_gameover()
-        mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_animacao()
+        mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_movimentos()
         #
         if mov_hard_drop > 0:
             self.desenhar_tabuleiro_e_teto(mov_x, mov_hard_drop, offset_x, offset_y_teto)
@@ -2251,9 +2255,9 @@ class Jogo:
         
         if self.esta_pausado:
             limite_da_tela = LINHAS * TILE
-            if self.offset_em_jogo["mov_esquerda"] < 0:
-                self.offset_em_jogo["mov_esquerda"] += 1
-                self.offset_em_jogo["mov_x"] = self.offset_em_jogo["mov_esquerda"]
+            if self.mov_em_jogo["mov_esquerda"] < 0:
+                self.mov_em_jogo["mov_esquerda"] += 1
+                self.mov_em_jogo["mov_x"] = self.mov_em_jogo["mov_esquerda"]
             
             px.dither(0.5)
             px.rect((-self.distancia_do_pause + offset_x), 0, self.distancia_do_pause , limite_da_tela, 0)
