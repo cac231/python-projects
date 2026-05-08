@@ -313,7 +313,7 @@ class Jogo:
         
         self.esta_pausado = False
         self.despausando = False
-        
+
     def variaveis_configuracao(self):
         self.nivel_inicial_config = 1 # nivel_inicial_config = 1
         self.shapes_visiveis_config = 3 # shapes_visiveis_config = 4
@@ -347,9 +347,9 @@ class Jogo:
                 f"Nível Inicial:{self.nivel_inicial_config:02d}", 
                 f"Peças Visíveis:{self.shapes_visiveis_config}",
                 f"FLUIDEZ:{self.movimento_duracao_config:02d}s",
-                f" Ínicio:{self.movimento_inicio_config:0.2f}",
+                f" Início:{self.movimento_inicio_config:0.2f}",
                 f" Constante:{self.movimento_constante_config:0.2f}",
-                f"ARE:{self.are_duracao_config:02d}s",
+                f"ARE:{self.are_duracao_config:02d}ms",
                 f"DAS:{self.das_config:02d}ms", 
                 f"ARR:{self.arr_config:02d}ms",
                 f" ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
@@ -360,13 +360,13 @@ class Jogo:
             "sobre": (["Feito pelo Cac", "Feito com Pyxel", "Feito com carinho", ":D"], 25),
             "sair": (["Pressione [ENTER]", "para confirmar"], 25),
         }
-    
         self.navegar_menu()
-    
+
     def variaveis_rects_e_constantes(self):
         # distancia entre os shapes proximos desenhados
         self.distancia_entre_shapes_proximos = 2.5
-        self.distancia_minima_shape_proximo = 0.5
+        self.distancia_inicial_shape_proximo = 0.5
+        self.distancia_extra_crazy = 0.5
         
         # comprimento dos rects
         self.comprimento_rect_esquerdo_1 = 0
@@ -379,19 +379,12 @@ class Jogo:
         self.variaveis_menu()
         self.variaveis_rects_e_constantes()
     
-    #//////////
-    
-    def reset_voltar_ao_menu(self):
-        self.variaveis_iniciais()
-    
-    #//////////
+    #////
     
     def iniciar_contagem_do_tempo(self):
         self.tempo_inicial = time.perf_counter()
         self.tempo_atual_em_segundos = 0
         self.tempo_pausado = 0
-    
-    #
     
     def iniciar_partida(self):
         self.tempo_inicial = 0
@@ -469,13 +462,6 @@ class Jogo:
         self.arr = self.arr_config # CONFIG
         self.arr_soft_drop = self.arr_soft_drop_config # CONFIG
     
-    def variaveis_pause(self):
-        self.distancia_do_pause = 150
-        self.opcoes_pause = ["Retornar", "Status", "  Voltar \n\n ao Início", "  Voltar \n\n aos modos", "  Sair \n\n do Jogo"]
-        self.opcoes_pause_ativas = [False] * len(self.opcoes_pause)
-        
-        self.opcao_atual_pause = 0
-    
     #////
    
     def reiniciar_shape(self):
@@ -525,7 +511,7 @@ class Jogo:
         self.esta_em_are = False
         self.limpou_linha = False # Se False, sem ARE
     
-    #
+    #////
     
     def gerar_novo_shape(self):
         self.shape_atual = self.proximos_shapes.pop(0)
@@ -543,6 +529,11 @@ class Jogo:
    
     def pegar_formato(self):
         return self.shape_matriz_atual
+    
+    #
+    
+    def reset_voltar_ao_menu(self):
+        self.variaveis_iniciais()
     
     #//// //// ////
 
@@ -670,9 +661,9 @@ class Jogo:
                 f"Nível Inicial:{self.nivel_inicial_config:02d}", 
                 f"Peças Visíveis:{self.shapes_visiveis_config}",
                 f"FLUIDEZ:{self.movimento_duracao_config:02d}s",
-                f" Ínicio:{self.movimento_inicio_config:0.2f}",
+                f" Início:{self.movimento_inicio_config:0.2f}",
                 f" Constante:{self.movimento_constante_config:0.2f}",
-                f"ARE:{self.are_duracao_config:02d}s",
+                f"ARE:{self.are_duracao_config:02d}ms",
                 f"DAS:{self.das_config:02d}ms", 
                 f"ARR:{self.arr_config:02d}ms",
                 f" ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
@@ -681,6 +672,30 @@ class Jogo:
             if self.opcao_atual[2] == len(self.opcoes_submenus["ajustes"][0]) - 1:
                 self.opcoes_submenus["ajustes"][0][-1] = f"RESETADO"
     
+    #//// ////
+    
+    def variaveis_pause(self):
+        self.distancia_do_pause = 150
+        self.opcoes_pause = ["Retornar", "Status", "Voltar", "Sair"]
+        
+        self.opcao_atual_pause = 0
+        self.opcoes_pause_ativas = [False] * len(self.opcoes_pause)
+        self.opcoes_pause_ativas[self.opcao_atual_pause] = True
+    
+    def navegar_pause(self, *, clique=0, deslize=0):
+        self.opcoes_pause_ativas = [False] * len(self.opcoes_pause)
+        quantidade_de_opcoes = len(self.opcoes_pause)
+        
+        if deslize != 0:
+            self.opcao_atual_pause += deslize
+            if self.opcao_atual_pause % quantidade_de_opcoes == 0:
+                self.opcao_atual_pause = 0
+            elif self.opcao_atual_pause < 0:
+                self.opcao_atual_pause = (quantidade_de_opcoes - 1)
+        print(self.opcao_atual_pause)
+        
+        self.opcoes_pause_ativas[self.opcao_atual_pause] = True
+
     #////
     
     def pegar_input(self, input, repeticao=0, hold=0, *, input_puro=False):
@@ -1210,7 +1225,17 @@ class Jogo:
             self.navegar_menu(config=-1)
     
     def teclas_navegacao_pause(self):
-        pass
+        if self.pegar_input("ACIONAR"):
+            self.navegar_pause(clique=1)
+        
+        elif self.pegar_input("VOLTAR"):
+            self.navegar_pause(clique=-1)
+
+        elif self.pegar_input("PARA_CIMA"):
+            self.navegar_pause(deslize=-1)
+        
+        elif self.pegar_input("PARA_BAIXO"):
+            self.navegar_pause(deslize=1)
     
     def verificar_estado_do_modo(self):
         if self.modo_do_jogo == "marathon_150":
@@ -1402,6 +1427,8 @@ class Jogo:
                         _desenhar_texto(dx=dx, dy=dy, cor=8)
             _desenhar_texto(cor=self.cor_principal_aleatoria)
     
+    #
+    
     def desenhar_todos_botoes_menu(self, offset_x):
         limite_da_tela = LINHAS * TILE
         centro_y = ((limite_da_tela / 2) + limite_da_tela) / 2
@@ -1483,9 +1510,15 @@ class Jogo:
     #////
     
     def desenhar_textos_pause(self, offset_x):
+        limite_da_tela = LINHAS * TILE
+        centro_y = ((limite_da_tela / 2) + limite_da_tela) / 2
+        
+        #
+        
+        pos_y = (limite_da_tela / 4) - ALTURA_DA_FONTE_11 / 2
         frase = "PAUSADO"
         self.desenhar_texto_dos_botoes_menu(
-            (-self.distancia_do_pause + offset_x, 20), 
+            (-self.distancia_do_pause + offset_x, pos_y), 
             self.distancia_do_pause, 
             frase, True, FONT_11,
             espacamento=0,
@@ -1496,29 +1529,37 @@ class Jogo:
         #
         
         frases = self.opcoes_pause
-        
         opcoes_ativas = self.opcoes_pause_ativas
         itens_visiveis = min(5, len(opcoes_ativas))
         
-        espacamento = 50
-        altura_total = (itens_visiveis - 1) * (espacamento) + ALTURA_DA_FONTE_10
+        espacamento = 30
+        altura_total = (itens_visiveis - 1) * (espacamento) + ALTURA_DA_FONTE_11
         
         self.calcular_animacao_scroll(1, opcoes_ativas, itens_visiveis)
         
-        pos_y = self.distancia_do_pause - altura_total / 2
+        pos_y = centro_y - altura_total / 2
         
         for (frase, ativo) in zip(frases, opcoes_ativas):
             self.desenhar_texto_dos_botoes_menu(
                 (-self.distancia_do_pause + offset_x, pos_y), 
-                self.distancia_do_pause,
-                frase, ativo, FONT_10,
+                self.distancia_do_pause + 2,
+                frase, ativo, FONT_11,
                 espacamento=espacamento,
                 profundidade_menu=0,
                 offset_y=0,
             )
             pos_y += espacamento
         
-        
+    
+    #////
+    
+    def calcular_comprimento_rect_direito(self):
+        if self.modo_do_jogo == "crazy":
+            extra = self.distancia_extra_crazy
+        else:
+            extra = 0
+        comprimento = TILE * (self.shapes_visiveis * (self.distancia_entre_shapes_proximos + extra) + (self.distancia_inicial_shape_proximo + extra))
+        return comprimento
     
     #////
     
@@ -1579,8 +1620,8 @@ class Jogo:
     
     def rects_da_direita(self, margem, largura, mov_direita, mov_y, offset_x):
         pos_x = ((TILE * 10) + BOARD_X) + margem
-        extra = 0.5 if self.modo_do_jogo == "crazy" else 0
-        comprimento_dir = TILE * ((self.shapes_visiveis + extra) * self.distancia_entre_shapes_proximos + self.distancia_minima_shape_proximo)
+        
+        comprimento_dir = self.calcular_comprimento_rect_direito()
         
         self.desenhar_rect(
             pos_x + offset_x, 0, 
@@ -1677,9 +1718,7 @@ class Jogo:
         espacamento = altura_da_fonte + espaco
         
         pos_x = ((TILE * 10) + BOARD_X)
-        
-        extra = 0.5 if self.modo_do_jogo == "crazy" else 0
-        comprimento_dir = TILE * ((self.shapes_visiveis + extra) * self.distancia_entre_shapes_proximos + self.distancia_minima_shape_proximo)
+        comprimento_dir = self.calcular_comprimento_rect_direito()
         pos_y = comprimento_dir 
         
         match self.modo_do_jogo:
@@ -1698,28 +1737,35 @@ class Jogo:
     #////
     
     def desenhar_texto_estatisticas(self, *, pos_y_negativo, mov_y, offset_x):
+        match self.modo_do_jogo:
+            case "marathon_150": frase = "MARATHON"
+            case "40_lines": frase = "40 LINES"
+            case "ultra": frase = "ULTRA"
+            case "crazy": frase = "CRAZY XD"
+            case "infinito": frase = "INFINITO"
         frases_status = [
-            ("Tempo:",           f"{self.tempo_formatado()}", 6),
-            ("Start Level:",     f"{self.nivel_inicial}", 1),
-            ("Final Level:",     f"{self.nivel_atual}", 1),
-            ("Linhas:",          f"{self.linhas_limpas}", 2),
-            ("Pontos:",          f"{self.pontos_atual}", 2),
-            ("Singles:",         f"{self.status["quantidade_singles"]}", 3),
-            ("Doubles:",         f"{self.status["quantidade_doubles"]}", 3),
-            ("Triples:",         f"{self.status["quantidade_triples"]}", 3),
-            ("Tetris:",          f"{self.status["quantidade_quads"]}", 3),
-            ("T-Spins:",         f"{self.status["quantidade_t_spins"]}", 4),
-            ("Perfect Clears:",  f"{self.status["quantidade_perfect_clears"]}", 4),
-            ("Max Combo:",       f"{self.status["combo_maximo"]}", 5),
-            ("Max Streak:",      f"{self.status["streak_maximo"]}", 5),
-            ("Times Held:",      f"{self.status["quantidade_holds"]}", 6),
-            ("Times Pause:",     f"{self.status["quantidade_pausadas"]}", 6),  
+            ("Modo:",           f"{frase}", 0),  
+            ("Tempo:",          f"{self.tempo_formatado()}", 0),
+            ("Start Level:",    f"{self.nivel_inicial}", 1),
+            ("Final Level:",    f"{self.nivel_atual}", 1),
+            ("Linhas:",         f"{self.linhas_limpas}", 2),
+            ("Pontos:",         f"{self.pontos_atual}", 2),
+            ("Singles:",        f"{self.status["quantidade_singles"]}", 3),
+            ("Doubles:",        f"{self.status["quantidade_doubles"]}", 3),
+            ("Triples:",        f"{self.status["quantidade_triples"]}", 3),
+            ("Tetris:",         f"{self.status["quantidade_quads"]}", 3),
+            ("T-Spins:",        f"{self.status["quantidade_t_spins"]}", 4),
+            ("Perfect Clears:", f"{self.status["quantidade_perfect_clears"]}", 4),
+            ("Max Combo:",      f"{self.status["combo_maximo"]}", 5),
+            ("Max Streak:",     f"{self.status["streak_maximo"]}", 5),
+            ("Times Held:",     f"{self.status["quantidade_holds"]}", 6),
+            ("Times Pause:",    f"{self.status["quantidade_pausadas"]}", 6),  
         ]
 
         cor = CORES_ALEATORIAS_TETRIS
         
-        espacamento = 20
-        espacamento_entre_valores = 13
+        espacamento = 19
+        espacamento_entre_valores = 14
 
         altura_total = (len(frases_status)) * espacamento - (espacamento / 2)
         pos_y = ((TILE * LINHAS) / 2 - altura_total / 2) - pos_y_negativo
@@ -1882,10 +1928,10 @@ class Jogo:
     
     def desenhar_shapes_proximos(self, proximos_shapes, mov_direita, mov_y, offset_x, offset_y):
         ajustar_valor_x = 10.5
-        ajustar_valor_y = self.distancia_minima_shape_proximo  
+        ajustar_valor_y = 0.25 + 0.5
         
-        acrescimo_distancia = (0.05 * 5) if self.modo_do_jogo != "crazy" else (0.05 * 7.5)
-        extra_do_modo_crazy = 0.5 if self.modo_do_jogo == "crazy" else 0
+        extra_crazy = self.distancia_extra_crazy if self.modo_do_jogo == "crazy" else 0
+        acrescimo_distancia = ajustar_valor_y + (extra_crazy)
         
         for proximo_shape in proximos_shapes:
     
@@ -1898,15 +1944,15 @@ class Jogo:
                 for i_coluna, _ in enumerate(e_linha):
                     if formato[i_linha][i_coluna] == 1:
                         self.desenhar_shape(
-                            ajustar_valor_x + i_coluna + SHAPES[proximo_shape]["centralizado"][0],
-                            ajustar_valor_y + i_linha + acrescimo_distancia + aumentar, 
+                            ajustar_valor_x     + i_coluna + SHAPES[proximo_shape]["centralizado"][0],
+                            acrescimo_distancia + i_linha  + aumentar,
                             (spritesheet_x, 0),
                             mov_x=mov_direita,
                             mov_y=mov_y,
                             offset_x=offset_x,
                             offset_y=offset_y
                         )
-            acrescimo_distancia += self.distancia_entre_shapes_proximos + extra_do_modo_crazy
+            acrescimo_distancia += self.distancia_entre_shapes_proximos + extra_crazy
     
     def desenhar_shape_segurado(self, shape_segurado, mov_esquerda, mov_y, offset_x, offset_y):
         ajustar_valor_x = -3.5
@@ -2260,7 +2306,11 @@ class Jogo:
                 self.mov_em_jogo["mov_x"] = self.mov_em_jogo["mov_esquerda"]
             
             px.dither(0.5)
-            px.rect((-self.distancia_do_pause + offset_x), 0, self.distancia_do_pause , limite_da_tela, 0)
+            px.rect((-self.distancia_do_pause + offset_x), (limite_da_tela / 2), self.distancia_do_pause, limite_da_tela, 0)
+            px.dither(1)
+            
+            px.dither(0.1)
+            px.rect((-self.distancia_do_pause + offset_x), 0, self.distancia_do_pause, (limite_da_tela / 2), self.cor_principal_aleatoria + 8)
             px.dither(1)
             
             self.desenhar_textos_pause(offset_x)
