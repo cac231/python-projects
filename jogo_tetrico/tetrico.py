@@ -323,12 +323,9 @@ class Jogo:
         self.tempo_acumulado = 0.0
         self.ultimo_frame_tempo = time.perf_counter()
         
-        self.contador_updates = 0
-        self.tempo_debug = time.perf_counter()
-        
         px.run(self.atualizar_jogo, self.desenhar)
 
-   #//// //// ////
+   #//// //// FUNÇÕES INICIAIS //// ////
     
     def variaveis_iniciais(self):
         self.estado_atual_do_jogo = "em_menu"
@@ -337,6 +334,7 @@ class Jogo:
         
         self.esta_pausado = False
         self.despausando = False
+        self.clicou_em_resetar_partida = False
 
     def variaveis_configuracao(self):
         self.nivel_inicial_config = 1 # nivel_inicial_config = 1
@@ -365,10 +363,10 @@ class Jogo:
     def iniciar_jogo(self):
         self.variaveis_iniciais()
         self.variaveis_configuracao()
-        self.variaveis_menu()
         self.variaveis_rects_e_constantes()
+        self.variaveis_menu()
     
-    #////
+    #//// INICIAR PARTIDA ////
     
     def iniciar_contagem_do_tempo(self):
         self.tempo_inicial = time.perf_counter()
@@ -431,14 +429,13 @@ class Jogo:
             "mov_direita": 0,
             "mov_hard_drop": 0,
         }
-        
         self.offset_em_jogo = {    
             "teto": 0,
             "pause": 0,
         }
         
         self.mov_slide_gameover = 0
-        self.valor_exponencial_gameover = 0
+        self.velocidade_gameover_slide = 0
         
         self.estados_animacao_hard_drop = []
     
@@ -447,7 +444,7 @@ class Jogo:
         self.arr = self.arr_config # CONFIG
         self.arr_soft_drop = self.arr_soft_drop_config # CONFIG
     
-    #////
+    #//// REINICIAR SHAPE ////
    
     def reiniciar_shape(self):
         self.shape_pos_atual = self.desovar_shape(self.shape_atual)
@@ -496,7 +493,7 @@ class Jogo:
         self.esta_em_are = False
         self.limpou_linha = False # Se False, sem ARE
     
-    #////
+    #//// FUNÇÕES AO GERAR O SHAPE ////
     
     def gerar_novo_shape(self):
         self.shape_atual = self.proximos_shapes.pop(0)
@@ -515,12 +512,11 @@ class Jogo:
     def pegar_formato(self):
         return self.shape_matriz_atual
     
-    #
-    
-    def reset_voltar_ao_menu(self):
+    def resetar_voltar_ao_menu(self):
         self.variaveis_iniciais()
+        # Não reseta configuração, tamanho predefinidos dos rects e variáveis do menu
     
-    #//// //// ////
+    #//// //// MENU //// ////
 
     def frases_configuracao(self):
         return ([
@@ -675,7 +671,7 @@ class Jogo:
                     pass
             self.frases_submenus["configuracao"] = self.frases_configuracao()
     
-    #//// ////
+    #//// //// PAUSE //// ////
     
     def variaveis_despausar(self):
         self.shapes_fundo_pause, self.lista_y_fundo_pause = self.formar_fundo_pause()              
@@ -706,6 +702,7 @@ class Jogo:
         self.shapes_fundo_pause, self.lista_y_fundo_pause = self.formar_fundo_pause()
         self.distancia_do_pause = 160
         self.frases_pause = ["Continue", "Stats", "Restart", "Back", "Quit"]
+        self.frase_titulo_pause = "PAUSED"
         
         self.confirmacao_valor = {
             "resetar": 0,
@@ -729,7 +726,8 @@ class Jogo:
                 case 2:
                     if self.confirmacao_opcao(2, "resetar", "Restart"):
                         self.iniciar_partida()
-                        self.estado_atual_do_jogo = "em_jogo"
+                        self.clicou_em_resetar_partida = True
+                        self.velocidade_gameover_slide = 0
                 case 3:
                     if self.confirmacao_opcao(3, "voltar", "Back"):
                         self.estado_atual_do_jogo = "entre_menu_e_jogo"
@@ -744,7 +742,9 @@ class Jogo:
         
         self.quantidades_opcoes_pause[self.opcao_atual_pause] = True
 
-    #////
+    #//// //// JOGO //// ////
+    
+    #//// FUNÇÕES - DIVERSAS (INPUT, BAG 7, FIXAR, MODO, TEMPO FORMATADO) ////
     
     def pegar_input(self, input, repeticao=0, hold=0, *, input_puro=False):
         for tecla in self.MAPEAMENTO[input]:
@@ -764,6 +764,45 @@ class Jogo:
         
         while len(self.proximos_shapes) < self.shapes_visiveis:
             self.proximos_shapes.append(self.bag_7.pop(0))
+    
+    def fixar(self, formato, pos, mapa, cor):
+        if not self.fixou_neste_frame:
+            self.fixou_neste_frame = True
+            
+            for i_linha, e_linha in enumerate(formato):
+                for i_coluna, _ in enumerate(e_linha):    
+                    if formato[i_linha][i_coluna] == 1:
+                        mx = pos[0] + i_coluna 
+                        my = pos[1] + i_linha + CORRECAO_ALTURA
+                        mapa[my][mx] = cor
+                        self.verificar_game_over_teto()
+            return True
+        return False
+    
+    def verificar_estado_do_modo(self):
+        if self.modo_do_jogo == "marathon_150":
+            if self.linhas_limpas >= 150:
+                self.estado_atual_do_jogo = "game_over"
+        
+        elif self.modo_do_jogo == "40_lines":
+            if self.linhas_limpas >= 40:
+                self.estado_atual_do_jogo = "game_over"
+                
+        elif self.modo_do_jogo == "ultra":
+            if self.tempo_atual_em_segundos >= (3 * 60):
+                self.estado_atual_do_jogo = "game_over"
+        
+        elif self.modo_do_jogo == "infinite":
+            pass
+            # fi... apenas relaxe e jogue infinitamente!!!
+    
+    def tempo_formatado(self):
+        minutos = int(self.tempo_atual_em_segundos // 60)
+        segundos = int(self.tempo_atual_em_segundos % 60)
+        centesimos = int((self.tempo_atual_em_segundos - int(self.tempo_atual_em_segundos)) * 100)
+        return f"{minutos:02d}:{segundos:02d}.{centesimos:02d}"
+    
+    #//// COLISÃO ////
     
     def verificar_colisao(self, formato, pos, mapa, dx=0, dy=0):
         for i_linha, e_linha in enumerate(formato):
@@ -799,27 +838,7 @@ class Jogo:
                         return True
         return False
     
-    def fixar(self, formato, pos, mapa, cor):
-        if not self.fixou_neste_frame:
-            self.fixou_neste_frame = True
-            
-            for i_linha, e_linha in enumerate(formato):
-                for i_coluna, _ in enumerate(e_linha):    
-                    if formato[i_linha][i_coluna] == 1:
-                        mx = pos[0] + i_coluna 
-                        my = pos[1] + i_linha + CORRECAO_ALTURA
-                        mapa[my][mx] = cor
-                        self.verificar_game_over_teto()
-            return True
-        return False
-
-    def tempo_formatado(self):
-        minutos = int(self.tempo_atual_em_segundos // 60)
-        segundos = int(self.tempo_atual_em_segundos % 60)
-        centesimos = int((self.tempo_atual_em_segundos - int(self.tempo_atual_em_segundos)) * 100)
-        return f"{minutos:02d}:{segundos:02d}.{centesimos:02d}"
-    
-    #////
+    #//// SISTEMA DE ROTAÇÃO ////
     
     def sistema_super_rotacao(self, novo_estado):
         SEQUENCIA = {
@@ -901,7 +920,7 @@ class Jogo:
         else:
             self.shape_matriz_atual = backup
 
-    #////
+    #//// GRAVIDADE E T-SPIN ////
     
     def queda_automatica(self):
         self.gravidade_tempo_existe += 1
@@ -973,7 +992,7 @@ class Jogo:
             canto_f, canto_b = self.condicoes_do_t_spin(self.mapa, posicao)
             self.tipo_t_spin = self.retornar_tipo_do_t_spin(canto_f, canto_b)
     
-    #////
+    #//// INCREMENTAR OS STATUS E EVENTOS ////
     
     def anexar_eventos(self, ordem, tipo, linhas_limpas):
         duracao = 180
@@ -1008,6 +1027,8 @@ class Jogo:
         if back_to_back > 0:
             self.status["streak_maximo"] = max(self.status["streak_maximo"], back_to_back)
     
+    #//// LINHAS EM GERAL ////
+    
     def verificar_linha(self, mapa):
         mapa_temp = mapa[::-1]
         for linha_e in mapa_temp:             
@@ -1024,7 +1045,22 @@ class Jogo:
                 self.localizacao_linhas_limpas += [(LINHAS - 1) - linha_i]
                 self.linhas_limpas += 1
                 self.linhas_limpas_pelo_shape += 1
-        
+    
+    def mover_linhas_do_mapa(self, mapa_temp):
+        continuar_loop = True
+        while continuar_loop:
+            continuar_loop = False
+            
+            for linha_i, linha_e in enumerate(mapa_temp):
+                if linha_i + 1 >= len(mapa_temp) - CORRECAO_ALTURA:
+                    break
+                elif linha_e.count(VAZIO) == COLUNAS and mapa_temp[linha_i + 1].count(VAZIO) != COLUNAS: 
+                    mapa_temp[linha_i + 1], mapa_temp[linha_i] = mapa_temp[linha_i], mapa_temp[linha_i + 1]
+                    continuar_loop = True          
+        self.mapa = mapa_temp[::-1]
+    
+    #//// CALCULAR PONTOS ////
+    
     def calcular_pontos(self):
         linhas_limpas = self.linhas_limpas_pelo_shape
         pontuacao = 0
@@ -1081,21 +1117,8 @@ class Jogo:
         if linhas_limpas >= self.nivel_atual * 10:
             self.nivel_atual += 1
 
-    #////
+    #//// VERIFICAR GAME OVER ////
     
-    def mover_linhas_do_mapa(self, mapa_temp):
-        continuar_loop = True
-        while continuar_loop:
-            continuar_loop = False
-            
-            for linha_i, linha_e in enumerate(mapa_temp):
-                if linha_i + 1 >= len(mapa_temp) - CORRECAO_ALTURA:
-                    break
-                elif linha_e.count(VAZIO) == COLUNAS and mapa_temp[linha_i + 1].count(VAZIO) != COLUNAS: 
-                    mapa_temp[linha_i + 1], mapa_temp[linha_i] = mapa_temp[linha_i], mapa_temp[linha_i + 1]
-                    continuar_loop = True          
-        self.mapa = mapa_temp[::-1]
-
     def verificar_game_over_colisao(self):
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa):
             self.estado_atual_do_jogo = "game_over"
@@ -1109,6 +1132,8 @@ class Jogo:
                     self.shape_pos_atual = [0, 0]
                     return True
         return False
+    
+    #//// VERIFICAÇÕES - DIVERSAS (LOCK, MOVIMENTO LATERAL)////
         
     def aumentar_lock_reset(self):
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
@@ -1138,7 +1163,7 @@ class Jogo:
             self.foi_esquerda, self.foi_direita = False, False
             self.ultima_acao_foi_rotacao_animacao_lateral = False   
     
-    #////
+    #//// FUNÇÕES AO INPUT ////
     
     def segurar_shape(self, *, input_puro=False):
         if self.pegar_input("SEGURAR", input_puro=input_puro) and not self.segurou_neste_frame:
@@ -1226,7 +1251,7 @@ class Jogo:
     
     def teclas_especiais(self):
         if self.pegar_input("REINICIAR"):
-            self.reset_voltar_ao_menu()
+            self.resetar_voltar_ao_menu()
             self.resetou_jogo = True
             
         if self.pegar_input("PAUSAR"):
@@ -1246,6 +1271,8 @@ class Jogo:
         self.recalcular_pos_fantasma()
         self.soft_drop()
         self.hard_drop()
+    
+    #//// NAVEGAÇÃO DO MENU E DO PAUSE ////
     
     def teclas_navegacao_menu(self):
         if self.pegar_input("ACIONAR"):
@@ -1274,24 +1301,7 @@ class Jogo:
         elif self.pegar_input("PARA_BAIXO"):
             self.navegar_pause(deslize=1)
     
-    def verificar_estado_do_modo(self):
-        if self.modo_do_jogo == "marathon_150":
-            if self.linhas_limpas >= 150:
-                self.estado_atual_do_jogo = "game_over"
-        
-        elif self.modo_do_jogo == "40_lines":
-            if self.linhas_limpas >= 40:
-                self.estado_atual_do_jogo = "game_over"
-                
-        elif self.modo_do_jogo == "ultra":
-            if self.tempo_atual_em_segundos >= (3 * 60):
-                self.estado_atual_do_jogo = "game_over"
-        
-        elif self.modo_do_jogo == "infinite":
-            pass
-            # fi... apenas relaxe e jogue infinitamente!!!
-    
-    #////
+    #//// FIXED TIME STEP ////
 
     def atualizar(self):
         agora = time.perf_counter()
@@ -1305,19 +1315,23 @@ class Jogo:
             self.atualizar_jogo()
             self.tempo_acumulado -= (1 / 60) 
     
-    #/
+    #//// ENCAPSULAMENTO - GERAL ////
+    
+    def atualizar_estado_clicado_em_resetar(self):
+        if self.mov_slide_gameover == 0:
+                self.estado_atual_do_jogo = "em_jogo"
+                self.clicou_em_resetar_partida = False
+                self.velocidade_gameover_slide = 0
     
     def atualizar_estado_entre_menu_e_jogo(self):
-        if not self.esta_pausado:
-            if self.offset_menu["entre_menu_e_jogo"] >= LARGURA_TELA:
-                self.iniciar_contagem_do_tempo()
+        if self.offset_menu["entre_menu_e_jogo"] >= LARGURA_TELA:
+            if self.esta_pausado and self.confirmacao_valor["voltar"] == 1:
+                self.offset_menu["entre_menu_e_jogo"] = 0
+                self.resetar_voltar_ao_menu()
+            else:
                 self.offset_menu["entre_menu_e_jogo"] = 0
                 self.estado_atual_do_jogo = "em_jogo"
-        else:
-            if self.offset_menu["entre_menu_e_jogo"] >= LARGURA_TELA:
-                self.esta_pausado = False
-                self.offset_menu["entre_menu_e_jogo"] = 0
-                self.estado_atual_do_jogo = "em_menu"
+                self.iniciar_contagem_do_tempo()
     
     def atualizar_estado_pausado(self):
         if self.despausando and self.offset_em_jogo["pause"] <= 0:
@@ -1327,16 +1341,15 @@ class Jogo:
                 self.tempo_inicial += time.perf_counter() - self.tempo_pausado
                 self.tempo_pausado = 0
         else:
+            if self.estado_atual_do_jogo == "game_over":
+                self.frase_titulo_pause = "GAME\nOVER"
+            else:
+                self.frase_titulo_pause = "PAUSED"
             self.teclas_navegacao_pause()
     
+    #//// //// ATUALIZAR TUDO //// ////
+    
     def atualizar_jogo(self):
-        # self.contador_updates += 1
-        # if time.perf_counter() - self.tempo_debug >= 1.0:
-        #     print(f"Updates/s: {self.contador_updates}")  # ← Deve ser ~60
-        #     self.contador_updates = 0
-        #     self.tempo_debug = time.perf_counter()
-        
-        #/
         
         if self.estado_atual_do_jogo == "em_menu":
             self.teclas_navegacao_menu()
@@ -1348,30 +1361,28 @@ class Jogo:
         
         self.teclas_especiais()
 
+        if self.clicou_em_resetar_partida:
+            self.atualizar_estado_clicado_em_resetar()
+         
         if self.resetou_jogo == True:
             self.resetou_jogo = False
             return
-            
+        
         if self.esta_pausado == True:
             self.atualizar_estado_pausado()
             return
         
         if self.estado_atual_do_jogo == "game_over":
-            if self.mov_slide_gameover >= (LINHAS + 1):
-                self.estado_atual_do_jogo = "apos_game_over"
-            return
-
-        if self.estado_atual_do_jogo == "apos_game_over":
             return
         
-        #self.estado_atual_do_jogo = "apos_game_over"
+        #/
         
         self.fixou_neste_frame = False
         if not self.esta_em_are:
             self.input_tecla()
             self.queda_automatica()
-            meio_segundo, movimento_maximo = 30, 15
             
+            meio_segundo, movimento_maximo = 30, 15
             if self.lock_tempo >= meio_segundo or self.lock_movimentos == movimento_maximo:
                 self.verificar_t_spin(self.shape_pos_atual)
                 self.fixar(self.pegar_formato(), self.shape_pos_atual, self.mapa, SHAPES[self.shape_atual]["cor_letra"])
@@ -1383,8 +1394,7 @@ class Jogo:
                     self.verificar_linha(self.mapa)
                     self.pontos_atual += self.calcular_pontos()
                     self.verificar_nivel(self.linhas_limpas)
-              
-        if self.esta_em_are: 
+        else: 
             if not self.limpou_linha:
                 self.are_duracao = 0
             
@@ -1399,13 +1409,17 @@ class Jogo:
                 self.foi_esquerda, self.foi_direita = False, False
                 self.tempo_do_are += 1
         
+        #/
+        
         self.tempo_atual_em_segundos = (time.perf_counter() - self.tempo_inicial)
         self.verificar_estado_do_modo()
         
         #print(self.shape_pos_atual)
         #self.tempo_fps_ms = time.perf_counter()
 
-    #//// //// ////
+    #//// //// DESENHOS //// ////
+    
+    #//// FUNÇÕES - DIVERSAS ////
     
     def calcular_interpolacao(self, valor, destino, velocidade, limite):
         destino_x = destino
@@ -1414,17 +1428,6 @@ class Jogo:
                 return destino_x
         valor += distancia_restante * velocidade
         return valor
-    
-    def calcular_animacao_scroll(self, profundidade_menu, opcoes_ativas, itens_visiveis):
-        if len(opcoes_ativas) > 5:
-            if self.opcao_atual[profundidade_menu] > (len(opcoes_ativas) - 3):
-                scroll = max(0, len(opcoes_ativas) - 5)
-            else:
-                scroll = max(0, self.opcao_atual[profundidade_menu] - (itens_visiveis - 3))   
-            
-            scroll = min(scroll, len(opcoes_ativas) - itens_visiveis)
-            valor = self.offset_menu["scroll"][profundidade_menu]
-            self.offset_menu["scroll"][profundidade_menu] = self.calcular_interpolacao(valor, scroll, 0.2, 0.01)
     
     def desenhar_shape_como_letra(self, coluna_x, linha_y, spritesheet_pos):
         spritesheet_x, spritesheet_y = spritesheet_pos
@@ -1501,8 +1504,6 @@ class Jogo:
         self.desenhar_botoes_principal(centro_y, offset_entre_menus)
         if self.profundidade_menu >= 1:
             self.desenhar_botoes_submenus(centro_y, offset_entre_menus, offset_x)  
-    
-    #
     
     def desenhar_botao_entrada(self, centro_y, offset_entre_menus):
         pos_y = centro_y - (ALTURA_DA_FONTE_11 / 2)
@@ -1590,20 +1591,16 @@ class Jogo:
         self.desenhar_botao_titulo(offset_x)
         self.desenhar_botoes_pause(centro_y, offset_x)
     
-    #
-    
     def desenhar_botao_titulo(self, offset_x):
-        if self.estado_atual_do_jogo != ("em_jogo"):
-            frase = "GAME\nOVER"
-            pos_y = (LARGURA_TELA/4) - ALTURA_DA_FONTE_11
-        else:
-            frase = "PAUSED"
+        if self.frase_titulo_pause == "PAUSED":
             pos_y = (LARGURA_TELA/4) - (ALTURA_DA_FONTE_11/2)
+        else:
+            pos_y = (LARGURA_TELA/4) - ALTURA_DA_FONTE_11
         
         extra_x = 2
         self.desenhar_texto_dos_botoes(
             (-self.distancia_do_pause, pos_y),
-            (self.distancia_do_pause + extra_x), frase, True, FONT_11,
+            (self.distancia_do_pause + extra_x), self.frase_titulo_pause, True, FONT_11,
             offset_x=-offset_x,
             offset_y=0,
             min=-2, max=3
@@ -1655,8 +1652,6 @@ class Jogo:
         largura_final = BOARD_X - (margem * 2)
         self.rects_da_esquerda(margem, largura_final, mov_esquerda, mov_y, offset_x)
         self.rects_da_direita(margem, largura_final, mov_direita, mov_y, offset_x)
-    
-    #
     
     def rects_da_esquerda(self, margem, largura, mov_esquerda, mov_y, offset_x):
         if self.shape_segurado != None:
@@ -1733,13 +1728,13 @@ class Jogo:
             (TILE * mov_y) + pos_y, 
             frase, cor, FONT_10
         )
-           
+    
+    #
+    
     def desenhar_todos_textos(self, mov_esquerda, mov_direita, mov_y, *, offset_x):
         cor = CORES_ALEATORIAS_TETRIS
         self.textos_da_esquerda((ALTURA_DA_FONTE_10 / 2), BOARD_X, cor, mov_esquerda, mov_y, offset_x)
         self.textos_da_direita((ALTURA_DA_FONTE_10 / 2), BOARD_X, mov_direita, mov_y, offset_x)
-    
-    #
     
     def textos_da_esquerda(self, altura_da_fonte, largura, cor, mov_esquerda, mov_y, offset_x):
         espaco = 8
@@ -2057,7 +2052,7 @@ class Jogo:
                         offset_y=offset_y
                     )
     
-    #//// ANIMACAO ////
+    #//// ANIMACAO - LINHA LIMPA E HARD DROP ////
     
     def desenhar_animacao_limpar_linha(self, mov_x, mov_y, offset_x, offset_y):
         def _animacao_de_limpar_linha(start, end, constante, *, constante_na_pos_x=0):
@@ -2137,26 +2132,40 @@ class Jogo:
             
             variaveis[1] -= diminuicao
     
-    #//// ANIMACAO - FLUIDA ////
+    #//// ANIMACAO - INTERPOLAÇÃO ////
     
-    # def calcular_offset_x(self):
+    def calcular_offset_x(self):
     #     if self.estado_atual_do_jogo == "entre_menu_e_jogo":
     #         self.calcular_animacao_entre_menu_e_jogo()
     #         return LARGURA_TELA - self.offset_menu["entre_menu_e_jogo"]
     #     if self.estado_atual_do_jogo in ("em_jogo", "game_over", "apos_game_over"):
     #         self.calcular_animacao_pausado()
     #         return self.offset_em_jogo["pause"]
-    #     return 0
+        return 0
+    
+    def calcular_animacao_scroll(self, profundidade_menu, opcoes_ativas, itens_visiveis):
+        if len(opcoes_ativas) > 5:
+            if self.opcao_atual[profundidade_menu] > (len(opcoes_ativas) - 3):
+                scroll = max(0, len(opcoes_ativas) - 5)
+            else:
+                scroll = max(0, self.opcao_atual[profundidade_menu] - (itens_visiveis - 3))   
+            
+            velocidade = 0.1
+            scroll = min(scroll, len(opcoes_ativas) - itens_visiveis)
+            valor = self.offset_menu["scroll"][profundidade_menu]
+            self.offset_menu["scroll"][profundidade_menu] = self.calcular_interpolacao(valor, scroll, velocidade, 0.01)
     
     def calcular_animacao_entre_menu(self):
+        destino_x = (self.profundidade_menu * LARGURA_TELA)
         velocidade = 0.1
         valor = self.offset_menu["entre_menus"]
-        self.offset_menu["entre_menus"] = self.calcular_interpolacao(valor, (self.profundidade_menu * LARGURA_TELA), velocidade, 1)
+        self.offset_menu["entre_menus"] = self.calcular_interpolacao(valor, destino_x, velocidade, 1)
     
     def calcular_animacao_entre_menu_e_jogo(self):
-        velocidade = 0.05
+        destino_x = LARGURA_TELA
+        velocidade = 0.1
         valor = self.offset_menu["entre_menu_e_jogo"]
-        self.offset_menu["entre_menu_e_jogo"] = self.calcular_interpolacao(valor, LARGURA_TELA, velocidade, 1)
+        self.offset_menu["entre_menu_e_jogo"] = self.calcular_interpolacao(valor, destino_x, velocidade, 1)
     
     def calcular_animacao_pausado(self):
         if not self.esta_pausado or self.despausando:
@@ -2168,17 +2177,35 @@ class Jogo:
         valor = self.offset_em_jogo["pause"]
         self.offset_em_jogo["pause"] = self.calcular_interpolacao(valor, destino_x, velocidade, 1)
     
+    def calcular_animacao_gameover_slide(self):
+        if self.mov_em_jogo["mov_hard_drop"] > 0:
+            self.mov_slide_gameover = 0
+            return
+        
+        
+        self.velocidade_gameover_slide = min(self.velocidade_gameover_slide + 0.001, 0.05)
+        velocidade = self.velocidade_gameover_slide
+        valor = self.mov_slide_gameover
+        
+        if not self.clicou_em_resetar_partida:
+            destino_y = (LINHAS + 1)
+            self.mov_slide_gameover = min(self.calcular_interpolacao(valor, destino_y, velocidade, 0.01), destino_y)
+        else:
+            destino_y = 0
+            self.mov_slide_gameover = max(self.calcular_interpolacao(valor, destino_y, velocidade, 0.01), destino_y)
+    
+    #//// ANIMACAO - GERAL ////
+    
     def calcular_animacao_offset_teto(self, offset_abs):
-        velocidade = 0.25
+        velocidade_inicial = 0.2
+        velocidade_final = 0.3
         if offset_abs > self.offset_em_jogo["teto"]:
-            self.offset_em_jogo["teto"] = min(self.offset_em_jogo["teto"] + velocidade, offset_abs)
+            self.offset_em_jogo["teto"] = min(self.offset_em_jogo["teto"] + velocidade_inicial, offset_abs)
         elif offset_abs < self.offset_em_jogo["teto"]:
-            self.offset_em_jogo["teto"] = max(self.offset_em_jogo["teto"] - (1/3), offset_abs)
+            self.offset_em_jogo["teto"] = max(self.offset_em_jogo["teto"] - velocidade_final, offset_abs)
         if abs(self.offset_em_jogo["teto"]) < 0.1:
             self.offset_em_jogo["teto"] = 0
         return self.offset_em_jogo["teto"]
-    
-    #
     
     def calcular_valores_das_animacoes(self):
         inicio = self.movimento_inicio_config
@@ -2225,19 +2252,6 @@ class Jogo:
                 self.mov_em_jogo["mov_hard_drop"] -= (inicio + abs(self.mov_em_jogo["mov_hard_drop"]) * constante)
             else:
                 self.mov_em_jogo["mov_hard_drop"] = 0
-
-    def calcular_animacao_gameover_slide(self):
-        velocidade = 100
-        limite = LINHAS + 1
-        
-        if self.mov_em_jogo["mov_hard_drop"] > 0:
-            return 0
-        if self.valor_exponencial_gameover < limite:
-            progresso = self.mov_slide_gameover / (limite)
-            incremento = ((1 + self.mov_slide_gameover) / velocidade) ** (0.5 + progresso ** 1.5)
-            self.valor_exponencial_gameover = min(self.valor_exponencial_gameover + incremento, limite)
-       
-        return self.valor_exponencial_gameover
     
     def valores_movimentos(self):
         mov_x = TRANSFORMAR_EM_DECIMAL(self.mov_em_jogo["mov_x"])
@@ -2253,16 +2267,12 @@ class Jogo:
         if self.shape_segurado != None:
             self.desenhar_shape_segurado(self.shape_segurado, mov_esquerda, mov_y, offset_x, offset_y)
     
-    #
-    
     def desenhar_tabuleiro_e_teto(self, mov_x, mov_y, offset_x, offset_y):
         self.desenhar_fundo((BOARD_X, 0), (0, 0), (COLUNAS, LINHAS), mov_x=mov_x, mov_y=mov_y, offset_x=offset_x)
         if offset_y > 0:
             px.dither(0.4)
             self.desenhar_fundo((BOARD_X, 0), (0, LINHAS * 2), (COLUNAS, offset_y), mov_x=mov_x, mov_y=mov_y, offset_x=offset_x)
             px.dither(1)
-    
-    #
     
     def desenhar_todos_rects_textos(self, offset_x):
         mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_movimentos()
@@ -2283,7 +2293,7 @@ class Jogo:
         if not self.esta_em_are:
             self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_hard_drop, offset_x, offset_y_teto)
             pos = self.shape_pos_atual if self.nivel_atual < (len(TABELA_G) - 3) else self.shape_pos_fantasma
-            self.desenhar_shape_atual(self.pegar_formato(), pos, mov_x, mov_hard_drop, offset_x, offset_y_teto)    
+            self.desenhar_shape_atual(self.pegar_formato(), pos, mov_x, mov_hard_drop, offset_x, offset_y_teto)
         
         if self.limpou_linha:
             self.desenhar_animacao_limpar_linha(mov_x, mov_hard_drop, offset_x, offset_y_teto)
@@ -2291,11 +2301,9 @@ class Jogo:
         self.desenhar_shapes_fixados(self.mapa, mov_x, mov_hard_drop, offset_x, offset_y_teto)
         self.desenhar_shape_segurado_e_proximos(mov_esquerda, mov_direita, 0, offset_x)
         self.desenhar_popups(mov_x, offset_x)
-    
-    #
-        
+          
     def desenhar_tudo_no_game_over(self, offset_x):
-        offset_y_teto = self.calcular_offset_teto_gameover()
+        offset_y_teto = self.calcular_animacao_offset_teto(self.calcular_offset_teto_gameover())
         mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_movimentos()
 
         if mov_hard_drop > 0:
@@ -2304,6 +2312,11 @@ class Jogo:
         else:
             self.desenhar_tabuleiro_e_teto(mov_x, mov_slide_gameover, offset_x, offset_y_teto)
             self.desenhar_shapes_fixados(self.mapa, mov_x, mov_slide_gameover, offset_x, offset_y_teto)
+        
+        if self.clicou_em_resetar_partida:
+            self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_slide_gameover, offset_x, offset_y_teto)
+            pos = self.shape_pos_atual if self.nivel_atual < (len(TABELA_G) - 3) else self.shape_pos_fantasma
+            self.desenhar_shape_atual(self.pegar_formato(), pos, mov_x, mov_slide_gameover, offset_x, offset_y_teto)
             
         self.desenhar_shape_segurado_e_proximos(mov_esquerda, mov_direita, mov_slide_gameover, offset_x)
         self.desenhar_popups(mov_x, offset_x)
@@ -2344,38 +2357,39 @@ class Jogo:
         
         self.desenhar_tudo_pause(offset_x)
     
-    #//// TODOS OS DESENHOS ////
+    #//// //// DESENHAR TUDO //// ////
     
     def desenhar(self):
         px.cls(0)
         
-        #! ("em_menu", "entre_menu_e_jogo", "em_jogo", "game_over", "apos_game_over")
+        #! ("em_menu", "entre_menu_e_jogo", "em_jogo", "game_over")
         
-        if self.estado_atual_do_jogo != "em_menu":
+        if self.estado_atual_do_jogo not in ("em_menu", "entre_menu_e_jogo"):
             self.calcular_valores_das_animacoes()
             if self.estado_atual_do_jogo == "game_over":
-                self.mov_slide_gameover = self.calcular_animacao_gameover_slide()
+                self.calcular_animacao_gameover_slide()
 
         #/
         
         offset_x = 0
         offset_x_do_menu = 0
         
-        if self.estado_atual_do_jogo in ("em_jogo", "game_over", "apos_game_over"):
+        if self.estado_atual_do_jogo in ("em_jogo", "game_over"):
             self.calcular_animacao_pausado()
             offset_x = self.offset_em_jogo["pause"]
         
         if self.estado_atual_do_jogo == "entre_menu_e_jogo":
-            if not self.esta_pausado:
-                self.calcular_animacao_entre_menu_e_jogo()
-                offset_x = LARGURA_TELA - self.offset_menu["entre_menu_e_jogo"]    
-                offset_x_do_menu = self.offset_menu["entre_menu_e_jogo"]
-            else:
+            self.calcular_animacao_entre_menu_e_jogo()
+            
+            if self.confirmacao_valor["voltar"] == 1:
+                # MENU <--- JOGO
                 backup = self.offset_em_jogo["pause"]
-                self.calcular_animacao_entre_menu_e_jogo()
                 offset_x = self.offset_menu["entre_menu_e_jogo"] + backup
                 offset_x_do_menu = LARGURA_TELA - self.offset_menu["entre_menu_e_jogo"]
-        
+            else:
+                # MENU ---> JOGO
+                offset_x = LARGURA_TELA - self.offset_menu["entre_menu_e_jogo"]    
+                offset_x_do_menu = self.offset_menu["entre_menu_e_jogo"]
         #/
         
         if self.estado_atual_do_jogo in ("em_menu", "entre_menu_e_jogo"):
@@ -2383,7 +2397,7 @@ class Jogo:
         
         #/
         
-        if self.estado_atual_do_jogo in ("entre_menu_e_jogo", "em_jogo", "game_over", "apos_game_over"):
+        if self.estado_atual_do_jogo in ("entre_menu_e_jogo", "em_jogo", "game_over"):
             px.dither(0.6)
             px.rect(offset_x, 0, LARGURA_TELA, LARGURA_TELA, 8)
             px.dither(1)
@@ -2391,21 +2405,17 @@ class Jogo:
         if self.estado_atual_do_jogo in ("entre_menu_e_jogo", "em_jogo", "game_over"):
             self.desenhar_todos_rects_textos(offset_x)
         
-        if self.estado_atual_do_jogo in ("entre_menu_e_jogo", "em_jogo"):
+        if self.estado_atual_do_jogo == "em_jogo" or (self.estado_atual_do_jogo == "entre_menu_e_jogo" and self.mov_slide_gameover == 0):
             self.desenhar_tudo_em_jogo(offset_x)
-    
-        if self.estado_atual_do_jogo == "game_over":
-            self.desenhar_tudo_no_game_over(offset_x)        
         
-        if self.estado_atual_do_jogo == "apos_game_over":
-            self.desenhar_fundo((BOARD_X, 0), (0, LINHAS), (COLUNAS, LINHAS), mov_x=0, mov_y=0, offset_x=offset_x)
-            self.desenhar_texto_estatisticas(pos_y_negativo=0, mov_y=0, offset_x=offset_x)
+        if self.estado_atual_do_jogo == "game_over" or (self.estado_atual_do_jogo == "entre_menu_e_jogo" and self.mov_slide_gameover > 0):
+            self.desenhar_tudo_no_game_over(offset_x)
         
         #/
         
         if self.esta_pausado:
             self.desenhar_pause(offset_x)
-        
+    
         # self.tempo_inical_test_fim = time.perf_counter()
         # print(f"{((self.tempo_inical_test_fim - self.tempo_fps_ms) * 1000):.2f} MS")
         
