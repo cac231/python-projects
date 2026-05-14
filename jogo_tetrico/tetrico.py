@@ -337,17 +337,17 @@ class Jogo:
         self.clicou_em_resetar_partida = False
 
     def variaveis_configuracao(self):
-        self.nivel_inicial_config = 1 # nivel_inicial_config = 1
-        self.shapes_visiveis_config = 3 # shapes_visiveis_config = 4
+        self.nivel_inicial_config = 1 #  1
+        self.shapes_visiveis_config = 3 # 3
         
-        self.movimento_duracao_config = 6 # movimento_duracao_config = 6
-        self.movimento_inicio_config = 0.5 # movimento_inicio_config = 0.5
-        self.movimento_constante_config = 0.2 # movimento_constante_config = 0.2   
+        self.movimento_duracao_config = 7 # 7
+        self.movimento_inicio_config = 0.5 # 0.5
+        self.movimento_constante_config = 0.15 # 0.15
         
-        self.are_duracao_config = 20 # are_duracao_config = 20
-        self.das_config = 10 # das_config = 10
-        self.arr_config = 2 # arr_config = 2
-        self.arr_soft_drop_config = 2 # arr_soft_drop_config = 2
+        self.are_duracao_config = 20 # 20
+        self.das_config = 10 # 10
+        self.arr_config = 2 # 2
+        self.arr_soft_drop_config = 2 # 2
 
     def variaveis_rects_e_constantes(self):
         # distancia entre os shapes proximos desenhados
@@ -416,6 +416,7 @@ class Jogo:
             "quantidade_holds": 0,
             "quantidade_pausadas": 0,
         }
+        self.jogo_completo = False
         self.sequencia_dos_eventos = []
         
         self.variaveis_velocidade_movimentacao()
@@ -652,7 +653,7 @@ class Jogo:
                 case 1:
                     self.shapes_visiveis_config = alterar_valor(self.shapes_visiveis_config, soma, min=1, max=5)
                 case 2:
-                    self.movimento_duracao_config = alterar_valor(self.movimento_duracao_config, soma, min=0, max=15)
+                    self.movimento_duracao_config = alterar_valor(self.movimento_duracao_config, soma, min=0, max=10)
                 case 3:
                     self.movimento_inicio_config = alterar_valor(self.movimento_inicio_config, (soma/10), min=0, max=1)
                 case 4:
@@ -782,15 +783,15 @@ class Jogo:
     def verificar_estado_do_modo(self):
         if self.modo_do_jogo == "marathon_150":
             if self.linhas_limpas >= 150:
-                self.estado_atual_do_jogo = "game_over"
+                self.acionar_game_over()
         
         elif self.modo_do_jogo == "40_lines":
             if self.linhas_limpas >= 40:
-                self.estado_atual_do_jogo = "game_over"
+                self.acionar_game_over()
                 
         elif self.modo_do_jogo == "ultra":
             if self.tempo_atual_em_segundos >= (3 * 60):
-                self.estado_atual_do_jogo = "game_over"
+                self.acionar_game_over()
         
         elif self.modo_do_jogo == "infinite":
             pass
@@ -1119,16 +1120,20 @@ class Jogo:
 
     #//// VERIFICAR GAME OVER ////
     
+    def acionar_game_over(self):
+        self.estado_atual_do_jogo = "game_over"
+        self.jogo_completo = True
+    
     def verificar_game_over_colisao(self):
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa):
-            self.estado_atual_do_jogo = "game_over"
+            self.acionar_game_over()
             self.shape_pos_atual = [0, 0]
     
     def verificar_game_over_teto(self):
         for coluna in range(COLUNAS):
             for linha in range(CORRECAO_ALTURA):
                 if self.mapa[linha][coluna] != VAZIO:
-                    self.estado_atual_do_jogo = "game_over"
+                    self.acionar_game_over()
                     self.shape_pos_atual = [0, 0]
                     return True
         return False
@@ -1334,17 +1339,14 @@ class Jogo:
                 self.iniciar_contagem_do_tempo()
     
     def atualizar_estado_pausado(self):
-        if self.despausando and self.offset_em_jogo["pause"] <= 0:
+        if self.despausando:
+            if self.offset_em_jogo["pause"] <= 0:
                 self.variaveis_despausar()
                 self.esta_pausado = False
                 self.despausando = False
                 self.tempo_inicial += time.perf_counter() - self.tempo_pausado
                 self.tempo_pausado = 0
         else:
-            if self.estado_atual_do_jogo == "game_over":
-                self.frase_titulo_pause = "GAME\nOVER"
-            else:
-                self.frase_titulo_pause = "PAUSED"
             self.teclas_navegacao_pause()
     
     #//// //// ATUALIZAR TUDO //// ////
@@ -1371,6 +1373,11 @@ class Jogo:
         if self.esta_pausado == True:
             self.atualizar_estado_pausado()
             return
+        else:
+            if self.estado_atual_do_jogo == "game_over":
+                self.frase_titulo_pause = "GAME\nOVER"
+            else:
+                self.frase_titulo_pause = "PAUSED"
         
         if self.estado_atual_do_jogo == "game_over":
             return
@@ -1806,13 +1813,14 @@ class Jogo:
     
     def desenhar_texto_estatisticas(self, *, pos_y_negativo, mov_y, offset_x):
         match self.modo_do_jogo:
-            case "marathon_150": frase = "MARATHON"
-            case "40_lines": frase = "40 LINES"
-            case "ultra": frase = "ULTRA"
-            case "crazy": frase = "CRAZY"
-            case "infinite": frase = "INFINITE"
+            case "marathon_150": frase_modo = "MARATHON"
+            case "40_lines": frase_modo = "40 LINES"
+            case "ultra": frase_modo = "ULTRA"
+            case "crazy": frase_modo = "CRAZY"
+            case "infinite": frase_modo = "INFINITE"
+        frase_completo = "Yes" if self.jogo_completo else "No"
         frases_status = [
-            ("Mode:",           f"{frase}", 0),  
+            ("Mode:",           f"{frase_modo}", 0),  
             ("Time:",          f"{self.tempo_formatado()}", 0),
             ("Start Level:",    f"{self.nivel_inicial}", 1),
             ("Final Level:",    f"{self.nivel_atual}", 1),
@@ -1827,12 +1835,14 @@ class Jogo:
             ("Max Combo:",      f"{self.status["combo_maximo"]}", 5),
             ("Max Streak:",     f"{self.status["streak_maximo"]}", 5),
             ("Times Held:",     f"{self.status["quantidade_holds"]}", 6),
-            ("Times Pause:",    f"{self.status["quantidade_pausadas"]}", 6),  
+            ("Times Pause:",    f"{self.status["quantidade_pausadas"]}", 6),
+            ("Complete:",    f"{frase_completo}", 0)
+
         ]
 
         cor = CORES_ALEATORIAS_TETRIS
         
-        espacamento = 19
+        espacamento = 18
         espacamento_entre_valores = 14
 
         altura_total = (len(frases_status)) * espacamento - (espacamento / 2)
@@ -1902,9 +1912,9 @@ class Jogo:
             for i_coluna, _ in enumerate(e_linha):
                 if formato[i_linha][i_coluna] == 1:
                     match self.shape_pos_atual[1] + i_linha:
-                        case -3: return -3
-                        case -2: return -2
-                        case -1: return -1
+                        case -3: return -4
+                        case -2: return -3
+                        case -1: return -2
         return 0
     
     def calcular_offset_teto(self):
@@ -2115,14 +2125,14 @@ class Jogo:
                     linha_com_mais_um = index
             
             largura = lar_max - lar_min + 1
-            comprimento = (pos[1] + linha_com_mais_um)        
+            comprimento = (pos[1] + linha_com_mais_um)      
             
             x = BOARD_X + ((pos[0] + lar_min) * TILE)    
             fator = duracao_diminuicao * (1 - constante / 20)
             
             px.dither(duracao_total - fator)
             self.desenhar_rect(
-                x + offset_x, 0,
+                x + offset_x, self.calcular_offset_teto() * TILE ,
                 largura * TILE, comprimento * TILE,
                 8,
                 mov_x=mov_x,
@@ -2178,10 +2188,10 @@ class Jogo:
         self.offset_em_jogo["pause"] = self.calcular_interpolacao(valor, destino_x, velocidade, 1)
     
     def calcular_animacao_gameover_slide(self):
-        if self.mov_em_jogo["mov_hard_drop"] > 0:
+        condicao_animacao_offset_teto = (self.offset_em_jogo["teto"] > self.calcular_offset_teto_gameover() and not self.clicou_em_resetar_partida)
+        if self.mov_em_jogo["mov_hard_drop"] > 0 or condicao_animacao_offset_teto:
             self.mov_slide_gameover = 0
             return
-        
         
         self.velocidade_gameover_slide = min(self.velocidade_gameover_slide + 0.001, 0.05)
         velocidade = self.velocidade_gameover_slide
@@ -2189,23 +2199,19 @@ class Jogo:
         
         if not self.clicou_em_resetar_partida:
             destino_y = (LINHAS + 1)
-            self.mov_slide_gameover = min(self.calcular_interpolacao(valor, destino_y, velocidade, 0.01), destino_y)
+            self.mov_slide_gameover = min(self.calcular_interpolacao(valor, destino_y, velocidade, 0.01), destino_y)  
         else:
             destino_y = 0
             self.mov_slide_gameover = max(self.calcular_interpolacao(valor, destino_y, velocidade, 0.01), destino_y)
     
-    #//// ANIMACAO - GERAL ////
-    
     def calcular_animacao_offset_teto(self, offset_abs):
-        velocidade_inicial = 0.2
-        velocidade_final = 0.3
-        if offset_abs > self.offset_em_jogo["teto"]:
-            self.offset_em_jogo["teto"] = min(self.offset_em_jogo["teto"] + velocidade_inicial, offset_abs)
-        elif offset_abs < self.offset_em_jogo["teto"]:
-            self.offset_em_jogo["teto"] = max(self.offset_em_jogo["teto"] - velocidade_final, offset_abs)
-        if abs(self.offset_em_jogo["teto"]) < 0.1:
-            self.offset_em_jogo["teto"] = 0
+        destino_y = offset_abs
+        velocidade = 0.3
+        valor = self.offset_em_jogo["teto"]
+        self.offset_em_jogo["teto"] = self.calcular_interpolacao(valor, destino_y, velocidade, 0.1)
         return self.offset_em_jogo["teto"]
+    
+    #//// ANIMACAO - GERAL ////
     
     def calcular_valores_das_animacoes(self):
         inicio = self.movimento_inicio_config
@@ -2270,7 +2276,7 @@ class Jogo:
     def desenhar_tabuleiro_e_teto(self, mov_x, mov_y, offset_x, offset_y):
         self.desenhar_fundo((BOARD_X, 0), (0, 0), (COLUNAS, LINHAS), mov_x=mov_x, mov_y=mov_y, offset_x=offset_x)
         if offset_y > 0:
-            px.dither(0.4)
+            px.dither(0.6)
             self.desenhar_fundo((BOARD_X, 0), (0, LINHAS * 2), (COLUNAS, offset_y), mov_x=mov_x, mov_y=mov_y, offset_x=offset_x)
             px.dither(1)
     
@@ -2294,6 +2300,7 @@ class Jogo:
             self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_hard_drop, offset_x, offset_y_teto)
             pos = self.shape_pos_atual if self.nivel_atual < (len(TABELA_G) - 3) else self.shape_pos_fantasma
             self.desenhar_shape_atual(self.pegar_formato(), pos, mov_x, mov_hard_drop, offset_x, offset_y_teto)
+            print("s", offset_y_teto)
         
         if self.limpou_linha:
             self.desenhar_animacao_limpar_linha(mov_x, mov_hard_drop, offset_x, offset_y_teto)
