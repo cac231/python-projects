@@ -243,6 +243,9 @@ TABELA_G = {
 
 #/
 
+SHAPES_1_3_LARGURA = ("shape_I", "shape_IT", "shape_X", "shape_CT")
+SHAPES_COM_SRS_I = ("shape_I", "shape_IL", "shape_IJ")
+
 CORES_ALEATORIAS_TETRIS = list(range(1, 8))
 random.shuffle(CORES_ALEATORIAS_TETRIS)
 COR_PRINCIPAL_ALEATORIA = random.choice(CORES_ALEATORIAS_TETRIS)
@@ -368,6 +371,19 @@ class Jogo:
     
     #//// INICIAR PARTIDA ////
     
+    def formar_fundo_jogo(self):
+        largura = 20
+        comprimento = 20
+        lista = [[0] * largura for _ in range(comprimento)]
+        for linha in lista:
+                k = random.randint(0, 9)
+                indices = random.sample(range(0, largura), k)
+                for indice in indices:
+                        linha[indice] = 1
+        quantos_1 = sum([linha.count(1) for linha in lista])
+        lista_y = [random.choice([0, 1]) for _ in range(quantos_1)]
+        return lista, lista_y
+    
     def iniciar_contagem_do_tempo(self):
         self.tempo_inicial = time.perf_counter()
         self.tempo_atual_em_segundos = 0
@@ -379,6 +395,7 @@ class Jogo:
         self.tempo_pausado = 0
         
         self.mapa = [[VAZIO] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
+        self.shapes_fundo_jogo, self.lista_y_fundo_jogo = self.formar_fundo_jogo()
         
         self.nivel_inicial = self.nivel_inicial_config # CONFIG
         self.nivel_atual = self.nivel_inicial
@@ -689,14 +706,16 @@ class Jogo:
             return False
     
     def formar_fundo_pause(self):
-        lista = [[0] * 10 for _ in range(10)]
+        largura = 10
+        comprimento = 10
+        lista = [[0] * largura for _ in range(comprimento)]
         for linha in lista:
                 k = random.randint(0, 9)
-                indices = random.sample(range(0, 10), k)
+                indices = random.sample(range(0, largura), k)
                 for indice in indices:
                         linha[indice] = 1
         quantos_1 = sum([linha.count(1) for linha in lista])
-        lista_y = [random.choice([0, 2]) for _ in range(quantos_1)]
+        lista_y = [random.choice([0, 1]) for _ in range(quantos_1)]
         return lista, lista_y
     
     def variaveis_pause(self):
@@ -854,7 +873,7 @@ class Jogo:
                 "0->L": [(0,0), (1,0),  (1,-1),  (0,2),  (1,2)],
                 "R->L": [(0,0), (2,0),  (2,0),   (0,0), (1,0)],
             },
-            "shape_I": {
+            "shapes_largos": {
                 "0->R": [(0,0), (-2,0), (1,0),  (-2,1),  (1,-2)],
                 "R->0": [(0,0), (2,0),  (-1,0), (2,-1),  (-1,2)],
                 "R->2": [(0,0), (-1,0), (2,0),  (-1,-2), (2,1)],
@@ -870,7 +889,7 @@ class Jogo:
             return (False, (0, 0))
         
         transcricao = f"{self.estado_rotacao}->{novo_estado}"
-        lista_das_sequencias = SEQUENCIA["shape_I" if self.shape_atual in ("shape_I", "shape_IL", "shape_IJ") else "todos_shapes"][transcricao]
+        lista_das_sequencias = SEQUENCIA["shapes_largos" if self.shape_atual in SHAPES_COM_SRS_I else "todos_shapes"][transcricao]
         
         for index, (dx, dy) in enumerate(lista_das_sequencias):
             if not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dx=dx, dy=dy):
@@ -1150,7 +1169,7 @@ class Jogo:
         esquerda_puro = self.pegar_input("ESQUERDA", input_puro=True) and not self.pegar_input("DIREITA", input_puro=True)
         direita_puro = self.pegar_input("DIREITA", input_puro=True) and not self.pegar_input("ESQUERDA", input_puro=True)
         
-        dx = 3 if self.shape_atual in ("shape_I", "shape_IL", "shape_IJ") else 2
+        dx = 3 if self.shape_atual in SHAPES_COM_SRS_I else 2
         
         if self.verificar_colisao_parede(self.pegar_formato(), self.shape_pos_atual, 1):
             self.foi_direita = True
@@ -1436,6 +1455,20 @@ class Jogo:
         valor += distancia_restante * velocidade
         return valor
     
+    def desenhar_shapes_jogo_fundo(self, offset_x):
+        formato = self.shapes_fundo_jogo
+        y_soma = 0 
+        for i_linha, e_linha in enumerate(formato):
+            for i_coluna, _ in enumerate(e_linha):
+                if formato[i_linha][i_coluna] == 1:
+                        y = self.lista_y_fundo_jogo[y_soma]
+                        y_soma += 1
+                        self.desenhar_shape_como_letra(
+                            offset_x + (i_coluna * TILE),
+                            (i_linha * TILE), 
+                            (8 - 1, y)
+                        ) 
+    
     def desenhar_shape_como_letra(self, coluna_x, linha_y, spritesheet_pos):
         spritesheet_x, spritesheet_y = spritesheet_pos
         px.blt(
@@ -1457,9 +1490,9 @@ class Jogo:
         
         somar_y = somar_y if somar_y != 0 else CENTRALIZAR(fonte, frase, largura) 
         cor_escura = 8
-        condicao_primeira_opcao_offset = (self.offset_menu["scroll"][profundidade_menu] > 0.4 and self.opcao_atual[profundidade_menu] == 0)
         
-        if ativo != True or condicao_primeira_opcao_offset:
+        if ativo != True:
+            _desenhar_texto(cor=0)
             px.dither(0.3)
             _desenhar_texto(cor=(COR_PRINCIPAL_ALEATORIA + cor_escura))
             px.dither(1)
@@ -1467,7 +1500,7 @@ class Jogo:
             for dx in range(min, max):
                 for dy in range(min, max):
                     if dx != 0 or dy != 0:
-                        _desenhar_texto(dx=dx, dy=dy, cor=8)
+                        _desenhar_texto(dx=dx, dy=dy, cor=cor_escura)
             _desenhar_texto(cor=COR_PRINCIPAL_ALEATORIA)
     
     #//// MENU ////
@@ -1587,7 +1620,7 @@ class Jogo:
                             (-self.distancia_do_pause + offset_x) + (i_coluna * TILE),
                             (i_linha * TILE), 
                             (COR_PRINCIPAL_ALEATORIA - 1, y)
-                        )
+                        )   
     
     #
     
@@ -1912,9 +1945,9 @@ class Jogo:
             for i_coluna, _ in enumerate(e_linha):
                 if formato[i_linha][i_coluna] == 1:
                     match self.shape_pos_atual[1] + i_linha:
-                        case -3: return -4
-                        case -2: return -3
-                        case -1: return -2
+                        case -3: return -3
+                        case -2: return -2
+                        case -1: return -1
         return 0
     
     def calcular_offset_teto(self):
@@ -1967,7 +2000,7 @@ class Jogo:
                         self.desenhar_shape(
                             self.shape_pos_fantasma[0] + i_coluna,
                             self.shape_pos_fantasma[1] + i_linha, 
-                            (spritesheet_x, 2),
+                            (spritesheet_x, 1),
                             mov_x=mov_x,
                             mov_y=mov_y,
                             offset_x=offset_x,
@@ -2019,7 +2052,7 @@ class Jogo:
         
         for proximo_shape in proximos_shapes:
     
-            aumentar = -0.5 if proximo_shape in ("shape_I", "shape_IT", "shape_X", "shape_CT") else 0
+            aumentar = -0.5 if proximo_shape in SHAPES_1_3_LARGURA else 0
             
             spritesheet_x = SHAPES[proximo_shape]["imagem_pos"]
             formato = SHAPES[proximo_shape]["formato"]
@@ -2044,7 +2077,7 @@ class Jogo:
         inicio, fim = 0.25, 4.5
         ajustar_valor_y = inicio + (fim / 2) - 1
         
-        aumentar = -0.5 if self.shape_segurado in ("shape_I", "shape_IT", "shape_X", "shape_CT") else 0
+        aumentar = -0.5 if self.shape_segurado in SHAPES_1_3_LARGURA else 0
         
         spritesheet_x = SHAPES[shape_segurado]["imagem_pos"]
         formato = SHAPES[shape_segurado]["formato"]
@@ -2342,9 +2375,10 @@ class Jogo:
         
         self.desenhar_todos_botoes_menu(offset_x, self.offset_menu["entre_menus"])
         
+        px.rect((-offset_x), 0, LARGURA_TELA, (LARGURA_TELA/2), 0)
         px.dither(0.4)
         px.rect((-offset_x), 0, LARGURA_TELA, (LARGURA_TELA/2), 8)
-        px.dither(1)    
+        px.dither(1)
         
         self.desenhar_titulo_menu(offset_x)
     
@@ -2405,9 +2439,10 @@ class Jogo:
         #/
         
         if self.estado_atual_do_jogo in ("entre_menu_e_jogo", "em_jogo", "game_over"):
-            px.dither(0.6)
+            px.dither(0.3)
             px.rect(offset_x, 0, LARGURA_TELA, LARGURA_TELA, 8)
             px.dither(1)
+            #self.desenhar_shapes_jogo_fundo(offset_x)
         
         if self.estado_atual_do_jogo in ("entre_menu_e_jogo", "em_jogo", "game_over"):
             self.desenhar_todos_rects_textos(offset_x)
