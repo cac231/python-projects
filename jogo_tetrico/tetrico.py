@@ -10,7 +10,6 @@ SHAPES = {
                     [0, 0, 0]],
         "imagem_pos": 0,
         "cor_letra": "p",
-        "centralizado": (0.5, -0.5),
     },
     "shape_I": {
         "formato": [[0, 0, 0, 0],
@@ -18,15 +17,13 @@ SHAPES = {
                     [0, 0, 0, 0],
                     [0, 0, 0, 0]],
         "imagem_pos": 1,
-        "cor_letra": "c",        
-        "centralizado": (0, -1),
+        "cor_letra": "c",
     },
     "shape_O": {
         "formato": [[1, 1],
                     [1, 1]],
         "imagem_pos": 2,
-        "cor_letra": "y",      
-        "centralizado": (1, 0),
+        "cor_letra": "y",
     },
     "shape_L": {
         "formato": [[0, 0, 1],
@@ -34,7 +31,6 @@ SHAPES = {
                     [0, 0, 0]],
         "imagem_pos": 3,
         "cor_letra": "o",
-        "centralizado": (0.5, -0.5),
     },
     "shape_J": {
         "formato": [[1, 0, 0],
@@ -42,7 +38,6 @@ SHAPES = {
                     [0, 0, 0]],
         "imagem_pos": 4,
         "cor_letra": "b",
-        "centralizado": (0.5, -0.5),
     },
     "shape_S": {
         "formato": [[0, 1, 1],
@@ -50,7 +45,6 @@ SHAPES = {
                     [0, 0, 0]],
         "imagem_pos": 5,
         "cor_letra": "g",
-        "centralizado": (0.5, -0.5),
     },
     "shape_Z": {
         "formato": [[1, 1, 0],
@@ -58,7 +52,6 @@ SHAPES = {
                     [0, 0, 0]],
         "imagem_pos": 6,
         "cor_letra": "r",
-        "centralizado": (0.5, -0.5),
     },
     #
     "shape_IL": {
@@ -67,8 +60,7 @@ SHAPES = {
                     [0, 0, 0, 0],
                     [0, 0, 0, 0]],
         "imagem_pos": 3,
-        "cor_letra": "o",        
-        "centralizado": (0, -1),
+        "cor_letra": "o",
     },
     "shape_IJ": {
         "formato": [[1, 0, 0, 0],
@@ -76,30 +68,87 @@ SHAPES = {
                     [0, 0, 0, 0],
                     [0, 0, 0, 0]],
         "imagem_pos": 4,
-        "cor_letra": "b",        
-        "centralizado": (0, -1),
+        "cor_letra": "b",
     },
-    "shape_X": {
-        "formato": [[0, 1, 0],
-                    [1, 1, 1],
-                    [0, 1, 0]],
-        "imagem_pos": 6,
-        "cor_letra": "r",
-        "centralizado": (0.5, -0.5),
+    "shape_D": {
+        "formato": [[1, 1, 1],
+                    [1, 1, 1]],
+        "imagem_pos": 2,
+        "cor_letra": "y",
     },
     "shape_C": {
         "formato": [[0, 1],
                     [1, 1]],
-        "imagem_pos": 2,
-        "cor_letra": "y",      
-        "centralizado": (1, 0),
-    },
-    "shape_CT": {
-        "formato": [[0, 1, 0],
-                    [1, 1, 1],
-                    [1, 0, 0]],
         "imagem_pos": 0,
         "cor_letra": "p",
+    },
+    "shape_P": {
+        "formato": [[1, 1, 0],
+                    [1, 1, 1]],
+        "imagem_pos": 6,
+        "cor_letra": "r",
+    },
+}
+
+SHAPES_PROXIMOS_SEGURADO = {
+    "shape_T": {
+        "formato": [[0, 1, 0],
+                    [1, 1, 1]],
+        "centralizado": (0.5, -0.5),
+    },
+    "shape_I": {
+        "formato": [[1, 1, 1, 1]],
+        "centralizado": (0, -1),
+    },
+    "shape_O": {
+        "formato": [[1, 1],
+                    [1, 1]],  
+        "centralizado": (1, 0),
+    },
+    "shape_L": {
+        "formato": [[0, 0, 1],
+                    [1, 1, 1]],
+        "centralizado": (0.5, -0.5),
+    },
+    "shape_J": {
+        "formato": [[1, 0, 0],
+                    [1, 1, 1]],
+        "centralizado": (0.5, -0.5),
+    },
+    "shape_S": {
+        "formato": [[0, 1, 1],
+                    [1, 1, 0]],
+        "centralizado": (0.5, -0.5),
+    },
+    "shape_Z": {
+        "formato": [[1, 1, 0],
+                    [0, 1, 1]],
+        "centralizado": (0.5, -0.5),
+    },
+    #
+    "shape_IL": {
+        "formato": [[0, 0, 0, 1],
+                    [1, 1, 1, 1]],
+        "centralizado": (0, -1),
+    },
+    "shape_IJ": {
+        "formato": [[1, 0, 0, 0],
+                    [1, 1, 1, 1]],
+        "centralizado": (0, -1),
+    },
+    "shape_D": {
+        "formato": [[1, 1, 1],
+                    [1, 1, 1]],
+        "centralizado": (0.5, -0.5),
+    },
+    "shape_C": {
+        "formato": [[0, 1],
+                    [1, 1]], 
+        "centralizado": (1, 0),
+    },
+    "shape_P": {
+        "formato": [[1, 1, 0],
+                    [1, 1, 1]],
         "centralizado": (0.5, -0.5),
     },
 }
@@ -243,7 +292,7 @@ TABELA_G = {
 
 #/
 
-SHAPES_1_3_LARGURA = ("shape_I", "shape_IT", "shape_X", "shape_CT")
+SHAPES_1_DE_LARGURA = ("shape_I",)
 SHAPES_COM_SRS_I = ("shape_I", "shape_IL", "shape_IJ")
 
 CORES_ALEATORIAS_TETRIS = list(range(1, 8))
@@ -371,12 +420,10 @@ class Jogo:
     
     #//// INICIAR PARTIDA ////
     
-    def formar_fundo_jogo(self):
-        largura = 20
-        comprimento = 20
+    def formar_fundo(self, largura, comprimento, quantidade):
         lista = [[0] * largura for _ in range(comprimento)]
         for linha in lista:
-                k = random.randint(0, 9)
+                k = random.randint(0, quantidade)
                 indices = random.sample(range(0, largura), k)
                 for indice in indices:
                         linha[indice] = 1
@@ -395,7 +442,7 @@ class Jogo:
         self.tempo_pausado = 0
         
         self.mapa = [[VAZIO] * COLUNAS for _ in range(ALTURA_DO_JOGO)]
-        self.shapes_fundo_jogo, self.lista_y_fundo_jogo = self.formar_fundo_jogo()
+        self.shapes_fundo_jogo, self.lista_y_fundo_jogo = self.formar_fundo(20, 20, 12)
         
         self.nivel_inicial = self.nivel_inicial_config # CONFIG
         self.nivel_atual = self.nivel_inicial
@@ -461,6 +508,8 @@ class Jogo:
         self.das = self.das_config # CONFIG
         self.arr = self.arr_config # CONFIG
         self.arr_soft_drop = self.arr_soft_drop_config # CONFIG
+        self.visual_vel_x = 0
+        self.visual_vel_y = 0
     
     #//// REINICIAR SHAPE ////
    
@@ -471,10 +520,13 @@ class Jogo:
         self.ajustar_desovacao()
         self.recalcular_pos_fantasma()
         
+        self.visual_pos_x = self.shape_pos_atual[0]
+        self.visual_pos_y = self.shape_pos_atual[1]
+        
         # rotacao e movimentacao
         self.ultimo_movimento_lateral = None        
         self.estado_rotacao = "0"
-        
+
         # t-spin
         self.ultima_acao_foi_rotacao = False
         self.ultimo_srs_foi_1x2 = False
@@ -692,7 +744,7 @@ class Jogo:
     #//// //// PAUSE //// ////
     
     def variaveis_despausar(self):
-        self.shapes_fundo_pause, self.lista_y_fundo_pause = self.formar_fundo_pause()              
+        self.shapes_fundo_pause, self.lista_y_fundo_pause = self.formar_fundo(10, 10, 10)              
         self.frases_pause = ["Continue", "Stats", "Restart", "Back", "Quit"]
         self.confirmacao_valor = {chave: 0 for chave in self.confirmacao_valor}
     
@@ -705,21 +757,8 @@ class Jogo:
             self.frases_pause[indice] = frase + "?"
             return False
     
-    def formar_fundo_pause(self):
-        largura = 10
-        comprimento = 10
-        lista = [[0] * largura for _ in range(comprimento)]
-        for linha in lista:
-                k = random.randint(0, 9)
-                indices = random.sample(range(0, largura), k)
-                for indice in indices:
-                        linha[indice] = 1
-        quantos_1 = sum([linha.count(1) for linha in lista])
-        lista_y = [random.choice([0, 1]) for _ in range(quantos_1)]
-        return lista, lista_y
-    
     def variaveis_pause(self):
-        self.shapes_fundo_pause, self.lista_y_fundo_pause = self.formar_fundo_pause()
+        self.shapes_fundo_pause, self.lista_y_fundo_pause = self.formar_fundo(10, 10, 10)
         self.distancia_do_pause = 160
         self.frases_pause = ["Continue", "Stats", "Restart", "Back", "Quit"]
         self.frase_titulo_pause = "PAUSED"
@@ -775,10 +814,12 @@ class Jogo:
         return False
     
     def sistema_bag_7(self):
+        normais = ["I", "O", "T", "L", "J", "S", "Z"]
+        adicionais = ["IL", "IJ", "D", "C", "P"]
         if len(self.bag_7) == 0:
-            shapes = ["I", "O", "T", "L", "J", "S", "Z"]
+            shapes = normais
             if self.modo_do_jogo == "crazy":
-                shapes.extend(["IL", "IJ", "X", "C", "CT"]) 
+                shapes.extend(adicionais) 
             self.bag_7 = [f"shape_{x}" for x in shapes]
             random.shuffle(self.bag_7)
         
@@ -1317,8 +1358,8 @@ class Jogo:
     def teclas_navegacao_pause(self):
         if self.pegar_input("ACIONAR"):
             self.navegar_pause(clique=1)
-        elif self.pegar_input("VOLTAR"):
-            self.navegar_pause(clique=-1)
+        # elif self.pegar_input("VOLTAR"):
+        #     self.navegar_pause(clique=-1)
 
         elif self.pegar_input("PARA_CIMA"):
             self.navegar_pause(deslize=-1)
@@ -1670,10 +1711,7 @@ class Jogo:
     #//// RECTS ////
     
     def calcular_comprimento_rect_direito(self):
-        if self.modo_do_jogo == "crazy":
-            extra = self.distancia_extra_modo_crazy
-        else:
-            extra = 0
+        extra = 0
         comprimento = TILE * (self.shapes_visiveis * (self.distancia_entre_shapes_proximos + extra) + (self.distancia_inicial_shapes_proximos + extra))
         return comprimento
     
@@ -2011,12 +2049,17 @@ class Jogo:
         spritesheet_x = SHAPES[self.shape_atual]["imagem_pos"]
         pos_x, pos_y = pos
         
+        vel_x = 0.6  # lateral mais suave
+        vel_y = 0.8  # queda mais rápida
+        self.visual_pos_x = self.calcular_interpolacao(self.visual_pos_x, pos_x, vel_x, 1)
+        self.visual_pos_y = self.calcular_interpolacao(self.visual_pos_y, pos_y, vel_y, 1)
+        
         for i_linha, e_linha in enumerate(formato):
             for i_coluna, _ in enumerate(e_linha):
                 if formato[i_linha][i_coluna] == 1:
                         self.desenhar_shape(
-                            pos_x + i_coluna,
-                            pos_y + i_linha, 
+                            self.visual_pos_x + i_coluna,
+                            self.visual_pos_y + i_linha, 
                             (spritesheet_x, 0),
                             mov_x=mov_x,
                             mov_y=mov_y,
@@ -2046,22 +2089,19 @@ class Jogo:
     def desenhar_shapes_proximos(self, proximos_shapes, mov_direita, mov_y, offset_x, offset_y):
         ajustar_valor_x = 10.5
         ajustar_valor_y = 0.25 + 0.5
-        
-        extra = self.distancia_extra_modo_crazy if self.modo_do_jogo == "crazy" else 0
-        acrescimo_distancia = ajustar_valor_y + extra
+        acrescimo_distancia = ajustar_valor_y
         
         for proximo_shape in proximos_shapes:
-    
-            aumentar = -0.5 if proximo_shape in SHAPES_1_3_LARGURA else 0
+            aumentar = 0.5 if proximo_shape in SHAPES_1_DE_LARGURA else 0
             
             spritesheet_x = SHAPES[proximo_shape]["imagem_pos"]
-            formato = SHAPES[proximo_shape]["formato"]
+            formato = SHAPES_PROXIMOS_SEGURADO[proximo_shape]["formato"]
  
             for i_linha, e_linha in enumerate(formato):
                 for i_coluna, _ in enumerate(e_linha):
                     if formato[i_linha][i_coluna] == 1:
                         self.desenhar_shape(
-                            ajustar_valor_x     + i_coluna + SHAPES[proximo_shape]["centralizado"][0],
+                            ajustar_valor_x     + i_coluna + SHAPES_PROXIMOS_SEGURADO[proximo_shape]["centralizado"][0],
                             acrescimo_distancia + i_linha  + aumentar,
                             (spritesheet_x, 0),
                             mov_x=mov_direita,
@@ -2069,7 +2109,7 @@ class Jogo:
                             offset_x=offset_x,
                             offset_y=offset_y
                         )
-            acrescimo_distancia += self.distancia_entre_shapes_proximos + extra
+            acrescimo_distancia += self.distancia_entre_shapes_proximos
     
     def desenhar_shape_segurado(self, shape_segurado, mov_esquerda, mov_y, offset_x, offset_y):
         ajustar_valor_x = -3.5
@@ -2077,7 +2117,7 @@ class Jogo:
         inicio, fim = 0.25, 4.5
         ajustar_valor_y = inicio + (fim / 2) - 1
         
-        aumentar = -0.5 if self.shape_segurado in SHAPES_1_3_LARGURA else 0
+        aumentar = -0.5 if self.shape_segurado in SHAPES_1_DE_LARGURA else 0
         
         spritesheet_x = SHAPES[shape_segurado]["imagem_pos"]
         formato = SHAPES[shape_segurado]["formato"]
@@ -2086,7 +2126,7 @@ class Jogo:
             for i_coluna, _ in enumerate(e_linha):
                 if formato[i_linha][i_coluna] == 1:
                     self.desenhar_shape(
-                        ajustar_valor_x + i_coluna + SHAPES[shape_segurado]["centralizado"][1], 
+                        ajustar_valor_x + i_coluna + SHAPES_PROXIMOS_SEGURADO[shape_segurado]["centralizado"][1], 
                         ajustar_valor_y + i_linha + aumentar, 
                         (spritesheet_x, 0),
                         mov_x=mov_esquerda,
@@ -2333,7 +2373,6 @@ class Jogo:
             self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_hard_drop, offset_x, offset_y_teto)
             pos = self.shape_pos_atual if self.nivel_atual < (len(TABELA_G) - 3) else self.shape_pos_fantasma
             self.desenhar_shape_atual(self.pegar_formato(), pos, mov_x, mov_hard_drop, offset_x, offset_y_teto)
-            print("s", offset_y_teto)
         
         if self.limpou_linha:
             self.desenhar_animacao_limpar_linha(mov_x, mov_hard_drop, offset_x, offset_y_teto)
@@ -2439,10 +2478,10 @@ class Jogo:
         #/
         
         if self.estado_atual_do_jogo in ("entre_menu_e_jogo", "em_jogo", "game_over"):
-            px.dither(0.3)
+            px.dither(0.5)
             px.rect(offset_x, 0, LARGURA_TELA, LARGURA_TELA, 8)
             px.dither(1)
-            #self.desenhar_shapes_jogo_fundo(offset_x)
+            self.desenhar_shapes_jogo_fundo(offset_x)
         
         if self.estado_atual_do_jogo in ("entre_menu_e_jogo", "em_jogo", "game_over"):
             self.desenhar_todos_rects_textos(offset_x)
