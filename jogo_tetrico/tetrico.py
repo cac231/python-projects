@@ -276,11 +276,9 @@ TABELA_G = {
     20:	36.6,
 }
 
-#/
+#todo: adicionar talvez particular? nao sei
 
-#todo: corrigir o rect dos tetronimos proximos no modo Crazy. E corrigir o "crazy XD", a sua posicao no X
-
-#todo:  adicioanar funcionalidade botoes de pause, recent_games e controles
+#todo: adicionar config nos controles
 
 #todo ver como vai ficar os popus, com borda ou nao
 
@@ -370,6 +368,7 @@ class Jogo:
             "OPCAO_DIMINUIR": [px.KEY_LEFT, px.GAMEPAD1_BUTTON_DPAD_LEFT],
         }
         
+        self.partidas_historico = []
         self.iniciar_jogo()
         
         self.tempo_acumulado = 0.0
@@ -385,21 +384,24 @@ class Jogo:
         self.resetou_jogo = False
         
         self.esta_pausado = False
-        self.despausando = False
+        self.despausando = False 
         self.clicou_em_resetar_partida = False
 
     def variaveis_configuracao(self):
-        self.nivel_inicial_config = 1 #  1
+        self.nivel_inicial_config = 1 # 1
         self.shapes_visiveis_config = 3 # 3
         
         self.movimento_duracao_config = 7 # 7
-        self.movimento_inicio_config = 0.5 # 0.5
+        self.movimento_inicio_config = 0.5 # 0.50
         self.movimento_constante_config = 0.15 # 0.15
         
         self.are_duracao_config = 20 # 20
         self.das_config = 10 # 10
         self.arr_config = 2 # 2
         self.arr_soft_drop_config = 2 # 2
+        
+        self.visual_vel_x_config = 0.80 # 0.80
+        self.visual_vel_y_config = 0.90  # 0.90
 
     def variaveis_rects_e_constantes(self):
         # distancia entre os shapes proximos desenhados
@@ -480,10 +482,13 @@ class Jogo:
             "quantidade_holds": 0,
             "quantidade_pausadas": 0,
         }
-        self.jogo_completo = False
         self.sequencia_dos_eventos = []
         
+        self.modo_completado = False
+        self.informacoes_status = self.retornar_status_da_partida()
+        
         self.variaveis_velocidade_movimentacao()
+        self.estados_animacao_hard_drop = []
     
     def variaveis_movimentos(self):
         self.movimento_duracao = self.movimento_duracao_config # CONFIG
@@ -497,19 +502,18 @@ class Jogo:
         self.offset_em_jogo = {    
             "teto": 0,
             "pause": 0,
+            "status": 0,
         }
         
         self.mov_slide_gameover = 0
-        self.velocidade_gameover_slide = 0
-        
-        self.estados_animacao_hard_drop = []
+        self.velocidade_slide_gameover = 0
     
     def variaveis_velocidade_movimentacao(self):
         self.das = self.das_config # CONFIG
         self.arr = self.arr_config # CONFIG
         self.arr_soft_drop = self.arr_soft_drop_config # CONFIG
-        self.visual_vel_x = 0
-        self.visual_vel_y = 0
+        self.visual_vel_x = self.visual_vel_x_config
+        self.visual_vel_y = self.visual_vel_y_config
     
     #//// REINICIAR SHAPE ////
    
@@ -584,6 +588,7 @@ class Jogo:
     
     def resetar_voltar_ao_menu(self):
         self.variaveis_iniciais()
+        self.frases_menu()
         # Não reseta configuração, tamanho predefinidos dos rects e variáveis do menu
     
     #//// //// MENU //// ////
@@ -592,24 +597,35 @@ class Jogo:
         return ([
                 f"Starting Level:{self.nivel_inicial_config:02d}", 
                 f"Previews:{self.shapes_visiveis_config}",
-                f"FLUIDITY:{self.movimento_duracao_config:02d}s",
+                f"FLUIDITY:",
+                f" Duration:{self.movimento_duracao_config:02d}s",
                 f" Outset:{self.movimento_inicio_config:0.2f}",
                 f" Constant:{self.movimento_constante_config:0.2f}",
                 f"ARE:{self.are_duracao_config:02d}ms",
                 f"DAS:{self.das_config:02d}ms", 
                 f"ARR:{self.arr_config:02d}ms",
-                f" ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
-                f"", 
-                f"RESET VALUES"], 30)
+                f"ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
+                f"SHAPE SPEED:", 
+                f" Speed X:{self.visual_vel_x_config:0.2f}s", 
+                f" Speed Y:{self.visual_vel_y_config:0.2f}s", 
+                f"",
+                f"RESET VALUES"], 
+                30)
     
     def frases_menu(self):
+        if len(self.partidas_historico) > 0:
+            frase_recentes = []
+            for index, partida in enumerate(self.partidas_historico):
+                frase_recentes.append(f"{index + 1:02}: {partida[0][1]}")
+        else:
+            frase_recentes = ["Nothing"]
         self.frase_entrada = "Press [ENTER]"
         self.frases_menu_principal = ["Play", "Settings", "Controls", "Recent Games", "About", "Quit"]
         self.frases_submenus = {
             "jogar": (["MARATHON 150", "40 LINES", "ULTRA", "CRAZY", "INFINITE"], 30),
             "configuracao": self.frases_configuracao(),
             "controles": (["True"], 30),
-            "recentes": (["1", "2"], 30),
+            "recentes": (frase_recentes, 30),
             "sobre": (["Made by Cac", "Made with Pyxel", "Made with love", ":D"], 25),
             "sair": (["Press [ENTER]", "to confirm"], 25)
         }
@@ -618,11 +634,13 @@ class Jogo:
         self.pilha_menu = ["entrada"]
         self.profundidade_menu = 0
         self.opcao_atual = [0, 0, 0]
-
+        self.mostrar_status_menu = False
+        
         self.offset_menu = {
             "scroll": [0, 0, 0],
             "entre_menus": 0,
             "entre_menu_e_jogo": 0,
+            "status": 0,
         }
         
         self.frases_menu()
@@ -644,8 +662,8 @@ class Jogo:
         }   
         
         if clique != 0:
-            self.profundidade_menu += clique
             self.navegar_horizontalmente_menu(clique)
+        
         self.menu_ativo = self.pilha_menu[-1]
         
         if deslize != 0:
@@ -656,13 +674,16 @@ class Jogo:
         self.quantidades_opcoes_menus[self.menu_ativo][self.opcao_atual[self.profundidade_menu]] = True
     
     def navegar_horizontalmente_menu(self, clique):
-        if self.profundidade_menu < 0:
-            self.profundidade_menu = 0
-        
-        elif clique == -1:
-            self.pilha_menu.pop()
+        if clique == 1:
+            self.profundidade_menu += clique
+        else:
+            if self.offset_menu["status"] <= 0:
+                if self.profundidade_menu > 0:
+                    self.profundidade_menu += clique
+                    self.pilha_menu.pop()
+                    self.frases_submenus["configuracao"][0][-1] = f"RESET VALUES"
     
-        elif self.profundidade_menu == 1:
+        if self.profundidade_menu == 1:
             self.pilha_menu.append("principal")
         
         elif self.profundidade_menu == 2:
@@ -690,7 +711,7 @@ class Jogo:
                 self.estado_atual_do_jogo = "entre_menu_e_jogo"
             
             elif self.menu_ativo == "configuracao":
-                if self.opcao_atual[2] == 10:
+                if self.opcao_atual[2] == (len(self.frases_configuracao()[0]) - 1):
                     self.variaveis_configuracao()
                     self.frases_submenus["configuracao"] = self.frases_configuracao()
                     self.frases_submenus["configuracao"][0][-1] = f"RESET"
@@ -699,7 +720,11 @@ class Jogo:
                 pass
             
             elif self.menu_ativo == "recentes":
-                pass
+                if len(self.partidas_historico) > 0:
+                    if self.mostrar_status_menu:
+                        self.mostrar_status_menu = False
+                    else:
+                        self.mostrar_status_menu = True
             
             elif self.menu_ativo == "sair":
                 self.profundidade_menu += clique
@@ -722,23 +747,28 @@ class Jogo:
                 case 1:
                     self.shapes_visiveis_config = alterar_valor(self.shapes_visiveis_config, soma, min=1, max=5)
                 case 2:
-                    self.movimento_duracao_config = alterar_valor(self.movimento_duracao_config, soma, min=0, max=10)
-                case 3:
-                    self.movimento_inicio_config = alterar_valor(self.movimento_inicio_config, (soma/10), min=0, max=1)
-                case 4:
-                    self.movimento_constante_config = alterar_valor(self.movimento_constante_config, (soma/20), min=0, max=0.5)
-                case 5:
-                    self.are_duracao_config = alterar_valor(self.are_duracao_config, soma, min=0, max=200)
-                case 6:
-                    self.das_config = alterar_valor(self.das_config, soma, min=0, max=50)
-                case 7:
-                    self.arr_config = alterar_valor(self.arr_config, soma, min=0, max=10)
-                case 8:
-                    self.arr_soft_drop_config = alterar_valor(self.arr_soft_drop_config, soma, min=0, max=10)
-                case 9:                          
                     pass
+                case 3:
+                    self.movimento_duracao_config = alterar_valor(self.movimento_duracao_config, soma, min=0, max=10)
+                case 4:
+                    self.movimento_inicio_config = alterar_valor(self.movimento_inicio_config, (soma/10), min=0, max=1)
+                case 5:
+                    self.movimento_constante_config = alterar_valor(self.movimento_constante_config, (soma/20), min=0, max=0.5)
+                case 6:
+                    self.are_duracao_config = alterar_valor(self.are_duracao_config, soma, min=0, max=200)
+                case 7:
+                    self.das_config = alterar_valor(self.das_config, soma, min=0, max=50)
+                case 8:
+                    self.arr_config = alterar_valor(self.arr_config, soma, min=0, max=10)
+                case 9:
+                    self.arr_soft_drop_config = alterar_valor(self.arr_soft_drop_config, soma, min=0, max=10)
                 case 10:                          
                     pass
+                case 11:                          
+                    self.visual_vel_x_config = alterar_valor(self.visual_vel_x_config, (soma/20), min=0.05, max=1)
+                case 12:                          
+                    self.visual_vel_y_config = alterar_valor(self.visual_vel_y_config, (soma/20), min=0.05, max=1)
+            
             self.frases_submenus["configuracao"] = self.frases_configuracao()
     
     #//// //// PAUSE //// ////
@@ -768,6 +798,7 @@ class Jogo:
             "sair": 0,
             "voltar": 0,
         }
+        self.mostrar_status_pause = False
         
         self.opcao_atual_pause = 0
         self.quantidades_opcoes_pause = [False] * len(self.frases_pause)
@@ -777,23 +808,37 @@ class Jogo:
         self.quantidades_opcoes_pause = [False] * len(self.frases_pause)
         
         if clique != 0:
-            match self.opcao_atual_pause:
-                case 0:
+            if self.opcao_atual_pause == 0:
+                self.despausando = True
+            
+            elif self.opcao_atual_pause == 1:
+                if self.estado_atual_do_jogo == "em_jogo":
+                    self.informacoes_status = self.retornar_status_da_partida()
+                    if self.mostrar_status_pause:
+                        self.mostrar_status_pause = False
+                    else:
+                        self.mostrar_status_pause = True
+                else:
                     self.despausando = True
-                case 1: 
-                    pass
-                case 2:
-                    if self.confirmacao_opcao(2, "resetar", "Restart"):
-                        self.iniciar_partida()
-                        self.clicou_em_resetar_partida = True
-                        self.velocidade_gameover_slide = 0
-                case 3:
-                    if self.confirmacao_opcao(3, "voltar", "Back"):
-                        self.estado_atual_do_jogo = "entre_menu_e_jogo"
-                case 4:
-                    if self.confirmacao_opcao(4, "sair", "Quit"):
-                        self.estado_atual_do_jogo = "sair_do_jogo"
-                        px.quit()
+            
+            elif self.opcao_atual_pause == 2:
+                if self.confirmacao_opcao(2, "resetar", "Restart"):
+                    self.iniciar_partida()
+                    self.clicou_em_resetar_partida = True
+                    self.velocidade_slide_gameover = 0
+                    self.mostrar_status_pause = False
+            
+            elif self.opcao_atual_pause == 3:
+                if self.confirmacao_opcao(3, "voltar", "Back"):
+                    if self.estado_atual_do_jogo == "em_jogo":
+                        self.informacoes_status = self.retornar_status_da_partida("abortado")
+                        self.salvar_partida(self.informacoes_status)
+                    self.estado_atual_do_jogo = "entre_menu_e_jogo"
+            
+            elif self.opcao_atual_pause == 4:
+                if self.confirmacao_opcao(4, "sair", "Quit"):
+                    self.estado_atual_do_jogo = "sair_do_jogo"
+                    px.quit()
         
         if deslize != 0:
             indice_maximo = len(self.quantidades_opcoes_pause) - 1
@@ -804,6 +849,46 @@ class Jogo:
     #//// //// JOGO //// ////
     
     #//// FUNÇÕES - DIVERSAS (INPUT, BAG 7, FIXAR, MODO, TEMPO FORMATADO) ////
+    
+    def retornar_status_da_partida(self, resultado=None):
+        agora_fuso = time.localtime()
+        tempo_string = time.strftime("%d.%m.%y %H:%M", agora_fuso)
+        match self.modo_do_jogo:
+            case "marathon_150": frase_modo = "MARATHON"
+            case "40_lines": frase_modo = "40 LINES"
+            case "ultra": frase_modo = "ULTRA"
+            case "crazy": frase_modo = "CRAZY"
+            case "infinite": frase_modo = "INFINITE"
+        match resultado:
+            case "game_over": frase_resultado = "GAME OVER"
+            case "completo": frase_resultado = "COMPLETED"
+            case "abortado": frase_resultado = "ABORTED"
+            case _: frase_resultado = "Nothing"
+            
+        frases_status = [
+            ("",               f"{tempo_string}", 6),  
+            ("Mode:",          f"{frase_modo}", 0),  
+            ("Result:",        f"{frase_resultado}", 0),
+            ("Duration:",      f"{self.tempo_formatado()}", 0),
+            ("Start Level:",   f"{self.nivel_inicial}", 1),
+            ("Final Level:",   f"{self.nivel_atual}", 1),
+            ("Lines:",         f"{self.linhas_limpas}", 2),
+            ("Score:",         f"{self.pontos_atual}", 2),
+            ("Singles:",       f"{self.status["quantidade_singles"]}", 3),
+            ("Doubles:",       f"{self.status["quantidade_doubles"]}", 3),
+            ("Triples:",       f"{self.status["quantidade_triples"]}", 3),
+            ("Tetris:",        f"{self.status["quantidade_quads"]}", 3),
+            ("T-Spins:",       f"{self.status["quantidade_t_spins"]}", 4),
+            ("Perfect Clears:",f"{self.status["quantidade_perfect_clears"]}", 4),
+            ("Max Combo:",     f"{self.status["combo_maximo"]}", 5),
+            ("Max Streak:",    f"{self.status["streak_maximo"]}", 5),
+            ("Times Held:",    f"{self.status["quantidade_holds"]}", 6),
+            ("Times Pause:",   f"{self.status["quantidade_pausadas"]}", 6),
+        ]
+        return frases_status
+    
+    def salvar_partida(self, status_da_partida):
+        self.partidas_historico.append(status_da_partida)
     
     def pegar_input(self, input, repeticao=0, hold=0, *, input_puro=False):
         for tecla in self.MAPEAMENTO[input]:
@@ -829,33 +914,31 @@ class Jogo:
     def fixar(self, formato, pos, mapa, cor):
         if not self.fixou_neste_frame:
             self.fixou_neste_frame = True
-            
             for i_linha, e_linha in enumerate(formato):
                 for i_coluna, _ in enumerate(e_linha):    
                     if formato[i_linha][i_coluna] == 1:
                         mx = pos[0] + i_coluna 
                         my = pos[1] + i_linha + CORRECAO_ALTURA
                         mapa[my][mx] = cor
-                        self.verificar_game_over_teto()
+            self.verificar_game_over_teto()
             return True
         return False
     
     def verificar_estado_do_modo(self):
         if self.modo_do_jogo == "marathon_150":
             if self.linhas_limpas >= 150:
-                self.acionar_game_over()
+                self.modo_completado = True
         
         elif self.modo_do_jogo == "40_lines":
             if self.linhas_limpas >= 40:
-                self.acionar_game_over()
+                self.modo_completado = True
                 
         elif self.modo_do_jogo == "ultra":
             if self.tempo_atual_em_segundos >= (3 * 60):
-                self.acionar_game_over()
+                self.modo_completado = True
         
         elif self.modo_do_jogo == "infinite":
-            pass
-            # fi... apenas relaxe e jogue infinitamente!!!
+            pass # fi... apenas relaxe e jogue infinitamente!!!
     
     def tempo_formatado(self):
         minutos = int(self.tempo_atual_em_segundos // 60)
@@ -1180,20 +1263,21 @@ class Jogo:
 
     #//// VERIFICAR GAME OVER ////
     
-    def acionar_game_over(self):
+    def acionar_game_over(self, resultado):
         self.estado_atual_do_jogo = "game_over"
-        self.jogo_completo = True
+        self.informacoes_status = self.retornar_status_da_partida(resultado)
+        self.salvar_partida(self.informacoes_status)
     
     def verificar_game_over_colisao(self):
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa):
-            self.acionar_game_over()
+            self.acionar_game_over("game_over")
             self.shape_pos_atual = [0, 0]
     
     def verificar_game_over_teto(self):
         for coluna in range(COLUNAS):
             for linha in range(CORRECAO_ALTURA):
                 if self.mapa[linha][coluna] != VAZIO:
-                    self.acionar_game_over()
+                    self.acionar_game_over("game_over")
                     self.shape_pos_atual = [0, 0]
                     return True
         return False
@@ -1386,7 +1470,7 @@ class Jogo:
         if self.mov_slide_gameover == 0:
                 self.estado_atual_do_jogo = "em_jogo"
                 self.clicou_em_resetar_partida = False
-                self.velocidade_gameover_slide = 0
+                self.velocidade_slide_gameover = 0
     
     def atualizar_estado_entre_menu_e_jogo(self):
         if self.offset_menu["entre_menu_e_jogo"] >= LARGURA_TELA:
@@ -1400,6 +1484,7 @@ class Jogo:
     
     def atualizar_estado_pausado(self):
         if self.despausando:
+            self.mostrar_status_pause = False
             if self.offset_em_jogo["pause"] <= 0:
                 self.variaveis_despausar()
                 self.esta_pausado = False
@@ -1468,6 +1553,12 @@ class Jogo:
             if self.tempo_do_are > self.are_duracao:
                 if self.limpou_linha:
                     self.mover_linhas_do_mapa(self.mapa[::-1])
+                    
+                if self.modo_completado:
+                    self.acionar_game_over("completo")
+                    self.modo_completado = False
+                    return    
+                
                 self.gerar_novo_shape()
                 self.segurar_shape(input_puro=True)
                 self.verificar_rotacao_shape(input_puro=True)
@@ -1881,48 +1972,23 @@ class Jogo:
         self.comprimento_rect_direito = pos_y - comprimento_dir + (espacamento / 2)
    
     #//// TEXTOS - STATUS E POPUPS ////
-    
-    def desenhar_texto_estatisticas(self, *, pos_y_negativo, mov_y, offset_x):
-        match self.modo_do_jogo:
-            case "marathon_150": frase_modo = "MARATHON"
-            case "40_lines": frase_modo = "40 LINES"
-            case "ultra": frase_modo = "ULTRA"
-            case "crazy": frase_modo = "CRAZY"
-            case "infinite": frase_modo = "INFINITE"
-        frase_completo = "Yes" if self.jogo_completo else "No"
-        frases_status = [
-            ("Mode:",           f"{frase_modo}", 0),  
-            ("Time:",          f"{self.tempo_formatado()}", 0),
-            ("Start Level:",    f"{self.nivel_inicial}", 1),
-            ("Final Level:",    f"{self.nivel_atual}", 1),
-            ("Lines:",         f"{self.linhas_limpas}", 2),
-            ("Score:",         f"{self.pontos_atual}", 2),
-            ("Singles:",        f"{self.status["quantidade_singles"]}", 3),
-            ("Doubles:",        f"{self.status["quantidade_doubles"]}", 3),
-            ("Triples:",        f"{self.status["quantidade_triples"]}", 3),
-            ("Tetris:",         f"{self.status["quantidade_quads"]}", 3),
-            ("T-Spins:",        f"{self.status["quantidade_t_spins"]}", 4),
-            ("Perfect Clears:", f"{self.status["quantidade_perfect_clears"]}", 4),
-            ("Max Combo:",      f"{self.status["combo_maximo"]}", 5),
-            ("Max Streak:",     f"{self.status["streak_maximo"]}", 5),
-            ("Times Held:",     f"{self.status["quantidade_holds"]}", 6),
-            ("Times Pause:",    f"{self.status["quantidade_pausadas"]}", 6),
-            ("Complete:",    f"{frase_completo}", 0)
-
-        ]
-
+            
+    def desenhar_texto_estatisticas(self, status, pos_x=0, pos_y=0, *, mov_y, offset_x):
+        frases_status = status
         cor = CORES_ALEATORIAS_TETRIS
         
-        espacamento = 18
-        espacamento_entre_valores = 14
+        espacamento = 17
+        espacamento_entre_valores = 13
 
         altura_total = (len(frases_status)) * espacamento - (espacamento / 2)
-        pos_y = ((TILE * LINHAS) / 2 - altura_total / 2) - pos_y_negativo
+        meio_da_tela = ((TILE * LINHAS) / 2) - (altura_total / 2)
+        
+        pos_y += meio_da_tela
         
         for tupla in frases_status:
             frase, valor, cor_i = tupla
-            px.text((BOARD_X + espacamento_entre_valores) + offset_x,                            pos_y + (mov_y * TILE), frase, cor[cor_i], FONT_10)
-            px.text((BOARD_X + espacamento_entre_valores) + offset_x + FONT_10.text_width(frase), pos_y + (mov_y * TILE), valor, cor[cor_i], FONT_10)
+            px.text((pos_x + espacamento_entre_valores) + offset_x,                             pos_y + (mov_y * TILE), frase, cor[cor_i], FONT_10)
+            px.text((pos_x + espacamento_entre_valores) + offset_x + FONT_10.text_width(frase), pos_y + (mov_y * TILE), valor, cor[cor_i], FONT_10)
             pos_y += espacamento
     
     def desenhar_popups(self, mov_x, offset_x):
@@ -2049,10 +2115,10 @@ class Jogo:
         spritesheet_x = SHAPES[self.shape_atual]["imagem_pos"]
         pos_x, pos_y = pos
         
-        vel_x = 0.6  # lateral mais suave
-        vel_y = 0.8  # queda mais rápida
-        self.visual_pos_x = self.calcular_interpolacao(self.visual_pos_x, pos_x, vel_x, 1)
-        self.visual_pos_y = self.calcular_interpolacao(self.visual_pos_y, pos_y, vel_y, 1)
+        vel_x = self.visual_vel_x  # lateral mais suave
+        vel_y = self.visual_vel_y  # queda mais rápida
+        self.visual_pos_x = self.calcular_interpolacao(self.visual_pos_x, pos_x, vel_x, 0.1)
+        self.visual_pos_y = self.calcular_interpolacao(self.visual_pos_y, pos_y, vel_y, 0.1)
         
         for i_linha, e_linha in enumerate(formato):
             for i_coluna, _ in enumerate(e_linha):
@@ -2217,15 +2283,6 @@ class Jogo:
     
     #//// ANIMACAO - INTERPOLAÇÃO ////
     
-    def calcular_offset_x(self):
-    #     if self.estado_atual_do_jogo == "entre_menu_e_jogo":
-    #         self.calcular_animacao_entre_menu_e_jogo()
-    #         return LARGURA_TELA - self.offset_menu["entre_menu_e_jogo"]
-    #     if self.estado_atual_do_jogo in ("em_jogo", "game_over", "apos_game_over"):
-    #         self.calcular_animacao_pausado()
-    #         return self.offset_em_jogo["pause"]
-        return 0
-    
     def calcular_animacao_scroll(self, profundidade_menu, opcoes_ativas, itens_visiveis):
         if len(opcoes_ativas) > 5:
             if self.opcao_atual[profundidade_menu] > (len(opcoes_ativas) - 3):
@@ -2266,8 +2323,8 @@ class Jogo:
             self.mov_slide_gameover = 0
             return
         
-        self.velocidade_gameover_slide = min(self.velocidade_gameover_slide + 0.001, 0.05)
-        velocidade = self.velocidade_gameover_slide
+        self.velocidade_slide_gameover = min(self.velocidade_slide_gameover + 0.001, 0.05)
+        velocidade = self.velocidade_slide_gameover
         valor = self.mov_slide_gameover
         
         if not self.clicou_em_resetar_partida:
@@ -2283,6 +2340,26 @@ class Jogo:
         valor = self.offset_em_jogo["teto"]
         self.offset_em_jogo["teto"] = self.calcular_interpolacao(valor, destino_y, velocidade, 0.1)
         return self.offset_em_jogo["teto"]
+    
+    def calcular_animacao_status_pause(self):
+        if self.mostrar_status_pause:
+            destino_x = (LARGURA_TELA / 2)
+        else:
+            destino_x = 0
+
+        velocidade = 0.1
+        valor = self.offset_em_jogo["status"]
+        self.offset_em_jogo["status"] = self.calcular_interpolacao(valor, destino_x, velocidade, 1)
+    
+    def calcular_animacao_status_menu(self):
+        if self.mostrar_status_menu:
+            destino_x = (LARGURA_TELA / 2)
+        else:
+            destino_x = 0
+        
+        velocidade = 0.1
+        valor = self.offset_menu["status"]
+        self.offset_menu["status"] = self.calcular_interpolacao(valor, destino_x, velocidade, 1)
     
     #//// ANIMACAO - GERAL ////
     
@@ -2371,8 +2448,7 @@ class Jogo:
         
         if not self.esta_em_are:
             self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_hard_drop, offset_x, offset_y_teto)
-            pos = self.shape_pos_atual if self.nivel_atual < (len(TABELA_G) - 3) else self.shape_pos_fantasma
-            self.desenhar_shape_atual(self.pegar_formato(), pos, mov_x, mov_hard_drop, offset_x, offset_y_teto)
+            self.desenhar_shape_atual(self.pegar_formato(), self.shape_pos_atual, mov_x, mov_hard_drop, offset_x, offset_y_teto)
         
         if self.limpou_linha:
             self.desenhar_animacao_limpar_linha(mov_x, mov_hard_drop, offset_x, offset_y_teto)
@@ -2388,27 +2464,32 @@ class Jogo:
         if mov_hard_drop > 0:
             self.desenhar_tabuleiro_e_teto(mov_x, mov_hard_drop, offset_x, offset_y_teto)
             self.desenhar_shapes_fixados(self.mapa, mov_x, mov_hard_drop, offset_x, offset_y_teto)
+            if self.limpou_linha:
+                self.desenhar_animacao_limpar_linha(mov_x, mov_hard_drop, offset_x, offset_y_teto)
         else:
             self.desenhar_tabuleiro_e_teto(mov_x, mov_slide_gameover, offset_x, offset_y_teto)
             self.desenhar_shapes_fixados(self.mapa, mov_x, mov_slide_gameover, offset_x, offset_y_teto)
+            if self.limpou_linha:
+                self.desenhar_animacao_limpar_linha(mov_x, mov_slide_gameover, offset_x, offset_y_teto)
         
         if self.clicou_em_resetar_partida:
             self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_slide_gameover, offset_x, offset_y_teto)
-            pos = self.shape_pos_atual if self.nivel_atual < (len(TABELA_G) - 3) else self.shape_pos_fantasma
-            self.desenhar_shape_atual(self.pegar_formato(), pos, mov_x, mov_slide_gameover, offset_x, offset_y_teto)
-            
+            self.desenhar_shape_atual(self.pegar_formato(), self.shape_pos_atual, mov_x, mov_slide_gameover, offset_x, offset_y_teto)
+        
         self.desenhar_shape_segurado_e_proximos(mov_esquerda, mov_direita, mov_slide_gameover, offset_x)
         self.desenhar_popups(mov_x, offset_x)
-         
-        self.desenhar_fundo((BOARD_X, (-LINHAS - 1) * TILE), (0, LINHAS), (COLUNAS, LINHAS), mov_x=0, mov_y=mov_slide_gameover, offset_x=offset_x)
-        self.desenhar_texto_estatisticas(pos_y_negativo=(-(-LINHAS - 1) * TILE), mov_y=mov_slide_gameover, offset_x=offset_x)
+        
+        px.dither(0.9)
+        self.desenhar_rect(BOARD_X + offset_x, ((-LINHAS - 1) * TILE), (COLUNAS * TILE), LARGURA_TELA, 0, mov_y=mov_slide_gameover)
+        px.dither(1)
+        self.desenhar_texto_estatisticas(self.informacoes_status, BOARD_X, ((-LINHAS - 1) * TILE), mov_y=mov_slide_gameover, offset_x=offset_x)
     
     #//// ENCAPSULAMENTO - MENU E PAUSE ////
     
     def desenhar_menu(self, offset_x):
         self.calcular_animacao_entre_menu() 
         
-        px.dither(0.1)
+        px.dither(0.3)
         px.rect((-offset_x), (LARGURA_TELA/2), LARGURA_TELA, (LARGURA_TELA/2), 8)
         px.dither(1)
         
@@ -2420,6 +2501,12 @@ class Jogo:
         px.dither(1)
         
         self.desenhar_titulo_menu(offset_x)
+        
+        if self.menu_ativo == "recentes":
+            if len(self.partidas_historico) > 0:
+                status = self.partidas_historico[self.opcao_atual[2]]
+                self.desenhar_rect((LARGURA_TELA - offset_x), 0, (COLUNAS * TILE), LARGURA_TELA, 0)
+                self.desenhar_texto_estatisticas(status, LARGURA_TELA, 0, mov_y=0, offset_x=-offset_x)
     
     def desenhar_pause(self, offset_x):
         if self.mov_em_jogo["mov_esquerda"] < 0:
@@ -2427,15 +2514,21 @@ class Jogo:
             
         px.rect((-self.distancia_do_pause + offset_x), 0, self.distancia_do_pause, LARGURA_TELA, 0)
         
-        px.dither(0.1)
+        px.dither(0.3)
         px.rect((-self.distancia_do_pause + offset_x), (LARGURA_TELA/2), self.distancia_do_pause, LARGURA_TELA, 8)
         px.dither(1)
         
-        px.dither(0.4)
+        px.dither(0.5)
         px.rect((-self.distancia_do_pause + offset_x), 0, self.distancia_do_pause, (LARGURA_TELA/2), COR_PRINCIPAL_ALEATORIA + 8)
         px.dither(1)
         
         self.desenhar_tudo_pause(offset_x)
+        
+        self.calcular_animacao_status_pause()
+        offset_entre_menu_e_jogo = self.offset_menu["entre_menu_e_jogo"]
+        offset_x_status = self.offset_em_jogo["status"]
+        self.desenhar_rect(LARGURA_TELA + (offset_entre_menu_e_jogo - offset_x_status), 0, (COLUNAS * TILE), LARGURA_TELA, 0)
+        self.desenhar_texto_estatisticas(self.informacoes_status, LARGURA_TELA, 0, mov_y=0, offset_x=(offset_entre_menu_e_jogo - offset_x_status))
     
     #//// //// DESENHAR TUDO //// ////
     
@@ -2454,9 +2547,14 @@ class Jogo:
         offset_x = 0
         offset_x_do_menu = 0
         
+        if self.estado_atual_do_jogo == "em_menu":
+            self.calcular_animacao_status_menu()
+            offset_x_do_menu = self.offset_menu["status"]
+        
         if self.estado_atual_do_jogo in ("em_jogo", "game_over"):
-            self.calcular_animacao_pausado()
-            offset_x = self.offset_em_jogo["pause"]
+            if self.esta_pausado or self.despausando:
+                self.calcular_animacao_pausado()
+                offset_x = self.offset_em_jogo["pause"]
         
         if self.estado_atual_do_jogo == "entre_menu_e_jogo":
             self.calcular_animacao_entre_menu_e_jogo()
