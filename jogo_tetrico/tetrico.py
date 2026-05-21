@@ -303,7 +303,7 @@ COR_PRINCIPAL_ALEATORIA = random.choice(CORES_ALEATORIAS_TETRIS)
 def alterar_valor(valor, soma, *, min, max):
     novo = valor + soma
     if min <= novo <= max:
-        return novo
+        return round(novo, 2)
     return min if novo > max else max
 
 def buscar_tabela_g(nivel):
@@ -358,17 +358,19 @@ class Jogo:
             "SOFT_DROP": [px.KEY_DOWN, px.KEY_S, px.GAMEPAD1_BUTTON_DPAD_DOWN],
             "HARD_DROP": [px.KEY_SPACE, px.GAMEPAD1_BUTTON_DPAD_UP],
             
-            "REINICIAR": [px.KEY_F1, px.GAMEPAD1_BUTTON_BACK],
+            "REINICIAR": [px.KEY_F1],
             "PAUSAR": [px.KEY_ESCAPE, px.GAMEPAD1_BUTTON_START],
             
-            "ACIONAR": [px.KEY_RETURN, px.GAMEPAD1_BUTTON_START],
-            "VOLTAR": [px.KEY_BACKSPACE, px.GAMEPAD1_BUTTON_BACK],
+            "ACIONAR": [px.KEY_RETURN, px.GAMEPAD1_BUTTON_A],
+            "VOLTAR": [px.KEY_BACKSPACE, px.GAMEPAD1_BUTTON_B],
             #
             "PARA_CIMA": [px.KEY_UP, px.KEY_W, px.GAMEPAD1_BUTTON_DPAD_UP],
             "PARA_BAIXO": [px.KEY_DOWN, px.KEY_S, px.GAMEPAD1_BUTTON_DPAD_DOWN],
             #
             "OPCAO_AUMENTAR": [px.KEY_RIGHT, px.GAMEPAD1_BUTTON_DPAD_RIGHT],
             "OPCAO_DIMINUIR": [px.KEY_LEFT, px.GAMEPAD1_BUTTON_DPAD_LEFT],
+            
+            "DELETAR": [px.KEY_X, px.GAMEPAD1_BUTTON_X]
         }
         
         self.historico_partidas = []
@@ -393,6 +395,7 @@ class Jogo:
     def variaveis_configuracao(self):
         self.nivel_inicial_config = 1 # 1
         self.shapes_visiveis_config = 3 # 3
+        self.mostrar_fantasma_config = True
         
         self.movimento_duracao_config = 7 # 7
         self.movimento_inicio_config = 0.5 # 0.50
@@ -596,10 +599,26 @@ class Jogo:
     
     #//// //// MENU //// ////
 
+    def frases_quantidades(self):
+        lista_frases_submenus = list(self.frases_submenus.values())
+        self.quantidades_opcoes_menus = {
+            "entrada": [False],
+            "principal": [False] * len(self.frases_menu_principal),
+            
+            "jogar": [False] * len(lista_frases_submenus[0][0]),
+            "configuracao": [False] * len(lista_frases_submenus[1][0]),
+            "controles": [False] * len(lista_frases_submenus[2][0]),
+            "recentes": [False] * len(lista_frases_submenus[3][0]),
+            "sobre": [True] * len(lista_frases_submenus[4][0]),
+            "sair": [True] * len(lista_frases_submenus[5][0]),
+        }
+    
     def frases_configuracao(self):
+        frase_mostrar_fantasma = "Yeah" if self.mostrar_fantasma_config else "Nop"
         return ([
                 f"Starting Level:{self.nivel_inicial_config:02d}", 
                 f"Previews:{self.shapes_visiveis_config}",
+                f"Ghost Piece:{frase_mostrar_fantasma}",
                 f"FLUIDITY:",
                 f" Duration:{self.movimento_duracao_config:02d}s",
                 f" Outset:{self.movimento_inicio_config:0.2f}",
@@ -629,7 +648,7 @@ class Jogo:
             "jogar": (["MARATHON 150", "40 LINES", "ULTRA", "CRAZY", "INFINITE"], 30),
             "configuracao": self.frases_configuracao(),
             "controles": (["True"], 30),
-            "recentes": (["Press [DEL] for delete", *frase_recentes], 30),
+            "recentes": (["Press [X] for delete", *frase_recentes], 30),
             "sobre": (["Made by Cac", "Made with Pyxel", "Made with love", ":D"], 25),
             "sair": (["Press [ENTER]", "to confirm"], 25)
         }
@@ -652,26 +671,24 @@ class Jogo:
         self.frases_menu()
         self.navegar_menu()
     
-    def navegar_menu(self, *, clique=0, deslize=0, soma=0):
-        lista_frases_submenus = list(self.frases_submenus.values())
-        self.quantidades_opcoes_menus = {
-            "entrada": [False],
-            "principal": [False] * len(self.frases_menu_principal),
-            
-            "jogar": [False] * len(lista_frases_submenus[0][0]),
-            "configuracao": [False] * len(lista_frases_submenus[1][0]),
-            "controles": [False] * len(lista_frases_submenus[2][0]),
-            "recentes": [False] * len(lista_frases_submenus[3][0]),
-            "sobre": [True] * len(lista_frases_submenus[4][0]),
-            "sair": [True] * len(lista_frases_submenus[5][0]),
-        }   
+    def navegar_menu(self, *, clique=0, deslize=0, soma=0, deletar=False):
+        self.frases_quantidades()
         
         if clique != 0:
             self.navegar_horizontalmente_menu(clique)
+        
         self.menu_ativo = self.pilha_menu[-1]
+        
         if deslize != 0:
             self.navegar_verticalmente_menu(deslize)
+        
         self.ajustar_configuracao_menu(soma)
+        
+        if deletar:
+            if self.apagar_status():
+                self.frases_menu()
+                self.frases_quantidades()
+            
         self.quantidades_opcoes_menus[self.menu_ativo][self.opcao_atual_menu[self.profundidade_menu]] = True
     
     def navegar_horizontalmente_menu(self, clique):
@@ -731,7 +748,11 @@ class Jogo:
                 
     def navegar_verticalmente_menu(self, deslize):
         indice_maximo = len(self.quantidades_opcoes_menus[self.menu_ativo]) - 1
-        self.opcao_atual_menu[self.profundidade_menu] = alterar_valor(self.opcao_atual_menu[self.profundidade_menu], deslize, min=0, max=indice_maximo)
+        
+        if not self.mostrar_status_menu:
+            self.opcao_atual_menu[self.profundidade_menu] = alterar_valor(self.opcao_atual_menu[self.profundidade_menu], deslize, min=0, max=indice_maximo)
+        else:
+            self.opcao_atual_menu[self.profundidade_menu] = alterar_valor(self.opcao_atual_menu[self.profundidade_menu], deslize, min=1, max=indice_maximo)
         
         if self.profundidade_menu == 1:
             self.offset_menu["scroll"][2] = 0
@@ -745,29 +766,42 @@ class Jogo:
                 case 1:
                     self.shapes_visiveis_config = alterar_valor(self.shapes_visiveis_config, soma, min=1, max=5)
                 case 2:
-                    pass
+                    self.mostrar_fantasma_config = False if self.mostrar_fantasma_config else True
                 case 3:
-                    self.movimento_duracao_config = alterar_valor(self.movimento_duracao_config, soma, min=0, max=10)
-                case 4:
-                    self.movimento_inicio_config = alterar_valor(self.movimento_inicio_config, (soma/10), min=0, max=1)
-                case 5:
-                    self.movimento_constante_config = alterar_valor(self.movimento_constante_config, (soma/20), min=0, max=0.5)
-                case 6:
-                    self.are_duracao_config = alterar_valor(self.are_duracao_config, soma, min=0, max=200)
-                case 7:
-                    self.das_config = alterar_valor(self.das_config, soma, min=0, max=50)
-                case 8:
-                    self.arr_config = alterar_valor(self.arr_config, soma, min=0, max=10)
-                case 9:
-                    self.arr_soft_drop_config = alterar_valor(self.arr_soft_drop_config, soma, min=0, max=10)
-                case 10:                          
                     pass
+                case 4:
+                    self.movimento_duracao_config = alterar_valor(self.movimento_duracao_config, soma, min=0, max=10)
+                case 5:
+                    self.movimento_inicio_config = alterar_valor(self.movimento_inicio_config, (soma/10), min=0, max=1)
+                case 6:
+                    self.movimento_constante_config = alterar_valor(self.movimento_constante_config, (soma/20), min=0, max=0.5)
+                case 7:
+                    self.are_duracao_config = alterar_valor(self.are_duracao_config, soma, min=0, max=200)
+                case 8:
+                    self.das_config = alterar_valor(self.das_config, soma, min=0, max=50)
+                case 9:
+                    self.arr_config = alterar_valor(self.arr_config, soma, min=0, max=10)
+                case 10:
+                    self.arr_soft_drop_config = alterar_valor(self.arr_soft_drop_config, soma, min=0, max=10)
                 case 11:                          
+                    pass
+                case 12:
                     self.visual_vel_x_config = alterar_valor(self.visual_vel_x_config, (soma/20), min=0.05, max=1.0)
-                case 12:                          
+                case 13:                          
                     self.visual_vel_y_config = alterar_valor(self.visual_vel_y_config, (soma/20), min=0.05, max=1)
-            print(self.visual_vel_x_config, self.visual_vel_y_config)
+            
             self.frases_submenus["configuracao"] = self.frases_configuracao()
+    
+    def apagar_status(self):
+        if len(self.historico_partidas) > 0 and self.opcao_atual_menu[2] > 0:
+            self.historico_partidas.pop(self.opcao_atual_menu[2] - 1)
+            self.opcao_atual_menu[self.profundidade_menu] -= 1
+            if self.opcao_atual_menu[self.profundidade_menu] == 0:
+                self.opcao_atual_menu[self.profundidade_menu] = 1
+            if len(self.historico_partidas) == 0:
+                self.mostrar_status_menu = False
+            return True
+        return False
     
     #//// //// PAUSE //// ////
     
@@ -1371,7 +1405,7 @@ class Jogo:
         repeticao = self.arr_soft_drop
         
         if self.pegar_input("SOFT_DROP", repeticao):
-            if self.arr_soft_drop_config == 0:
+            if repeticao == 0:
                 self.shape_pos_atual = self.shape_pos_fantasma[:]
             
             elif not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
@@ -1433,6 +1467,9 @@ class Jogo:
             self.navegar_menu(soma=1)
         elif self.pegar_input("OPCAO_DIMINUIR", repeticao=7):
             self.navegar_menu(soma=-1)
+        
+        elif self.pegar_input("DELETAR"):
+            self.navegar_menu(deletar=True)
     
     def teclas_navegacao_pause(self):
         if self.pegar_input("ACIONAR"):
@@ -2119,17 +2156,18 @@ class Jogo:
     #//// DESENHAR SHAPES - PRINCIPAIS ////
     
     def desenhar_shape_fantasma(self, formato, mov_x, mov_y, offset_x, offset_y):
-        spritesheet_x = SHAPES[self.shape_atual]["imagem_pos"]
-        pos_x, pos_y = self.shape_pos_fantasma
+        if not self.mostrar_fantasma_config:
+            return
         
-        visual_pos_x, visual_pos_y = self.calcular_animacao_shapes(False, pos_x, pos_y)
+        spritesheet_x = SHAPES[self.shape_atual]["imagem_pos"]
+        pos_x, pos_y = self.shape_pos_fantasma            
         
         for i_linha, e_linha in enumerate(formato):
             for i_coluna, _ in enumerate(e_linha):
                 if formato[i_linha][i_coluna] == 1:
                         self.desenhar_shape(
-                            visual_pos_x + i_coluna,
-                            visual_pos_y + i_linha, 
+                            pos_x + i_coluna,
+                            pos_y + i_linha, 
                             (spritesheet_x, 1),
                             mov_x=mov_x,
                             mov_y=mov_y,
@@ -2141,14 +2179,14 @@ class Jogo:
         spritesheet_x = SHAPES[self.shape_atual]["imagem_pos"]
         pos_x, pos_y = pos
         
-        visual_pos_x, visual_pos_y = self.calcular_animacao_shapes(True, pos_x, pos_y)
+        self.visual_pos_x, self.visual_pos_y = self.calcular_animacao_shapes(True, pos_x, pos_y, self.visual_pos_x, self.visual_pos_y)
         
         for i_linha, e_linha in enumerate(formato):
             for i_coluna, _ in enumerate(e_linha):
                 if formato[i_linha][i_coluna] == 1:
                         self.desenhar_shape(
-                            visual_pos_x + i_coluna,
-                            visual_pos_y + i_linha, 
+                            self.visual_pos_x + i_coluna,
+                            self.visual_pos_y + i_linha, 
                             (spritesheet_x, 0),
                             mov_x=mov_x,
                             mov_y=mov_y,
@@ -2327,14 +2365,14 @@ class Jogo:
     
     #
     
-    def calcular_animacao_shapes(self, sinalizador, pos_x, pos_y):
+    def calcular_animacao_shapes(self, sinalizador, pos_x, pos_y, visual_pos_x, visual_pos_y):
         vel_x = self.visual_vel_x  # lateral mais suave
         vel_y = self.visual_vel_y  # queda mais rápida
         
         if sinalizador:
-            self.visual_pos_x = self.calcular_interpolacao(self.visual_pos_x, pos_x, vel_x, 0.1)
-            self.visual_pos_y = self.calcular_interpolacao(self.visual_pos_y, pos_y, vel_y, 0.1)
-            return self.visual_pos_x, self.visual_pos_y
+            visual_pos_x = self.calcular_interpolacao(visual_pos_x, pos_x, vel_x, 0.1)
+            visual_pos_y = self.calcular_interpolacao(visual_pos_y, pos_y, vel_y, 0.1)
+            return visual_pos_x, visual_pos_y
         return pos_x, pos_y
     
     def calcular_animacao_entre_menu_e_jogo(self):
@@ -2544,9 +2582,9 @@ class Jogo:
         self.desenhar_titulo_menu(offset_x)
         
         if self.menu_ativo == "recentes":
+            self.desenhar_rect((LARGURA_TELA - offset_x), 0, (COLUNAS * TILE), LARGURA_TELA, 0)
             if len(self.historico_partidas) > 0:
                 status = self.historico_partidas[self.opcao_atual_menu[2] - 1]
-                self.desenhar_rect((LARGURA_TELA - offset_x), 0, (COLUNAS * TILE), LARGURA_TELA, 0)
                 self.desenhar_texto_estatisticas(status, LARGURA_TELA, 0, mov_y=0, offset_x=-offset_x)
     
     def desenhar_pause(self, offset_x):
