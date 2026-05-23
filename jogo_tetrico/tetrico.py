@@ -2,6 +2,7 @@ import pyxel as px
 import time
 import random
 import os
+import json
 
 SHAPES = {
     "shape_T": {
@@ -276,6 +277,62 @@ TABELA_G = {
     20:	36.6,
 }
 
+TECLA_PARA_NOME = {
+    # Letras A-Z
+    px.KEY_A: "A", px.KEY_B: "B", px.KEY_C: "C", px.KEY_D: "D",
+    px.KEY_E: "E", px.KEY_F: "F", px.KEY_G: "G", px.KEY_H: "H",
+    px.KEY_I: "I", px.KEY_J: "J", px.KEY_K: "K", px.KEY_L: "L",
+    px.KEY_M: "M", px.KEY_N: "N", px.KEY_O: "O", px.KEY_P: "P",
+    px.KEY_Q: "Q", px.KEY_R: "R", px.KEY_S: "S", px.KEY_T: "T",
+    px.KEY_U: "U", px.KEY_V: "V", px.KEY_W: "W", px.KEY_X: "X",
+    px.KEY_Y: "Y", px.KEY_Z: "Z",
+    
+    # Números 0-9
+    px.KEY_0: "0", px.KEY_1: "1", px.KEY_2: "2", px.KEY_3: "3",
+    px.KEY_4: "4", px.KEY_5: "5", px.KEY_6: "6", px.KEY_7: "7",
+    px.KEY_8: "8", px.KEY_9: "9",
+    
+    # Setas
+    px.KEY_UP: "↑",
+    px.KEY_DOWN: "↓",
+    px.KEY_LEFT: "←",
+    px.KEY_RIGHT: "→",
+    
+    # Especiais
+    px.KEY_SPACE: "SPACE",
+    px.KEY_RETURN: "ENTER",
+    px.KEY_TAB: "TAB",
+    px.KEY_ESCAPE: "ESC",
+    px.KEY_BACKSPACE: "BACK",
+    px.KEY_SHIFT: "SHIFT",
+    px.KEY_CTRL: "CTRL",
+    px.KEY_ALT: "ALT",
+    
+    # F-keys
+    px.KEY_F1: "F1", px.KEY_F2: "F2", px.KEY_F3: "F3",
+    px.KEY_F4: "F4", px.KEY_F5: "F5", px.KEY_F6: "F6",
+    px.KEY_F7: "F7", px.KEY_F8: "F8", px.KEY_F9: "F9",
+    px.KEY_F10: "F10", px.KEY_F11: "F11", px.KEY_F12: "F12",
+    
+    px.GAMEPAD1_BUTTON_A: "(A)",
+    px.GAMEPAD1_BUTTON_B: "(B)",
+    px.GAMEPAD1_BUTTON_X: "(X)",
+    px.GAMEPAD1_BUTTON_Y: "(Y)",
+    px.GAMEPAD1_BUTTON_START: "(START)",
+    px.GAMEPAD1_BUTTON_BACK: "(MENU)",
+    px.GAMEPAD1_BUTTON_DPAD_UP: "(↑)",
+    px.GAMEPAD1_BUTTON_DPAD_DOWN: "(↓)",
+    px.GAMEPAD1_BUTTON_DPAD_LEFT: "(←)",
+    px.GAMEPAD1_BUTTON_DPAD_RIGHT: "(→)",
+    px.GAMEPAD1_BUTTON_LEFTSHOULDER: "(LB)",
+    px.GAMEPAD1_BUTTON_RIGHTSHOULDER: "(LR)",
+}
+
+#/
+
+#todo: nos recent games: adicionar (add json) e salvar json, pra nao perder o historico
+#TODO: RECENT GAMES JA ADICIONADO, AGORA ADICIONA O JSON QUE FIQUE SALVO!!!
+
 #todo: adicionar talvez particular? nao sei
 
 #todo: adicionar config nos controles
@@ -284,11 +341,21 @@ TABELA_G = {
 
 #todo: adiconar o fixed time step.... dificl mas ok
 
-#todo: nos recent games: adicionar (add json) e salvar json, pra nao perder o historico
-
 #todo: adicionar sons
 
 #/
+
+def carregar_jogos_recentes():
+    try:
+        with open("recent_games.json", 'r', encoding='utf-8') as f:
+            historico = json.load(f)
+    except:
+        historico = []
+    return historico
+
+def salvar_jogos_recentes(historico):
+    with open("recent_games.json", 'w', encoding='utf-8') as f:
+        json.dump(historico, f, indent=2, ensure_ascii=False)
 
 LOCK_DELAY_FRAMES = 30
 LOCK_MAX_MOVIMENTOS = 15
@@ -348,32 +415,33 @@ class Jogo:
         self.tempo_fps_ms = 0
         
         self.MAPEAMENTO = {
-            "ESQUERDA": [px.KEY_A, px.KEY_LEFT, px.GAMEPAD1_BUTTON_DPAD_LEFT],
+            "ESQUERDA": [px.KEY_LEFT, px.KEY_A, px.GAMEPAD1_BUTTON_DPAD_LEFT],
             "DIREITA": [px.KEY_RIGHT, px.KEY_D, px.GAMEPAD1_BUTTON_DPAD_RIGHT],
             
-            "ROTACAO_ESQUERDA": [px.KEY_Q, px.GAMEPAD1_BUTTON_A],
-            "ROTACAO_DIREITA": [px.KEY_E, px.GAMEPAD1_BUTTON_B],
+            "ROTACAO_ESQUERDA": [px.KEY_Q, px.KEY_Z, px.KEY_CTRL, px.GAMEPAD1_BUTTON_A],
+            "ROTACAO_DIREITA": [px.KEY_E, px.KEY_X, px.KEY_UP, px.GAMEPAD1_BUTTON_B],
+            #"ROTACAO_180": [px.KEY_E, px.KEY_X, px.KEY_UP, px.GAMEPAD1_BUTTON_B],
             
-            "SEGURAR": [px.KEY_TAB, px.GAMEPAD1_BUTTON_Y],
+            "SEGURAR": [px.KEY_TAB, px.KEY_C, px.GAMEPAD1_BUTTON_LEFTSHOULDER, px.GAMEPAD1_BUTTON_RIGHTSHOULDER],
             "SOFT_DROP": [px.KEY_DOWN, px.KEY_S, px.GAMEPAD1_BUTTON_DPAD_DOWN],
             "HARD_DROP": [px.KEY_SPACE, px.GAMEPAD1_BUTTON_DPAD_UP],
             
+            "PAUSAR": [px.KEY_ESCAPE, px.KEY_P, px.GAMEPAD1_BUTTON_START],
             "REINICIAR": [px.KEY_F1],
-            "PAUSAR": [px.KEY_ESCAPE, px.GAMEPAD1_BUTTON_START],
             
             "ACIONAR": [px.KEY_RETURN, px.GAMEPAD1_BUTTON_A],
             "VOLTAR": [px.KEY_BACKSPACE, px.GAMEPAD1_BUTTON_B],
             #
-            "PARA_CIMA": [px.KEY_UP, px.KEY_W, px.GAMEPAD1_BUTTON_DPAD_UP],
-            "PARA_BAIXO": [px.KEY_DOWN, px.KEY_S, px.GAMEPAD1_BUTTON_DPAD_DOWN],
+            "PARA_CIMA": [px.KEY_UP, px.GAMEPAD1_BUTTON_DPAD_UP],
+            "PARA_BAIXO": [px.KEY_DOWN, px.GAMEPAD1_BUTTON_DPAD_DOWN],
             #
             "OPCAO_AUMENTAR": [px.KEY_RIGHT, px.GAMEPAD1_BUTTON_DPAD_RIGHT],
             "OPCAO_DIMINUIR": [px.KEY_LEFT, px.GAMEPAD1_BUTTON_DPAD_LEFT],
-            
-            "DELETAR": [px.KEY_X, px.GAMEPAD1_BUTTON_X]
+            #
+            "DELETAR": [px.KEY_X, px.GAMEPAD1_BUTTON_X],
         }
-        
-        self.historico_partidas = []
+          
+        self.historico_partidas = carregar_jogos_recentes()
         self.iniciar_jogo()
         
         self.tempo_acumulado = 0.0
@@ -615,39 +683,68 @@ class Jogo:
     
     def frases_configuracao(self):
         frase_mostrar_fantasma = "Yeah" if self.mostrar_fantasma_config else "Nop"
-        return ([
-                f"Starting Level:{self.nivel_inicial_config:02d}", 
-                f"Previews:{self.shapes_visiveis_config}",
-                f"Ghost Piece:{frase_mostrar_fantasma}",
-                f"FLUIDITY:",
-                f" Duration:{self.movimento_duracao_config:02d}s",
-                f" Outset:{self.movimento_inicio_config:0.2f}",
-                f" Constant:{self.movimento_constante_config:0.2f}",
-                f"ARE:{self.are_duracao_config:02d}ms",
-                f"DAS:{self.das_config:02d}ms", 
-                f"ARR:{self.arr_config:02d}ms",
-                f"ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
-                f"SHAPE SPEED:", 
-                f" X Speed:{self.visual_vel_x_config:0.2f}s", 
-                f" Y Speed:{self.visual_vel_y_config:0.2f}s", 
-                f"",
-                f"RESET VALUES"], 
-                30)
+        frases = ([
+            f"Starting Level:{self.nivel_inicial_config:02d}", 
+            f"Previews:{self.shapes_visiveis_config}",
+            f"Ghost Piece:{frase_mostrar_fantasma}",
+            f"FLUIDITY:",
+            f" Duration:{self.movimento_duracao_config:02d}s",
+            f" Outset:{self.movimento_inicio_config:0.2f}",
+            f" Constant:{self.movimento_constante_config:0.2f}",
+            f"ARE:{self.are_duracao_config:02d}ms",
+            f"DAS:{self.das_config:02d}ms", 
+            f"ARR:{self.arr_config:02d}ms",
+            f"ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
+            f"SHAPE SPEED:", 
+            f" X Speed:{self.visual_vel_x_config:0.2f}s", 
+            f" Y Speed:{self.visual_vel_y_config:0.2f}s", 
+            f"",
+            f"RESET VALUES"], 
+            30)
+        return frases
+      
+    def frases_controles(self):        
+        def mostrar_controles(tecla):      
+            teclas = self.MAPEAMENTO[tecla]
+            nomes = [TECLA_PARA_NOME.get(tecla, f"#{tecla}") for tecla in teclas]
+            return f"{', '.join(nomes)}"
+        
+        frases = ([
+            f"MOVEMENTS:", 
+            f"  Left: {mostrar_controles("ESQUERDA")}", 
+            f" Right: {mostrar_controles("DIREITA")}", 
+            f" Rotate-L: {mostrar_controles("ROTACAO_ESQUERDA")}", 
+            f" Rotate-R: {mostrar_controles("ROTACAO_DIREITA")}", 
+            f"ACTIONS:", 
+            f" Hold: {mostrar_controles("SEGURAR")}", 
+            f" Soft Drop: {mostrar_controles("SOFT_DROP")}", 
+            f" Hard Drop: {mostrar_controles("HARD_DROP")}", 
+            f" Pause: {mostrar_controles("PAUSAR")}", 
+            f"MENU ACTIONS:", 
+            f" Next Menu: {mostrar_controles("ACIONAR")}", 
+            f" Back Menu: {mostrar_controles("VOLTAR")}",
+            f" Up Menu: {mostrar_controles("PARA_CIMA")}", 
+            f" Down Menu: {mostrar_controles("PARA_BAIXO")}", 
+            f" Increment Value: {mostrar_controles("OPCAO_AUMENTAR")}",
+            f" Decrement Value: {mostrar_controles("OPCAO_DIMINUIR")}",
+            f" Delete: {mostrar_controles("DELETAR")}"],
+            30)
+        return frases
     
     def frases_menu(self):
         if len(self.historico_partidas) > 0:
             frase_recentes = []
             for index, partida in enumerate(self.historico_partidas):
-                frase_recentes.append(f"{index + 1:02}: {partida[0][1]}")
+                frase_recentes.append(f"{index + 1:02}: {list(partida.values())[0]}")
         else:
             frase_recentes = ["Nothing"]
        
         self.frase_entrada = "Press [ENTER]"
         self.frases_menu_principal = ["Play", "Settings", "Controls", "Recent Games", "About", "Quit"]
         self.frases_submenus = {
-            "jogar": (["MARATHON 150", "40 LINES", "ULTRA", "CRAZY", "INFINITE"], 30),
+            "jogar": (["MARATHON 150", "40 LINES", "ULTRA", "CRAZY", "ZEN"], 30),
             "configuracao": self.frases_configuracao(),
-            "controles": (["True"], 30),
+            "controles": self.frases_controles(),
             "recentes": (["Press [X] for delete", *frase_recentes], 30),
             "sobre": (["Made by Cac", "Made with Pyxel", "Made with love", ":D"], 25),
             "sair": (["Press [ENTER]", "to confirm"], 25)
@@ -722,7 +819,7 @@ class Jogo:
                     case 1: self.modo_do_jogo = "40_lines"
                     case 2: self.modo_do_jogo = "ultra"
                     case 3: self.modo_do_jogo = "crazy"
-                    case 4: self.modo_do_jogo = "infinite"
+                    case 4: self.modo_do_jogo = "zen"
                 self.iniciar_partida()
                 self.variaveis_movimentos()
                 self.variaveis_pause()
@@ -795,9 +892,9 @@ class Jogo:
     def apagar_status(self):
         if len(self.historico_partidas) > 0 and self.opcao_atual_menu[2] > 0:
             self.historico_partidas.pop(self.opcao_atual_menu[2] - 1)
-            self.opcao_atual_menu[self.profundidade_menu] -= 1
-            if self.opcao_atual_menu[self.profundidade_menu] == 0:
-                self.opcao_atual_menu[self.profundidade_menu] = 1
+            salvar_jogos_recentes(self.historico_partidas)
+            if self.opcao_atual_menu[self.profundidade_menu] > 1:
+                self.opcao_atual_menu[self.profundidade_menu] -= 1
             if len(self.historico_partidas) == 0:
                 self.mostrar_status_menu = False
             return True
@@ -887,37 +984,39 @@ class Jogo:
             case "40_lines": frase_modo = "40 LINES"
             case "ultra": frase_modo = "ULTRA"
             case "crazy": frase_modo = "CRAZY"
-            case "infinite": frase_modo = "INFINITE"
+            case "zen": frase_modo = "ZEN"
         match resultado:
             case "game_over": frase_resultado = "GAME OVER"
             case "completo": frase_resultado = "COMPLETED"
             case "abortado": frase_resultado = "ABORTED"
             case _: frase_resultado = "Nothing"
             
-        frases_status = [
-            ("",               f"{tempo_string}", 6),  
-            ("Mode:",          f"{frase_modo}", 0),  
-            ("Result:",        f"{frase_resultado}", 0),
-            ("Duration:",      f"{self.tempo_formatado()}", 0),
-            ("Start Level:",   f"{self.nivel_inicial}", 1),
-            ("Final Level:",   f"{self.nivel_atual}", 1),
-            ("Lines:",         f"{self.linhas_limpas}", 2),
-            ("Score:",         f"{self.pontos_atual}", 2),
-            ("Singles:",       f"{self.status["quantidade_singles"]}", 3),
-            ("Doubles:",       f"{self.status["quantidade_doubles"]}", 3),
-            ("Triples:",       f"{self.status["quantidade_triples"]}", 3),
-            ("Tetris:",        f"{self.status["quantidade_quads"]}", 3),
-            ("T-Spins:",       f"{self.status["quantidade_t_spins"]}", 4),
-            ("Perfect Clears:",f"{self.status["quantidade_perfect_clears"]}", 4),
-            ("Max Combo:",     f"{self.status["combo_maximo"]}", 5),
-            ("Max Streak:",    f"{self.status["streak_maximo"]}", 5),
-            ("Times Held:",    f"{self.status["quantidade_holds"]}", 6),
-            ("Times Pause:",   f"{self.status["quantidade_pausadas"]}", 6),
-        ]
-        return frases_status
+        status_dict = {
+            "DT":            f"{tempo_string}",  
+            "Mode":            f"{frase_modo}",  
+            "Result":          f"{frase_resultado}",
+            "Duration":        f"{self.tempo_formatado()}",
+            "Start Level":     f"{self.nivel_inicial}",
+            "Final Level":     f"{self.nivel_atual}",
+            "Lines":           f"{self.linhas_limpas}",
+            "Score":           f"{self.pontos_atual}",
+            "Singles":         f"{self.status['quantidade_singles']}",
+            "Doubles":         f"{self.status['quantidade_doubles']}",
+            "Triples":         f"{self.status['quantidade_triples']}",
+            "Tetris":          f"{self.status['quantidade_quads']}",
+            "T-Spins":         f"{self.status['quantidade_t_spins']}",
+            "Perfect Clears":  f"{self.status['quantidade_perfect_clears']}",
+            "Max Combo":       f"{self.status['combo_maximo']}",
+            "Max Streak":      f"{self.status['streak_maximo']}",
+            "Times Held":      f"{self.status['quantidade_holds']}",
+            "Times Pause":     f"{self.status['quantidade_pausadas']}"
+        }
+        
+        return status_dict
     
     def salvar_partida(self, status_da_partida):
         self.historico_partidas.append(status_da_partida)
+        salvar_jogos_recentes(self.historico_partidas)
     
     def pegar_input(self, input, repeticao=0, hold=0, *, input_puro=False):
         for tecla in self.MAPEAMENTO[input]:
@@ -966,7 +1065,7 @@ class Jogo:
             if self.tempo_atual_em_segundos >= (3 * 60):
                 self.modo_completado = True
         
-        elif self.modo_do_jogo == "infinite":
+        elif self.modo_do_jogo == "zen":
             pass # fi... apenas relaxe e jogue infinitamente!!!
     
     def tempo_formatado(self):
@@ -1600,6 +1699,15 @@ class Jogo:
     
     #//// FUNÇÕES - DIVERSAS ////
     
+    def calcular_interpolacao_linear(self, valor, destino, velocidade):
+        distancia = destino - valor
+        if abs(distancia) <= velocidade:
+            return destino
+        if distancia > 0:
+            return valor + velocidade
+        else:
+            return valor - velocidade
+    
     def calcular_interpolacao(self, valor, destino, velocidade, limite):
         distancia = destino - valor
         if abs(distancia) < limite:
@@ -1634,27 +1742,25 @@ class Jogo:
     def desenhar_texto_dos_botoes(self, pos, largura, frase, ativo, fonte, *, somar_y=0, espacamento=0, profundidade_menu=0, offset_x, offset_y, min=-1, max=2):
         def _calcular_animacao_texto():
             comprimento_maximo = 304
-            velocidade_ida = 0.005
-            velocidade_volta = 0.1
+            velocidade_ida = 0.2
+            velocidade_volta = 1.5
             largura_frase = fonte.text_width(frase)
             
             if (largura_frase <= comprimento_maximo):
                 return somar_y
-            
             if frase not in self.animacoes_texto_menu:
                 self.animacoes_texto_menu[frase] = {
                     "offset": 0,
                     "indo_direita": True
                 }
             
-            diferenca = (largura_frase - comprimento_maximo)
+            diferenca = largura_frase - (comprimento_maximo - 16)
             anim = self.animacoes_texto_menu[frase]
-            
+        
             if not ativo and abs(anim["offset"]) < 0.5:
                 del self.animacoes_texto_menu[frase]
-            
             if not ativo:
-                anim["offset"] = self.calcular_interpolacao(anim["offset"], 0, velocidade_volta, 1.5)
+                anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], 0, velocidade_volta)
                 anim["indo_direita"] = False
                 return somar_y + anim["offset"]
 
@@ -1666,8 +1772,7 @@ class Jogo:
                     anim["indo_direita"] = True
 
                 destino_x = -diferenca if anim["indo_direita"] else 0
-                anim["offset"] = self.calcular_interpolacao(anim["offset"], destino_x, velocidade_ida, 1.5)
-             
+                anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], destino_x, velocidade_ida)
             return somar_y + anim["offset"]
         
         def _desenhar_texto(*, dx=0, dy=0, cor=0):
@@ -2025,7 +2130,7 @@ class Jogo:
             case "40_lines": frase = "40 LINES"
             case "ultra": frase = "ULTRA"
             case "crazy": frase = "CRAZY"
-            case "infinite": frase = "INFINITE"
+            case "zen": frase = "ZEN"
         
         pos_y += espacamento
         self.desenhar_texto((pos_x, pos_y), largura, frase, COR_PRINCIPAL_ALEATORIA, mov_direita=mov_direita, mov_y=mov_y, offset_x=offset_x)
@@ -2036,6 +2141,26 @@ class Jogo:
     def desenhar_texto_estatisticas(self, status, pos_x=0, pos_y=0, *, mov_y, offset_x):
         frases_status = status
         cor = CORES_ALEATORIAS_TETRIS
+        cores = {
+            "0": 6,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 1,
+            "5": 1,
+            "6": 2,
+            "7": 2,
+            "8": 3,
+            "9": 3,
+            "10": 3,
+            "11": 3,
+            "12": 4,
+            "13": 4,
+            "14": 5,
+            "15": 5,
+            "16": 6,
+            "17": 6,
+        }
         
         espacamento = 17
         espacamento_entre_valores = 13
@@ -2045,10 +2170,9 @@ class Jogo:
         
         pos_y += meio_da_tela
         
-        for tupla in frases_status:
-            frase, valor, cor_i = tupla
-            px.text((pos_x + espacamento_entre_valores) + offset_x,                             pos_y + (mov_y * TILE), frase, cor[cor_i], FONT_10)
-            px.text((pos_x + espacamento_entre_valores) + offset_x + FONT_10.text_width(frase), pos_y + (mov_y * TILE), valor, cor[cor_i], FONT_10)
+        for index, (chave, valor) in enumerate(status.items()):
+            px.text((pos_x + espacamento_entre_valores) + offset_x, pos_y + (mov_y * TILE), f"{chave}:", cor[cores[str(index)]], FONT_10)
+            px.text((pos_x + espacamento_entre_valores) + offset_x + FONT_10.text_width(f"{chave}:"), pos_y + (mov_y * TILE), valor, cor[cores[str(index)]], FONT_10)
             pos_y += espacamento
     
     def desenhar_popups(self, mov_x, offset_x):
@@ -2421,7 +2545,7 @@ class Jogo:
         else:
             destino_x = 0
 
-        velocidade = 0.15
+        velocidade = 0.13
         valor = offset_tipo
         return self.calcular_interpolacao(valor, destino_x, velocidade, 1)
     
@@ -2569,22 +2693,29 @@ class Jogo:
         self.calcular_animacao_entre_menu() 
         
         px.dither(0.1)
-        px.rect((-offset_x), (LARGURA_TELA/2), LARGURA_TELA, (LARGURA_TELA/2), 8)
+        px.rect(-offset_x, (LARGURA_TELA/2), LARGURA_TELA, (LARGURA_TELA/2), 8)
         px.dither(1)
+        
+        if self.menu_ativo == "recentes" and len(self.historico_partidas) == 0:
+            px.dither(0.1)
+            px.rect((LARGURA_TELA - offset_x), (LARGURA_TELA/2), LARGURA_TELA, (LARGURA_TELA/2), 8)
+            px.dither(0.4)
+            px.rect((LARGURA_TELA - offset_x), 0, LARGURA_TELA, (LARGURA_TELA/2), 8)
+            px.dither(1)  
         
         self.desenhar_todos_botoes_menu(offset_x, self.offset_menu["entre_menus"])
         
-        px.rect((-offset_x), 0, LARGURA_TELA, (LARGURA_TELA/2), 0)
+        px.rect(-offset_x, 0, LARGURA_TELA, (LARGURA_TELA/2), 0)
         px.dither(0.4)
-        px.rect((-offset_x), 0, LARGURA_TELA, (LARGURA_TELA/2), 8)
+        px.rect(-offset_x, 0, LARGURA_TELA, (LARGURA_TELA/2), 8)
         px.dither(1)
         
         self.desenhar_titulo_menu(offset_x)
         
         if self.menu_ativo == "recentes":
-            self.desenhar_rect((LARGURA_TELA - offset_x), 0, (COLUNAS * TILE), LARGURA_TELA, 0)
             if len(self.historico_partidas) > 0:
                 status = self.historico_partidas[self.opcao_atual_menu[2] - 1]
+                self.desenhar_rect((LARGURA_TELA - offset_x), 0, (COLUNAS * TILE), LARGURA_TELA, 0)
                 self.desenhar_texto_estatisticas(status, LARGURA_TELA, 0, mov_y=0, offset_x=-offset_x)
     
     def desenhar_pause(self, offset_x):
