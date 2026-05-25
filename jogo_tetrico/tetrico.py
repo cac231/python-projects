@@ -422,7 +422,7 @@ class Jogo:
             "ROTACAO_DIREITA": [px.KEY_E, px.KEY_X, px.KEY_UP, px.GAMEPAD1_BUTTON_B],
             #"ROTACAO_180": [px.KEY_E, px.KEY_X, px.KEY_UP, px.GAMEPAD1_BUTTON_B],
             
-            "SEGURAR": [px.KEY_TAB, px.KEY_C, px.GAMEPAD1_BUTTON_LEFTSHOULDER, px.GAMEPAD1_BUTTON_RIGHTSHOULDER],
+            "SEGURAR": [px.KEY_TAB, px.KEY_C, px.GAMEPAD1_BUTTON_LEFTSHOULDER, px.GAMEPAD1_BUTTON_RIGHTSHOULDER, px.GAMEPAD1_BUTTON_Y],
             "SOFT_DROP": [px.KEY_DOWN, px.KEY_S, px.GAMEPAD1_BUTTON_DPAD_DOWN],
             "HARD_DROP": [px.KEY_SPACE, px.GAMEPAD1_BUTTON_DPAD_UP],
             
@@ -735,9 +735,9 @@ class Jogo:
         if len(self.historico_partidas) > 0:
             frase_recentes = []
             for index, partida in enumerate(self.historico_partidas):
-                frase_recentes.append(f"{index + 1:02}: {list(partida.values())[0]}")
+                frase_recentes.append(f"{index + 1:02}: {partida["DT"]}")
         else:
-            frase_recentes = ["Nothing"]
+            frase_recentes = ["..."]
        
         self.frase_entrada = "Press [ENTER]"
         self.frases_menu_principal = ["Play", "Settings", "Controls", "Recent Games", "About", "Quit"]
@@ -893,8 +893,9 @@ class Jogo:
         if len(self.historico_partidas) > 0 and self.opcao_atual_menu[2] > 0:
             self.historico_partidas.pop(self.opcao_atual_menu[2] - 1)
             salvar_jogos_recentes(self.historico_partidas)
-            if self.opcao_atual_menu[self.profundidade_menu] > 1:
-                self.opcao_atual_menu[self.profundidade_menu] -= 1
+            self.opcao_atual_menu[self.profundidade_menu] -= 1
+            if self.opcao_atual_menu[self.profundidade_menu] == 0:
+                self.opcao_atual_menu[self.profundidade_menu] = 1
             if len(self.historico_partidas) == 0:
                 self.mostrar_status_menu = False
             return True
@@ -989,7 +990,7 @@ class Jogo:
             case "game_over": frase_resultado = "GAME OVER"
             case "completo": frase_resultado = "COMPLETED"
             case "abortado": frase_resultado = "ABORTED"
-            case _: frase_resultado = "Nothing"
+            case _: frase_resultado = "..."
             
         status_dict = {
             "DT":            f"{tempo_string}",  
@@ -1742,8 +1743,10 @@ class Jogo:
     def desenhar_texto_dos_botoes(self, pos, largura, frase, ativo, fonte, *, somar_y=0, espacamento=0, profundidade_menu=0, offset_x, offset_y, min=-1, max=2):
         def _calcular_animacao_texto():
             comprimento_maximo = 304
-            velocidade_ida = 0.2
-            velocidade_volta = 1.5
+            velocidade_ida = 0.004
+            velocidade_volta = 0.015
+            # velocidade_ida = 0.2
+            # velocidade_volta = 1.5
             largura_frase = fonte.text_width(frase)
             
             if (largura_frase <= comprimento_maximo):
@@ -1760,7 +1763,8 @@ class Jogo:
             if not ativo and abs(anim["offset"]) < 0.5:
                 del self.animacoes_texto_menu[frase]
             if not ativo:
-                anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], 0, velocidade_volta)
+                #anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], 0, velocidade_volta)
+                anim["offset"] = self.calcular_interpolacao(anim["offset"], 0, velocidade_volta, 0.01)
                 anim["indo_direita"] = False
                 return somar_y + anim["offset"]
 
@@ -1772,7 +1776,8 @@ class Jogo:
                     anim["indo_direita"] = True
 
                 destino_x = -diferenca if anim["indo_direita"] else 0
-                anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], destino_x, velocidade_ida)
+                #anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], destino_x, velocidade_ida)
+                anim["offset"] = self.calcular_interpolacao(anim["offset"], destino_x, velocidade_ida, 0.01)
             return somar_y + anim["offset"]
         
         def _desenhar_texto(*, dx=0, dy=0, cor=0):
@@ -2142,26 +2147,26 @@ class Jogo:
         frases_status = status
         cor = CORES_ALEATORIAS_TETRIS
         cores = {
-            "0": 6,
-            "1": 0,
-            "2": 0,
-            "3": 0,
-            "4": 1,
-            "5": 1,
-            "6": 2,
-            "7": 2,
-            "8": 3,
-            "9": 3,
-            "10": 3,
-            "11": 3,
-            "12": 4,
-            "13": 4,
-            "14": 5,
-            "15": 5,
-            "16": 6,
-            "17": 6,
+            0: 0,
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 1,
+            5: 1,
+            6: 2,
+            7: 2,
+            8: 3,
+            9: 3,
+            10: 3,
+            11: 3,
+            12: 4,
+            13: 4,
+            14: 5,
+            15: 5,
+            16: 6,
+            17: 6,
         }
-        
+            
         espacamento = 17
         espacamento_entre_valores = 13
 
@@ -2171,8 +2176,9 @@ class Jogo:
         pos_y += meio_da_tela
         
         for index, (chave, valor) in enumerate(status.items()):
-            px.text((pos_x + espacamento_entre_valores) + offset_x, pos_y + (mov_y * TILE), f"{chave}:", cor[cores[str(index)]], FONT_10)
-            px.text((pos_x + espacamento_entre_valores) + offset_x + FONT_10.text_width(f"{chave}:"), pos_y + (mov_y * TILE), valor, cor[cores[str(index)]], FONT_10)
+            cor_index = cores[index]
+            px.text((pos_x + espacamento_entre_valores) + offset_x, pos_y + (mov_y * TILE), f"{chave}:", cor[cor_index], FONT_10)
+            px.text((pos_x + espacamento_entre_valores) + offset_x + FONT_10.text_width(f"{chave}:"), pos_y + (mov_y * TILE), valor, cor[cor_index], FONT_10)
             pos_y += espacamento
     
     def desenhar_popups(self, mov_x, offset_x):
