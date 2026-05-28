@@ -330,14 +330,13 @@ TECLA_PARA_NOME = {
 
 #/
 
-#todo: nos recent games: adicionar (add json) e salvar json, pra nao perder o historico
-#TODO: RECENT GAMES JA ADICIONADO, AGORA ADICIONA O JSON QUE FIQUE SALVO!!!
+#todo: json nao é salvo no web pyxel launcher
+#todo: adicionar config nos controles - NAO
+#todo ver como vai ficar os popus, com borda ou nao - SEM
+
+#todo: adicionar 180 rotacao
 
 #todo: adicionar talvez particular? nao sei
-
-#todo: adicionar config nos controles
-
-#todo ver como vai ficar os popus, com borda ou nao
 
 #todo: adiconar o fixed time step.... dificl mas ok
 
@@ -351,7 +350,7 @@ def carregar_jogos_recentes():
             historico = json.load(f)
     except:
         historico = []
-    return historico
+    return [p for p in historico if isinstance(p, dict)]
 
 def salvar_jogos_recentes(historico):
     with open("recent_games.json", 'w', encoding='utf-8') as f:
@@ -699,6 +698,7 @@ class Jogo:
             f" X Speed:{self.visual_vel_x_config:0.2f}s", 
             f" Y Speed:{self.visual_vel_y_config:0.2f}s", 
             f"",
+            "RESET COLORS",
             f"RESET VALUES"], 
             30)
         return frases
@@ -796,7 +796,8 @@ class Jogo:
                 if self.profundidade_menu > 0:
                     self.profundidade_menu += clique
                     self.pilha_menu.pop()
-                    self.frases_submenus["configuracao"][0][-1] = f"RESET VALUES"
+                    self.frases_submenus["configuracao"][0][-2] = "RESET COLORS"
+                    self.frases_submenus["configuracao"][0][-1] = "RESET VALUES"
     
         if self.profundidade_menu == 1:
             self.pilha_menu.append("principal")
@@ -829,7 +830,12 @@ class Jogo:
                 if self.opcao_atual_menu[2] == (len(self.frases_configuracao()[0]) - 1): # clicou em resetar configuracao
                     self.variaveis_configuracao()
                     self.frases_submenus["configuracao"] = self.frases_configuracao()
-                    self.frases_submenus["configuracao"][0][-1] = f"RESET"
+                    self.frases_submenus["configuracao"][0][-1] = "RESET"
+                elif self.opcao_atual_menu[2] == (len(self.frases_configuracao()[0]) - 2): # clicou em resetar cores
+                    global COR_PRINCIPAL_ALEATORIA
+                    random.shuffle(CORES_ALEATORIAS_TETRIS)
+                    COR_PRINCIPAL_ALEATORIA = random.choice(CORES_ALEATORIAS_TETRIS)
+                    self.frases_submenus["configuracao"][0][-2] = "RESET COLORS!"
             
             elif self.menu_ativo == "controles":
                 pass
@@ -1667,6 +1673,7 @@ class Jogo:
     
     def atualizar_jogo(self):
         self.tempo_fps_ms = time.perf_counter()
+        print(self.animacoes_texto_menu)
         
         if self.estado_atual_do_jogo == "em_menu":
             self.teclas_navegacao_menu()
@@ -1743,10 +1750,8 @@ class Jogo:
     def desenhar_texto_dos_botoes(self, pos, largura, frase, ativo, fonte, *, somar_y=0, espacamento=0, profundidade_menu=0, offset_x, offset_y, min=-1, max=2):
         def _calcular_animacao_texto():
             comprimento_maximo = 304
-            velocidade_ida = 0.004
-            velocidade_volta = 0.015
-            # velocidade_ida = 0.2
-            # velocidade_volta = 1.5
+            velocidade_ativo = 0.004
+            velocidade_nao_ativo = 0.03
             largura_frase = fonte.text_width(frase)
             
             if (largura_frase <= comprimento_maximo):
@@ -1760,11 +1765,11 @@ class Jogo:
             diferenca = largura_frase - (comprimento_maximo - 16)
             anim = self.animacoes_texto_menu[frase]
         
-            if not ativo and abs(anim["offset"]) < 0.5:
+            if not ativo and abs(anim["offset"]) < 0.1:
                 del self.animacoes_texto_menu[frase]
             if not ativo:
-                #anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], 0, velocidade_volta)
-                anim["offset"] = self.calcular_interpolacao(anim["offset"], 0, velocidade_volta, 0.01)
+                #anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], 0, velocidade_nao_ativo)
+                anim["offset"] = self.calcular_interpolacao(anim["offset"], 0, velocidade_nao_ativo, 0.01)
                 anim["indo_direita"] = False
                 return somar_y + anim["offset"]
 
@@ -1776,8 +1781,8 @@ class Jogo:
                     anim["indo_direita"] = True
 
                 destino_x = -diferenca if anim["indo_direita"] else 0
-                #anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], destino_x, velocidade_ida)
-                anim["offset"] = self.calcular_interpolacao(anim["offset"], destino_x, velocidade_ida, 0.01)
+                #anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], destino_x, velocidade_ativo)
+                anim["offset"] = self.calcular_interpolacao(anim["offset"], destino_x, velocidade_ativo, 0.01)
             return somar_y + anim["offset"]
         
         def _desenhar_texto(*, dx=0, dy=0, cor=0):
