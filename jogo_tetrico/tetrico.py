@@ -419,7 +419,7 @@ class Jogo:
             
             "ROTACAO_ESQUERDA": [px.KEY_Q, px.KEY_Z, px.KEY_CTRL, px.GAMEPAD1_BUTTON_A],
             "ROTACAO_DIREITA": [px.KEY_E, px.KEY_X, px.KEY_UP, px.GAMEPAD1_BUTTON_B],
-            #"ROTACAO_180": [px.KEY_E, px.KEY_X, px.KEY_UP, px.GAMEPAD1_BUTTON_B],
+            "ROTACAO_180": [px.KEY_W, px.KEY_SHIFT, px.GAMEPAD1_BUTTON_X],
             
             "SEGURAR": [px.KEY_TAB, px.KEY_C, px.GAMEPAD1_BUTTON_LEFTSHOULDER, px.GAMEPAD1_BUTTON_RIGHTSHOULDER, px.GAMEPAD1_BUTTON_Y],
             "SOFT_DROP": [px.KEY_DOWN, px.KEY_S, px.GAMEPAD1_BUTTON_DPAD_DOWN],
@@ -715,6 +715,7 @@ class Jogo:
             f" Right: {mostrar_controles("DIREITA")}", 
             f" Rotate-L: {mostrar_controles("ROTACAO_ESQUERDA")}", 
             f" Rotate-R: {mostrar_controles("ROTACAO_DIREITA")}", 
+            f" Rotate-180: {mostrar_controles("ROTACAO_180")}", 
             f"ACTIONS:", 
             f" Hold: {mostrar_controles("SEGURAR")}", 
             f" Soft Drop: {mostrar_controles("SOFT_DROP")}", 
@@ -773,19 +774,14 @@ class Jogo:
         
         if clique != 0:
             self.navegar_horizontalmente_menu(clique)
-        
-        self.menu_ativo = self.pilha_menu[-1]
-        
+        self.menu_ativo = self.pilha_menu[-1] 
         if deslize != 0:
             self.navegar_verticalmente_menu(deslize)
-        
         self.ajustar_configuracao_menu(soma)
-        
         if deletar:
             if self.apagar_status():
                 self.frases_menu()
                 self.frases_quantidades()
-            
         self.quantidades_opcoes_menus[self.menu_ativo][self.opcao_atual_menu[self.profundidade_menu]] = True
     
     def navegar_horizontalmente_menu(self, clique):
@@ -1060,20 +1056,14 @@ class Jogo:
         return False
     
     def verificar_estado_do_modo(self):
-        if self.modo_do_jogo == "marathon_150":
-            if self.linhas_limpas >= 150:
+        if self.modo_do_jogo == "marathon_150" and self.linhas_limpas >= 150:
                 self.modo_completado = True
         
-        elif self.modo_do_jogo == "40_lines":
-            if self.linhas_limpas >= 40:
+        elif self.modo_do_jogo == "40_lines" and self.linhas_limpas >= 40:
                 self.modo_completado = True
                 
-        elif self.modo_do_jogo == "ultra":
-            if self.tempo_atual_em_segundos >= (3 * 60):
+        elif self.modo_do_jogo == "ultra" and self.tempo_atual_em_segundos >= (3 * 60):
                 self.modo_completado = True
-        
-        elif self.modo_do_jogo == "zen":
-            pass # fi... apenas relaxe e jogue infinitamente!!!
     
     def tempo_formatado(self):
         minutos = int(self.tempo_atual_em_segundos // 60)
@@ -1125,12 +1115,17 @@ class Jogo:
                 "0->R": [(0,0), (-1,0), (-1,-1), (0,2),  (-1,2)],
                 "R->0": [(0,0), (1,0),  (1,1),   (0,-2), (1,-2)],
                 "R->2": [(0,0), (1,0),  (1,1),   (0,-2), (1,-2)],
-                "2->R": [(0,0), (-1,0), (-1,-1), (0,2),  (-1,2)],
+                  "2->R": [(0,0), (-1,0), (-1,-1), (0,2),  (-1,2)],
                 "2->L": [(0,0), (1,0),  (1,-1),  (0,2),  (1,2)],
                 "L->2": [(0,0), (-1,0), (-1,1),  (0,-2), (-1,-2)],
                 "L->0": [(0,0), (-1,0), (-1,1),  (0,-2), (-1,-2)],
                 "0->L": [(0,0), (1,0),  (1,-1),  (0,2),  (1,2)],
                 "R->L": [(0,0), (2,0),  (2,0),   (0,0), (1,0)],
+                #
+                "0->2": [],
+                "R->L": [],
+                "2->0": [],
+                "L->R": [],
             },
             "shapes_largos": {
                 "0->R": [(0,0), (-2,0), (1,0),  (-2,1),  (1,-2)],
@@ -1167,35 +1162,37 @@ class Jogo:
             soma = -1
         elif direcao == "180":
             soma = +2
-        else:
-            raise("Erro nas direções") 
         indice_atual = estados.index(self.estado_rotacao)
         return estados[(indice_atual + soma) % 4]            
     
     def rotacionar_shape(self, direcao):
         backup = self.shape_matriz_atual
         match direcao:
-            case "KEY_Q":
+            case "KEY_ESQUERDA":
                 nova_matriz = [list(linha) for linha in list(zip(*self.pegar_formato()))[::-1]]
                 self.shape_matriz_atual = nova_matriz
                 novo_estado_da_rotacao = self.proximo_estado_rotacao("esquerda")
                 correcao = self.sistema_super_rotacao(novo_estado_da_rotacao)
-        
-            case "KEY_E": 
+            case "KEY_DIREITA": 
                 nova_matriz = [list(linha) for linha in list(zip(*self.pegar_formato()[::-1]))]
                 self.shape_matriz_atual = nova_matriz  
                 novo_estado_da_rotacao = self.proximo_estado_rotacao("direita")
                 correcao = self.sistema_super_rotacao(novo_estado_da_rotacao)
-            
-            case _: raise("Erro ao rotacionar")
+            case "KEY_180": 
+                nova_matriz = [list(linha) for linha in list(zip(*self.pegar_formato()[::-1]))]
+                nova_matriz = [list(linha) for linha in list(zip(*nova_matriz[::-1]))]
+                self.shape_matriz_atual = nova_matriz  
+                novo_estado_da_rotacao = self.proximo_estado_rotacao("180")
+                correcao = self.sistema_super_rotacao(novo_estado_da_rotacao)
             
         if correcao[0] == True:
             self.shape_pos_atual[0] += correcao[1][0]
             self.shape_pos_atual[1] += correcao[1][1]
             self.shape_pos_fantasma = self.shape_pos_atual[:]
             match direcao:
-                case "KEY_Q": self.estado_rotacao = self.proximo_estado_rotacao("esquerda")
-                case "KEY_E": self.estado_rotacao = self.proximo_estado_rotacao("direita")
+                case "KEY_ESQUERDA": self.estado_rotacao = self.proximo_estado_rotacao("esquerda")
+                case "KEY_DIREITA": self.estado_rotacao = self.proximo_estado_rotacao("direita")
+                case "KEY_180": self.estado_rotacao = self.proximo_estado_rotacao("180")
         else:
             self.shape_matriz_atual = backup
 
@@ -1274,7 +1271,7 @@ class Jogo:
     #//// INCREMENTAR OS STATUS E EVENTOS ////
     
     def anexar_eventos(self, ordem, tipo, linhas_limpas):
-        duracao = 180
+        duracao = 130
         cor = (SHAPES[self.shape_atual]["imagem_pos"] + 1)
         informacoes = [tipo, linhas_limpas, duracao, cor]
         self.sequencia_dos_eventos.insert(ordem, informacoes)
@@ -1493,16 +1490,22 @@ class Jogo:
                 self.ultima_acao_foi_rotacao = False
     
     def verificar_rotacao_shape(self, *, input_puro=False):
-        if self.pegar_input("ROTACAO_ESQUERDA", input_puro=input_puro):
-            self.rotacionar_shape("KEY_Q")
-            self.aumentar_lock_reset()
-            self.ultima_acao_foi_rotacao, self.ultima_acao_foi_rotacao_animacao_lateral = True, True
+        rotacoes = {
+            "ROTACAO_ESQUERDA": "KEY_ESQUERDA",
+            "ROTACAO_DIREITA": "KEY_DIREITA",
+            #"ROTACAO_180": "KEY_180",
+        }
+        rotacionou = False
 
-        if self.pegar_input("ROTACAO_DIREITA", input_puro=input_puro):
-            self.rotacionar_shape("KEY_E")
+        for input_nome, direcao in rotacoes.items():
+            if self.pegar_input(input_nome, input_puro=input_puro):
+                self.rotacionar_shape(direcao)
+                rotacionou = True
+        if rotacionou:
             self.aumentar_lock_reset()
-            self.ultima_acao_foi_rotacao, self.ultima_acao_foi_rotacao_animacao_lateral = True, True
-    
+            self.ultima_acao_foi_rotacao = True
+            self.ultima_acao_foi_rotacao_animacao_lateral = True
+        
     def recalcular_pos_fantasma(self):
         while not self.verificar_colisao(self.pegar_formato(), self.shape_pos_fantasma, self.mapa, dy=1):
             self.shape_pos_fantasma[1] += 1
@@ -1513,7 +1516,6 @@ class Jogo:
         if self.pegar_input("SOFT_DROP", repeticao):
             if repeticao == 0:
                 self.shape_pos_atual = self.shape_pos_fantasma[:]
-            
             elif not self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa, dy=1):
                 self.gravidade_acumulador = self.gravidade_threshold + (1 / 60)
                 self.quantos_soft_drops += 1        
@@ -1666,14 +1668,14 @@ class Jogo:
                 self.foi_esquerda, self.foi_direita = False, False
                 self.tempo_do_are += 1
         
-        self.tempo_atual_em_segundos = (time.perf_counter() - self.tempo_inicial)
         self.verificar_estado_do_modo()
+        if not self.modo_completado:
+            self.tempo_atual_em_segundos = (time.perf_counter() - self.tempo_inicial)
     
     #//// //// ATUALIZAR TUDO //// ////
     
     def atualizar_jogo(self):
         self.tempo_fps_ms = time.perf_counter()
-        print(self.animacoes_texto_menu)
         
         if self.estado_atual_do_jogo == "em_menu":
             self.teclas_navegacao_menu()
@@ -2188,7 +2190,7 @@ class Jogo:
     
     def desenhar_popups(self, mov_x, offset_x):
         largura = TILE * LINHAS
-        duracao_max = 180
+        duracao_max = 130
         
         pos_inicial = 210
         extra = 30
@@ -2215,12 +2217,12 @@ class Jogo:
                 case "4": frase = "TETRIS!"
                 case "3": frase = "TRIPLE"
                 case "2": frase = "DOUBLE"
-                case "1":
-                    self.sequencia_dos_eventos.remove(evento)
-                    continue
+                case "1": frase = "DOUBLE"
+                    # self.sequencia_dos_eventos.remove(evento)
+                    # continue
             
             progresso = (duracao_max - duracao) / duracao_max # 1.0 a 0.0
-            fator = (progresso/2) + 2 * (progresso ** constante)
+            fator = (progresso/2) + 1 * (progresso ** constante)
             pos_y = round((pos_inicial / bit) - int(fator * range_animacao) / bit) * bit
             
             p = 1
@@ -2528,7 +2530,8 @@ class Jogo:
     
     def calcular_animacao_gameover_slide(self):
         condicao_animacao_offset_teto = (self.offset_em_jogo["teto"] > self.calcular_offset_teto_gameover() and not self.clicou_em_resetar_partida)
-        if self.mov_em_jogo["mov_hard_drop"] > 0 or condicao_animacao_offset_teto:
+        condicao_animacao_hard_drop_e_popups = (len(self.estados_animacao_hard_drop) > 0 or len(self.sequencia_dos_eventos) > 0)
+        if self.mov_em_jogo["mov_hard_drop"] > 0 or condicao_animacao_offset_teto or condicao_animacao_hard_drop_e_popups:
             self.mov_slide_gameover = 0
             return
         
@@ -2651,40 +2654,32 @@ class Jogo:
 
     #
     
+    def desenhar_tudo_da_partida(self, offset_x, offset_y_teto, mov_x, mov_y):
+        self.desenhar_tabuleiro_e_teto(mov_x, mov_y, offset_x, offset_y_teto)
+        if self.acionou_hard_drop or len(self.estados_animacao_hard_drop) > 0:
+            self.desenhar_animacao_hard_drop(mov_x, mov_y, offset_x)
+        if not self.esta_em_are:
+            self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_y, offset_x, offset_y_teto)
+            self.desenhar_shape_atual(self.pegar_formato(), self.shape_pos_atual, mov_x, mov_y, offset_x, offset_y_teto)
+        if self.limpou_linha:
+            self.desenhar_animacao_limpar_linha(mov_x, mov_y, offset_x, offset_y_teto)
+        self.desenhar_shapes_fixados(self.mapa, mov_x, mov_y, offset_x, offset_y_teto)
+    
     def desenhar_tudo_em_jogo(self, offset_x):
         offset_y_teto = self.calcular_animacao_offset_teto(self.calcular_offset_teto())
         mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_movimentos()
+        self.desenhar_tudo_da_partida(offset_x, offset_y_teto, mov_x, mov_hard_drop)
         
-        self.desenhar_tabuleiro_e_teto(mov_x, mov_hard_drop, offset_x, offset_y_teto)
-        
-        if self.acionou_hard_drop or len(self.estados_animacao_hard_drop) > 0:
-            self.desenhar_animacao_hard_drop(mov_x, mov_hard_drop, offset_x)
-        
-        if not self.esta_em_are:
-            self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_hard_drop, offset_x, offset_y_teto)
-            self.desenhar_shape_atual(self.pegar_formato(), self.shape_pos_atual, mov_x, mov_hard_drop, offset_x, offset_y_teto)
-        
-        if self.limpou_linha:
-            self.desenhar_animacao_limpar_linha(mov_x, mov_hard_drop, offset_x, offset_y_teto)
-        
-        self.desenhar_shapes_fixados(self.mapa, mov_x, mov_hard_drop, offset_x, offset_y_teto)
         self.desenhar_shape_segurado_e_proximos(mov_esquerda, mov_direita, 0, offset_x)
         self.desenhar_popups(mov_x, offset_x)
           
-    def desenhar_tudo_no_game_over(self, offset_x):
+    def desenhar_tudo_em_game_over(self, offset_x):
         offset_y_teto = self.calcular_animacao_offset_teto(self.calcular_offset_teto_gameover())
         mov_x, mov_esquerda, mov_direita, mov_hard_drop, mov_slide_gameover = self.valores_movimentos()
-
         if mov_hard_drop > 0:
-            self.desenhar_tabuleiro_e_teto(mov_x, mov_hard_drop, offset_x, offset_y_teto)
-            self.desenhar_shapes_fixados(self.mapa, mov_x, mov_hard_drop, offset_x, offset_y_teto)
-            if self.limpou_linha:
-                self.desenhar_animacao_limpar_linha(mov_x, mov_hard_drop, offset_x, offset_y_teto)
+            self.desenhar_tudo_da_partida(offset_x, offset_y_teto, mov_x, mov_hard_drop)
         else:
-            self.desenhar_tabuleiro_e_teto(mov_x, mov_slide_gameover, offset_x, offset_y_teto)
-            self.desenhar_shapes_fixados(self.mapa, mov_x, mov_slide_gameover, offset_x, offset_y_teto)
-            if self.limpou_linha:
-                self.desenhar_animacao_limpar_linha(mov_x, mov_slide_gameover, offset_x, offset_y_teto)
+            self.desenhar_tudo_da_partida(offset_x, offset_y_teto, mov_x, mov_slide_gameover)
         
         if self.clicou_em_resetar_partida:
             self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_slide_gameover, offset_x, offset_y_teto)
@@ -2800,7 +2795,7 @@ class Jogo:
             self.desenhar_tudo_em_jogo(offset_x)
         
         if self.estado_atual_do_jogo == "game_over" or (self.estado_atual_do_jogo == "entre_menu_e_jogo" and self.mov_slide_gameover > 0):
-            self.desenhar_tudo_no_game_over(offset_x)
+            self.desenhar_tudo_em_game_over(offset_x)
         
         #
         
