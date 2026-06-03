@@ -539,6 +539,7 @@ class Jogo:
         self.fixou_neste_frame = False
         self.segurou_neste_frame = False
         self.acionou_hard_drop = False
+        self.desenhar_shape_apos_colisao = True
         
         self.status = {
             "quantidade_singles": 0,
@@ -1030,12 +1031,11 @@ class Jogo:
         return False
     
     def sistema_bag_7(self):
-        normais = ["I", "O", "T", "L", "J", "S", "Z"]
-        adicionais = ["IL", "IJ", "D", "C", "P"]
+        shapes = ["I", "O", "T", "L", "J", "S", "Z"]
+        shapes_adicionais = ["IL", "IJ", "D", "C", "P"]
         if len(self.bag_7) == 0:
-            shapes = normais
             if self.modo_do_jogo == "crazy":
-                shapes.extend(adicionais) 
+                shapes.extend(shapes_adicionais) 
             self.bag_7 = [f"shape_{x}" for x in shapes]
             random.shuffle(self.bag_7)
         
@@ -1057,13 +1057,14 @@ class Jogo:
     
     def verificar_estado_do_modo(self):
         if self.modo_do_jogo == "marathon_150" and self.linhas_limpas >= 150:
-                self.modo_completado = True
+            self.modo_completado = True
         
         elif self.modo_do_jogo == "40_lines" and self.linhas_limpas >= 40:
-                self.modo_completado = True
-                
-        elif self.modo_do_jogo == "ultra" and self.tempo_atual_em_segundos >= (3 * 60):
-                self.modo_completado = True
+            self.modo_completado = True
+
+        elif self.modo_do_jogo == "ultra" and self.tempo_atual_em_segundos >= (tempo := (3 * 60)):
+            self.modo_completado = True
+            self.tempo_atual_em_segundos = tempo
     
     def tempo_formatado(self):
         minutos = int(self.tempo_atual_em_segundos // 60)
@@ -1122,10 +1123,10 @@ class Jogo:
                 "0->L": [(0,0), (1,0),  (1,-1),  (0,2),  (1,2)],
                 "R->L": [(0,0), (2,0),  (2,0),   (0,0), (1,0)],
                 #
-                "0->2": [],
-                "R->L": [],
-                "2->0": [],
-                "L->R": [],
+                # "0->2": [],
+                # "R->L": [],
+                # "2->0": [],
+                # "L->R": [],
             },
             "shapes_largos": {
                 "0->R": [(0,0), (-2,0), (1,0),  (-2,1),  (1,-2)],
@@ -1403,14 +1404,16 @@ class Jogo:
     def verificar_game_over_colisao(self):
         if self.verificar_colisao(self.pegar_formato(), self.shape_pos_atual, self.mapa):
             self.acionar_game_over("game_over")
-            self.shape_pos_atual = [0, 0]
+            self.desenhar_shape_apos_colisao = False
+            return True
+        return False
     
     def verificar_game_over_teto(self):
         for coluna in range(COLUNAS):
             for linha in range(CORRECAO_ALTURA):
                 if self.mapa[linha][coluna] != VAZIO:
                     self.acionar_game_over("game_over")
-                    self.shape_pos_atual = [0, 0]
+                    self.desenhar_shape_apos_colisao = False
                     return True
         return False
     
@@ -1634,6 +1637,7 @@ class Jogo:
     
     def atualizar_estado_em_jogo(self):
         self.fixou_neste_frame = False
+        
         if not self.esta_em_are:
             self.input_tecla()
             self.queda_automatica()
@@ -1651,15 +1655,16 @@ class Jogo:
                     self.verificar_nivel(self.linhas_limpas)
         else: 
             if not self.limpou_linha:
-                self.are_duracao = 0
-            
+                self.are_duracao = 0            
             if self.tempo_do_are > self.are_duracao:
+                
                 if self.limpou_linha:
-                    self.mover_linhas_do_mapa(self.mapa[::-1])
-                if self.modo_completado:
+                    self.mover_linhas_do_mapa(self.mapa[::-1])              
+                if self.modo_completado: 
                     self.acionar_game_over("completo")
                     self.modo_completado = False
                     return    
+                
                 self.gerar_novo_shape()
                 self.segurar_shape(input_puro=True)
                 self.verificar_rotacao_shape(input_puro=True)
@@ -2217,9 +2222,9 @@ class Jogo:
                 case "4": frase = "TETRIS!"
                 case "3": frase = "TRIPLE"
                 case "2": frase = "DOUBLE"
-                case "1": frase = "DOUBLE"
-                    # self.sequencia_dos_eventos.remove(evento)
-                    # continue
+                case "1":
+                    self.sequencia_dos_eventos.remove(evento)
+                    continue
             
             progresso = (duracao_max - duracao) / duracao_max # 1.0 a 0.0
             fator = (progresso/2) + 1 * (progresso ** constante)
@@ -2500,36 +2505,14 @@ class Jogo:
         valor = self.offset_menu["entre_menus"]
         self.offset_menu["entre_menus"] = self.calcular_interpolacao(valor, destino_x, velocidade, 1)
     
-    #
-    
-    def calcular_animacao_shapes(self, sinalizador, pos_x, pos_y, visual_pos_x, visual_pos_y):
-        vel_x = self.visual_vel_x  # lateral mais suave
-        vel_y = self.visual_vel_y  # queda mais rápida
-        
-        if sinalizador:
-            visual_pos_x = self.calcular_interpolacao(visual_pos_x, pos_x, vel_x, 0.1)
-            visual_pos_y = self.calcular_interpolacao(visual_pos_y, pos_y, vel_y, 0.1)
-            return visual_pos_x, visual_pos_y
-        return pos_x, pos_y
-    
     def calcular_animacao_entre_menu_e_jogo(self):
         destino_x = LARGURA_TELA
         velocidade = 0.1
         valor = self.offset_menu["entre_menu_e_jogo"]
         self.offset_menu["entre_menu_e_jogo"] = self.calcular_interpolacao(valor, destino_x, velocidade, 1)
     
-    def calcular_animacao_pausado(self):
-        if not self.esta_pausado or self.esta_despausando:
-            destino_x = 0
-        elif self.esta_pausado:
-            destino_x = self.distancia_do_pause 
-
-        velocidade = 0.1
-        valor = self.offset_em_jogo["pause"]
-        self.offset_em_jogo["pause"] = self.calcular_interpolacao(valor, destino_x, velocidade, 1)
-    
     def calcular_animacao_gameover_slide(self):
-        condicao_animacao_offset_teto = (self.offset_em_jogo["teto"] > self.calcular_offset_teto_gameover() and not self.clicou_em_resetar_partida)
+        condicao_animacao_offset_teto = (self.offset_em_jogo["teto"] != self.calcular_offset_teto_gameover() and not self.clicou_em_resetar_partida)
         condicao_animacao_hard_drop_e_popups = (len(self.estados_animacao_hard_drop) > 0 or len(self.sequencia_dos_eventos) > 0)
         if self.mov_em_jogo["mov_hard_drop"] > 0 or condicao_animacao_offset_teto or condicao_animacao_hard_drop_e_popups:
             self.mov_slide_gameover = 0
@@ -2545,6 +2528,28 @@ class Jogo:
         else:
             destino_y = 0
             self.mov_slide_gameover = max(self.calcular_interpolacao(valor, destino_y, velocidade, 0.01), destino_y)
+    
+    #
+    
+    def calcular_animacao_shapes(self, sinalizador, pos_x, pos_y, visual_pos_x, visual_pos_y):
+        vel_x = self.visual_vel_x  # lateral mais suave
+        vel_y = self.visual_vel_y  # queda mais rápida
+        
+        if sinalizador:
+            visual_pos_x = self.calcular_interpolacao(visual_pos_x, pos_x, vel_x, 0.1)
+            visual_pos_y = self.calcular_interpolacao(visual_pos_y, pos_y, vel_y, 0.1)
+            return visual_pos_x, visual_pos_y
+        return pos_x, pos_y
+    
+    def calcular_animacao_pausado(self):
+        if not self.esta_pausado or self.esta_despausando:
+            destino_x = 0
+        elif self.esta_pausado:
+            destino_x = self.distancia_do_pause 
+
+        velocidade = 0.1
+        valor = self.offset_em_jogo["pause"]
+        self.offset_em_jogo["pause"] = self.calcular_interpolacao(valor, destino_x, velocidade, 1)
     
     def calcular_animacao_offset_teto(self, offset_abs):
         destino_y = offset_abs
@@ -2658,7 +2663,7 @@ class Jogo:
         self.desenhar_tabuleiro_e_teto(mov_x, mov_y, offset_x, offset_y_teto)
         if self.acionou_hard_drop or len(self.estados_animacao_hard_drop) > 0:
             self.desenhar_animacao_hard_drop(mov_x, mov_y, offset_x)
-        if not self.esta_em_are:
+        if not self.esta_em_are and self.desenhar_shape_apos_colisao:
             self.desenhar_shape_fantasma(self.pegar_formato(), mov_x, mov_y, offset_x, offset_y_teto)
             self.desenhar_shape_atual(self.pegar_formato(), self.shape_pos_atual, mov_x, mov_y, offset_x, offset_y_teto)
         if self.limpou_linha:
