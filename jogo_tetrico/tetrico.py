@@ -278,7 +278,6 @@ TABELA_G = {
 }
 
 TECLA_PARA_NOME = {
-    # Letras A-Z
     px.KEY_A: "A", px.KEY_B: "B", px.KEY_C: "C", px.KEY_D: "D",
     px.KEY_E: "E", px.KEY_F: "F", px.KEY_G: "G", px.KEY_H: "H",
     px.KEY_I: "I", px.KEY_J: "J", px.KEY_K: "K", px.KEY_L: "L",
@@ -287,18 +286,15 @@ TECLA_PARA_NOME = {
     px.KEY_U: "U", px.KEY_V: "V", px.KEY_W: "W", px.KEY_X: "X",
     px.KEY_Y: "Y", px.KEY_Z: "Z",
     
-    # Números 0-9
     px.KEY_0: "0", px.KEY_1: "1", px.KEY_2: "2", px.KEY_3: "3",
     px.KEY_4: "4", px.KEY_5: "5", px.KEY_6: "6", px.KEY_7: "7",
     px.KEY_8: "8", px.KEY_9: "9",
     
-    # Setas
     px.KEY_UP: "↑",
     px.KEY_DOWN: "↓",
     px.KEY_LEFT: "←",
     px.KEY_RIGHT: "→",
     
-    # Especiais
     px.KEY_SPACE: "SPACE",
     px.KEY_RETURN: "ENTER",
     px.KEY_TAB: "TAB",
@@ -308,7 +304,6 @@ TECLA_PARA_NOME = {
     px.KEY_CTRL: "CTRL",
     px.KEY_ALT: "ALT",
     
-    # F-keys
     px.KEY_F1: "F1", px.KEY_F2: "F2", px.KEY_F3: "F3",
     px.KEY_F4: "F4", px.KEY_F5: "F5", px.KEY_F6: "F6",
     px.KEY_F7: "F7", px.KEY_F8: "F8", px.KEY_F9: "F9",
@@ -328,16 +323,59 @@ TECLA_PARA_NOME = {
     px.GAMEPAD1_BUTTON_RIGHTSHOULDER: "(LR)",
 }
 
+MAPEAMENTO = {
+    "ESQUERDA": [px.KEY_LEFT, px.KEY_A, px.GAMEPAD1_BUTTON_DPAD_LEFT],
+    "DIREITA": [px.KEY_RIGHT, px.KEY_D, px.GAMEPAD1_BUTTON_DPAD_RIGHT],
+    
+    "ROTACAO_ESQUERDA": [px.KEY_Q, px.KEY_Z, px.KEY_CTRL, px.GAMEPAD1_BUTTON_A],
+    "ROTACAO_DIREITA": [px.KEY_E, px.KEY_X, px.KEY_UP, px.GAMEPAD1_BUTTON_B],
+    "ROTACAO_180": [px.KEY_W, px.KEY_SHIFT, px.GAMEPAD1_BUTTON_X],
+    
+    "SEGURAR": [px.KEY_TAB, px.KEY_C, px.GAMEPAD1_BUTTON_LEFTSHOULDER, px.GAMEPAD1_BUTTON_RIGHTSHOULDER, px.GAMEPAD1_BUTTON_Y],
+    "SOFT_DROP": [px.KEY_DOWN, px.KEY_S, px.GAMEPAD1_BUTTON_DPAD_DOWN],
+    "HARD_DROP": [px.KEY_SPACE, px.GAMEPAD1_BUTTON_DPAD_UP],
+    
+    "PAUSAR": [px.KEY_ESCAPE, px.KEY_P, px.GAMEPAD1_BUTTON_START],
+    "REINICIAR": [px.KEY_F1],
+    
+    "ACIONAR": [px.KEY_RETURN, px.GAMEPAD1_BUTTON_A],
+    "VOLTAR": [px.KEY_BACKSPACE, px.GAMEPAD1_BUTTON_B],
+    "PARA_CIMA": [px.KEY_UP, px.GAMEPAD1_BUTTON_DPAD_UP],
+    "PARA_BAIXO": [px.KEY_DOWN, px.GAMEPAD1_BUTTON_DPAD_DOWN],
+    "OPCAO_AUMENTAR": [px.KEY_RIGHT, px.GAMEPAD1_BUTTON_DPAD_RIGHT],
+    "OPCAO_DIMINUIR": [px.KEY_LEFT, px.GAMEPAD1_BUTTON_DPAD_LEFT],
+    "DELETAR": [px.KEY_X, px.GAMEPAD1_BUTTON_X],
+}
+
+MAPEAMENTO_SOM = {
+    # "ESQUERDA": lambda: px.play(0, 1),
+    # "DIREITA": lambda: px.play(0, 1),
+    
+    # "ROTACAO_ESQUERDA": lambda: px.play(0, 1),
+    # "ROTACAO_DIREITA": lambda: px.play(0, 1),
+    # "ROTACAO_180": lambda: px.play(0, 1),
+    
+    # "SEGURAR": lambda: px.play(0, 1),
+    # "SOFT_DROP": lambda: px.play(0, 1),
+    # "HARD_DROP": lambda: px.play(0, 1),
+    
+    "PAUSAR": lambda: px.play(0, 0),
+    # "REINICIAR": lambda: px.play(0, 1),
+    "ACIONAR": lambda: px.play(0, 0),
+    "VOLTAR": lambda: px.play(0, 1),
+    # "PARA_CIMA": lambda: px.play(0, 1),
+    # "PARA_BAIXO": lambda: px.play(0, 1),
+    "OPCAO_AUMENTAR": lambda: px.play(0, 3),
+    "OPCAO_DIMINUIR": lambda: px.play(0, 4),
+    "DELETAR": lambda: px.play(0, 2),
+}
+
 #/
 
 #todo: json nao é salvo no web pyxel launcher
 #todo: adicionar config nos controles - NAO
 #todo ver como vai ficar os popus, com borda ou nao - SEM
-
 #todo: adicionar 180 rotacao
-
-#todo: adicionar talvez particular? nao sei
-
 #todo: adiconar o fixed time step.... dificl mas ok
 
 #todo: adicionar sons
@@ -356,6 +394,8 @@ def salvar_jogos_recentes(historico):
     with open("recent_games.json", 'w', encoding='utf-8') as f:
         json.dump(historico, f, indent=2, ensure_ascii=False)
 
+#/
+
 LOCK_DELAY_FRAMES = 30
 LOCK_MAX_MOVIMENTOS = 15
 
@@ -365,6 +405,8 @@ SHAPES_COM_SRS_I = ("shape_I", "shape_IL", "shape_IJ")
 CORES_ALEATORIAS_TETRIS = list(range(1, 8))
 random.shuffle(CORES_ALEATORIAS_TETRIS)
 COR_PRINCIPAL_ALEATORIA = random.choice(CORES_ALEATORIAS_TETRIS)
+
+#/
 
 def alterar_valor(valor, soma, *, min, max):
     novo = valor + soma
@@ -390,6 +432,8 @@ ALTURA_DA_FONTE_11 = 18
 
 FONT_20 = px.Font(CAMINHO("assets/PF Pixelscript Pro Regular.ttf"), 16)
 
+#/
+
 COLUNAS = 10
 LINHAS = 20
 
@@ -413,32 +457,6 @@ class Jogo:
         
         self.tempo_fps_ms = 0
         
-        self.MAPEAMENTO = {
-            "ESQUERDA": [px.KEY_LEFT, px.KEY_A, px.GAMEPAD1_BUTTON_DPAD_LEFT],
-            "DIREITA": [px.KEY_RIGHT, px.KEY_D, px.GAMEPAD1_BUTTON_DPAD_RIGHT],
-            
-            "ROTACAO_ESQUERDA": [px.KEY_Q, px.KEY_Z, px.KEY_CTRL, px.GAMEPAD1_BUTTON_A],
-            "ROTACAO_DIREITA": [px.KEY_E, px.KEY_X, px.KEY_UP, px.GAMEPAD1_BUTTON_B],
-            "ROTACAO_180": [px.KEY_W, px.KEY_SHIFT, px.GAMEPAD1_BUTTON_X],
-            
-            "SEGURAR": [px.KEY_TAB, px.KEY_C, px.GAMEPAD1_BUTTON_LEFTSHOULDER, px.GAMEPAD1_BUTTON_RIGHTSHOULDER, px.GAMEPAD1_BUTTON_Y],
-            "SOFT_DROP": [px.KEY_DOWN, px.KEY_S, px.GAMEPAD1_BUTTON_DPAD_DOWN],
-            "HARD_DROP": [px.KEY_SPACE, px.GAMEPAD1_BUTTON_DPAD_UP],
-            
-            "PAUSAR": [px.KEY_ESCAPE, px.KEY_P, px.GAMEPAD1_BUTTON_START],
-            "REINICIAR": [px.KEY_F1],
-            
-            "ACIONAR": [px.KEY_RETURN, px.GAMEPAD1_BUTTON_A],
-            "VOLTAR": [px.KEY_BACKSPACE, px.GAMEPAD1_BUTTON_B],
-            #
-            "PARA_CIMA": [px.KEY_UP, px.GAMEPAD1_BUTTON_DPAD_UP],
-            "PARA_BAIXO": [px.KEY_DOWN, px.GAMEPAD1_BUTTON_DPAD_DOWN],
-            #
-            "OPCAO_AUMENTAR": [px.KEY_RIGHT, px.GAMEPAD1_BUTTON_DPAD_RIGHT],
-            "OPCAO_DIMINUIR": [px.KEY_LEFT, px.GAMEPAD1_BUTTON_DPAD_LEFT],
-            #
-            "DELETAR": [px.KEY_X, px.GAMEPAD1_BUTTON_X],
-        }
           
         self.historico_partidas = carregar_jogos_recentes()
         self.iniciar_jogo()
@@ -465,7 +483,7 @@ class Jogo:
         self.mostrar_fantasma_config = True
         
         self.movimento_duracao_config = 7 # 7
-        self.movimento_inicio_config = 0.5 # 0.50
+        self.movimento_inicio_config = 0.5 # 0.5
         self.movimento_constante_config = 0.15 # 0.15
         
         self.are_duracao_config = 20 # 20
@@ -639,7 +657,7 @@ class Jogo:
         self.are_duracao = self.are_duracao_config  # CONFIG
         self.tempo_do_are = 0
         self.esta_em_are = False
-        self.limpou_linha = False # Se False, sem ARE
+        self.limpou_linha = False # se False, sem ARE
     
     #//// FUNÇÕES AO GERAR O SHAPE ////
     
@@ -663,7 +681,7 @@ class Jogo:
     def resetar_voltar_ao_menu(self):
         self.variaveis_iniciais()
         self.frases_menu()
-        # Não reseta configuração, tamanho predefinidos dos rects e variáveis do menu
+        # não reseta configuração, tamanho predefinidos dos rects e variáveis do menu
     
     #//// //// MENU //// ////
 
@@ -691,10 +709,11 @@ class Jogo:
             f" Duration:{self.movimento_duracao_config:02d}s",
             f" Outset:{self.movimento_inicio_config:0.2f}",
             f" Constant:{self.movimento_constante_config:0.2f}",
-            f"ARE:{self.are_duracao_config:02d}ms",
-            f"DAS:{self.das_config:02d}ms", 
-            f"ARR:{self.arr_config:02d}ms",
-            f"ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
+            f"HANDLING:",
+            f" ARE:{self.are_duracao_config:02d}ms",
+            f" DAS:{self.das_config:02d}ms", 
+            f" ARR:{self.arr_config:02d}ms",
+            f" ARR SoftDrop:{self.arr_soft_drop_config:02d}ms", 
             f"SHAPE SPEED:", 
             f" X Speed:{self.visual_vel_x_config:0.2f}s", 
             f" Y Speed:{self.visual_vel_y_config:0.2f}s", 
@@ -706,7 +725,7 @@ class Jogo:
       
     def frases_controles(self):        
         def mostrar_controles(tecla):      
-            teclas = self.MAPEAMENTO[tecla]
+            teclas = MAPEAMENTO[tecla]
             nomes = [TECLA_PARA_NOME.get(tecla, f"#{tecla}") for tecla in teclas]
             return f"{', '.join(nomes)}"
         
@@ -876,18 +895,20 @@ class Jogo:
                 case 6:
                     self.movimento_constante_config = alterar_valor(self.movimento_constante_config, (soma/20), min=0, max=0.5)
                 case 7:
-                    self.are_duracao_config = alterar_valor(self.are_duracao_config, soma, min=0, max=200)
-                case 8:
-                    self.das_config = alterar_valor(self.das_config, soma, min=0, max=50)
-                case 9:
-                    self.arr_config = alterar_valor(self.arr_config, soma, min=0, max=10)
-                case 10:
-                    self.arr_soft_drop_config = alterar_valor(self.arr_soft_drop_config, soma, min=0, max=10)
-                case 11:                          
                     pass
-                case 12:
+                case 8:
+                    self.are_duracao_config = alterar_valor(self.are_duracao_config, soma, min=0, max=200)
+                case 9:
+                    self.das_config = alterar_valor(self.das_config, soma, min=0, max=50)
+                case 10:
+                    self.arr_config = alterar_valor(self.arr_config, soma, min=0, max=10)
+                case 11:
+                    self.arr_soft_drop_config = alterar_valor(self.arr_soft_drop_config, soma, min=0, max=10)
+                case 12:                          
+                    pass
+                case 13:
                     self.visual_vel_x_config = alterar_valor(self.visual_vel_x_config, (soma/20), min=0.05, max=1.0)
-                case 13:                          
+                case 14:                          
                     self.visual_vel_y_config = alterar_valor(self.visual_vel_y_config, (soma/20), min=0.05, max=1)
             
             self.frases_submenus["configuracao"] = self.frases_configuracao()
@@ -1023,10 +1044,12 @@ class Jogo:
         salvar_jogos_recentes(self.historico_partidas)
     
     def pegar_input(self, input, repeticao=0, hold=0, *, input_puro=False):
-        for tecla in self.MAPEAMENTO[input]:
-            if input_puro and px.btn(tecla): 
+        for tecla in MAPEAMENTO[input]:
+            if input_puro and px.btn(tecla):
                 return True
-            elif px.btnp(tecla, repeat=repeticao, hold=hold):
+            elif not input_puro and px.btnp(tecla, repeat=repeticao, hold=hold):
+                # if (som := MAPEAMENTO_SOM.get(input)):
+                #     som()
                 return True
         return False
     
@@ -1081,10 +1104,10 @@ class Jogo:
                     n_col = pos[0] + i_coluna + dx 
                     n_lin = pos[1] + i_linha + dy + CORRECAO_ALTURA
                     
-                    if n_col < 0: # parede da esquerda
+                    if n_col < 0: # esquerda
                         return True
                     
-                    if n_col >= COLUNAS: # parede da direita
+                    if n_col >= COLUNAS: # direita
                         return True
                     
                     if n_lin < 0: # teto
@@ -1102,9 +1125,9 @@ class Jogo:
             for i_coluna, _ in enumerate(e_linha):
                 if formato[i_linha][i_coluna] == 1:
                     n_col = pos[0] + i_coluna + dx
-                    if n_col < 0:  # parede da esquerda
+                    if n_col < 0:  # esquerda
                         return True
-                    if n_col >= COLUNAS: # parede da direita
+                    if n_col >= COLUNAS: # direita
                         return True
         return False
     
@@ -1116,17 +1139,16 @@ class Jogo:
                 "0->R": [(0,0), (-1,0), (-1,-1), (0,2),  (-1,2)],
                 "R->0": [(0,0), (1,0),  (1,1),   (0,-2), (1,-2)],
                 "R->2": [(0,0), (1,0),  (1,1),   (0,-2), (1,-2)],
-                  "2->R": [(0,0), (-1,0), (-1,-1), (0,2),  (-1,2)],
+                "2->R": [(0,0), (-1,0), (-1,-1), (0,2),  (-1,2)],
                 "2->L": [(0,0), (1,0),  (1,-1),  (0,2),  (1,2)],
                 "L->2": [(0,0), (-1,0), (-1,1),  (0,-2), (-1,-2)],
                 "L->0": [(0,0), (-1,0), (-1,1),  (0,-2), (-1,-2)],
                 "0->L": [(0,0), (1,0),  (1,-1),  (0,2),  (1,2)],
-                "R->L": [(0,0), (2,0),  (2,0),   (0,0), (1,0)],
-                #
-                # "0->2": [],
-                # "R->L": [],
-                # "2->0": [],
-                # "L->R": [],
+                
+                "0->2": [(0,0), (0,-1), (0,1), (-1,0), (1,0)],
+                "R->L": [(0,0), (1,0), (-1,0), (0,-1), (0,1)],
+                "2->0": [(0,0), (0,1), (0,-1), (1,0), (-1,0)],
+                "L->R": [(0,0), (-1,0), (1,0), (0,1), (0,-1)],
             },
             "shapes_largos": {
                 "0->R": [(0,0), (-2,0), (1,0),  (-2,1),  (1,-2)],
@@ -1137,6 +1159,11 @@ class Jogo:
                 "L->2": [(0,0), (-2,0), (1,0),  (-2,1),  (1,-2)],
                 "L->0": [(0,0), (1,0),  (-2,0), (1,2),   (-2,-1)],
                 "0->L": [(0,0), (-1,0), (2,0),  (-1,-2), (2,1)],
+                
+                "0->2": [(0,0), (0,-1), (0,1), (-2,0), (2,0)],
+                "R->L": [(0,0), (2,0), (-2,0), (0,-1), (0,1)],
+                "2->0": [(0,0), (0,1), (0,-1), (2,0), (-2,0)],
+                "L->R": [(0,0), (-2,0), (2,0), (0,1), (0,-1)],
             }
         }
         
@@ -1496,7 +1523,7 @@ class Jogo:
         rotacoes = {
             "ROTACAO_ESQUERDA": "KEY_ESQUERDA",
             "ROTACAO_DIREITA": "KEY_DIREITA",
-            #"ROTACAO_180": "KEY_180",
+            "ROTACAO_180": "KEY_180",
         }
         rotacionou = False
 
@@ -1590,20 +1617,6 @@ class Jogo:
             self.navegar_pause(deslize=-1)
         elif self.pegar_input("PARA_BAIXO"):
             self.navegar_pause(deslize=1)
-    
-    #//// FIXED TIME STEP ////
-
-    def atualizar(self):
-        agora = time.perf_counter()
-        delta = agora - self.ultimo_frame_tempo
-        self.ultimo_frame_tempo = agora
-       
-        delta = min(delta, 0.1) 
-        self.tempo_acumulado += delta
-        
-        while self.tempo_acumulado >= (1 / 60):
-            self.atualizar_jogo()
-            self.tempo_acumulado -= (1 / 60) 
     
     #//// ENCAPSULAMENTO - GERAL ////
     
@@ -1775,7 +1788,6 @@ class Jogo:
             if not ativo and abs(anim["offset"]) < 0.1:
                 del self.animacoes_texto_menu[frase]
             if not ativo:
-                #anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], 0, velocidade_nao_ativo)
                 anim["offset"] = self.calcular_interpolacao(anim["offset"], 0, velocidade_nao_ativo, 0.01)
                 anim["indo_direita"] = False
                 return somar_y + anim["offset"]
@@ -1788,7 +1800,6 @@ class Jogo:
                     anim["indo_direita"] = True
 
                 destino_x = -diferenca if anim["indo_direita"] else 0
-                #anim["offset"] = self.calcular_interpolacao_linear(anim["offset"], destino_x, velocidade_ativo)
                 anim["offset"] = self.calcular_interpolacao(anim["offset"], destino_x, velocidade_ativo, 0.01)
             return somar_y + anim["offset"]
         
@@ -2112,9 +2123,9 @@ class Jogo:
             pos_y_1 += espacamento
         self.comprimento_rect_esquerdo_1 = pos_y_1 - 80 + offset_fonte
         
-        #/
+        #
         
-        margem =  4
+        margem = 4
         pos_y_2 = (80 - offset_fonte) + self.comprimento_rect_esquerdo_1 + margem
         
         cor_combo = cor[4] if self.combo_atual >= 1 else 0
@@ -2532,8 +2543,8 @@ class Jogo:
     #
     
     def calcular_animacao_shapes(self, sinalizador, pos_x, pos_y, visual_pos_x, visual_pos_y):
-        vel_x = self.visual_vel_x  # lateral mais suave
-        vel_y = self.visual_vel_y  # queda mais rápida
+        vel_x = self.visual_vel_x # lateral mais suave
+        vel_y = self.visual_vel_y # queda mais rápida
         
         if sinalizador:
             visual_pos_x = self.calcular_interpolacao(visual_pos_x, pos_x, vel_x, 0.1)
@@ -2573,12 +2584,12 @@ class Jogo:
     def valores_offset_entre_menu_e_jogo(self):
         self.calcular_animacao_entre_menu_e_jogo()
         if self.confirmacao_valor["voltar"] == 1:
-            # MENU <--- JOGO
+            # JOGO -> MENU
             backup = self.offset_em_jogo["pause"]
             offset_x = self.offset_menu["entre_menu_e_jogo"] + backup
             offset_x_do_menu = LARGURA_TELA - self.offset_menu["entre_menu_e_jogo"]
         else:
-            # MENU ---> JOGO
+            # MENU -> JOGO
             offset_x = LARGURA_TELA - self.offset_menu["entre_menu_e_jogo"]    
             offset_x_do_menu = self.offset_menu["entre_menu_e_jogo"]
         return offset_x, offset_x_do_menu
@@ -2801,8 +2812,6 @@ class Jogo:
         
         if self.estado_atual_do_jogo == "game_over" or (self.estado_atual_do_jogo == "entre_menu_e_jogo" and self.mov_slide_gameover > 0):
             self.desenhar_tudo_em_game_over(offset_x)
-        
-        #
         
         if self.esta_pausado:
             self.desenhar_pause(offset_x)
