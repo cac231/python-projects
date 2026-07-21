@@ -6,6 +6,14 @@ Jogo da velha para terminal que oferece dois modos de dificuldade: um adversári
 
 - Python 3.10 ou superior
 
+### Dependência opcional
+
+Para adicionar cores e melhorar a visualização no terminal:
+
+```bash
+pip install colorama
+```
+
 ## EXECUÇÃO
 
 Pelo terminal, na pasta do projeto:
