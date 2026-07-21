@@ -456,13 +456,9 @@ class Jogo:
         px.tilemaps[0].set(32, 32, ["1"])
         
         self.tempo_fps_ms = 0
-        
           
         self.historico_partidas = carregar_jogos_recentes()
         self.iniciar_jogo()
-        
-        self.tempo_acumulado = 0.0
-        self.ultimo_frame_tempo = time.perf_counter()
         
         px.run(self.atualizar_jogo, self.desenhar)
 

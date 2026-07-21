@@ -1,51 +1,70 @@
-## Requisitos para executar o jogo
+## Requisitos
 
 - Python 3.10 ou superior
 
-### Módulo obrigatório
-- Pygame ou Pygame-ce (dê preferência ao Pygame-ce) 
+### Dependência obrigatória
+
+Instale **Pygame** ou **Pygame-ce** (recomendado):
+
 ```bash
 pip install pygame-ce
 ```
 
-### Módulo opcional (Windows)
-- pywinstyles
+### Dependência opcional (Windows)
+
+Para recursos visuais exclusivos do Windows:
+
 ```bash
 pip install pywinstyles
 ```
 
-## Como executar (Multiplataforma)
+---
 
-### 1. Usando o terminal
-* Pela pasta do jogo
+## Executando o jogo
+
+### Pelo terminal
+
+Na pasta do projeto:
+
 ```bash
 python hora_do_lesk.py
 ```
 
-* Pelo caminho completo do arquivo
+Ou utilizando o caminho completo do arquivo:
+
 ```bash
-python "caminho_do_arquivo.py"
+python "caminho/do/hora_do_lesk.py"
 ```
 
-## Como executar no Windows (.exe)
+---
+
+## Gerando um executável (Windows)
 
 ### 1. Instale o PyInstaller
+
 ```bash
 pip install pyinstaller
 ```
 
-### 2. Gere o executável usando o arquivo .spec
-* Pela pasta do jogo
+### 2. Gere o executável
+
+Na pasta do projeto:
+
 ```bash
 pyinstaller hora_do_lesk.py.spec
 ```
 
-* Pelo caminho completo do arquivo .spec
+Ou utilizando o caminho completo do arquivo `.spec`:
+
 ```bash
-pyinstaller "caminho_do_arquivo.spec"
+pyinstaller "caminho/do/hora_do_lesk.py.spec"
 ```
 
-### 3. Após a conversão, o executável será gerado na pasta
-```bash
-dist/Hora_do_Lesk.py.exe
+### 3. Localize o executável
+
+Após a compilação, o executável será criado em:
+
+```text
+dist/Hora_do_Lesk.exe
+```
 ```

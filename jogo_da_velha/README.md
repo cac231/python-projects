@@ -1,2 +1,21 @@
 ## OBJETIVO
-Jogo da velha no terminal com duas dificuldades: uma inteligente e outra aleatória
+
+Jogo da velha para terminal que oferece dois modos de dificuldade: um adversário inteligente e outro com jogadas aleatórias.
+
+## REQUISITOS
+
+- Python 3.10 ou superior
+
+## EXECUÇÃO
+
+Pelo terminal, na pasta do projeto:
+
+```bash
+python jogo_da_velha.py
+```
+
+Ou utilizando o caminho completo:
+
+```bash
+python "caminho/do/jogo_da_velha.py"
+```
