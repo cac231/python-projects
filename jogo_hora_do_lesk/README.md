@@ -1,10 +1,11 @@
-## Requisitos
+## OBJETIVO
+
+Jogo desenvolvido com Pygame que apresenta alta dificuldade e progressão de níveis, aumentando a velocidade do jogo a cada fase.
+
+## REQUISITOS
 
 - Python 3.10 ou superior
-
-### Dependência obrigatória
-
-Instale **Pygame** ou **Pygame-ce** (recomendado):
+- Pygame ou Pygame-ce (recomendado)
 
 ```bash
 pip install pygame-ce
@@ -18,53 +19,53 @@ Para recursos visuais exclusivos do Windows:
 pip install pywinstyles
 ```
 
----
+## ESTRUTURA DO PROJETO
 
-## Executando o jogo
+Para funcionar corretamente, mantenha os seguintes arquivos e pastas na mesma estrutura do projeto:
 
-### Pelo terminal
+- `hora_do_lesk.py`
+- pasta `assets`
 
-Na pasta do projeto:
+## EXECUÇÃO
+
+Pelo terminal, na pasta do projeto:
 
 ```bash
 python hora_do_lesk.py
 ```
 
-Ou utilizando o caminho completo do arquivo:
+Ou utilizando o caminho completo:
 
 ```bash
 python "caminho/do/hora_do_lesk.py"
 ```
 
----
+## EXECUTÁVEL (Windows)
 
-## Gerando um executável (Windows)
+Para gerar o executável:
 
-### 1. Instale o PyInstaller
+### Instale o PyInstaller
 
 ```bash
 pip install pyinstaller
 ```
 
-### 2. Gere o executável
+### Gere o executável utilizando o arquivo `.spec`
 
-Na pasta do projeto:
+Pela pasta do projeto:
 
 ```bash
 pyinstaller hora_do_lesk.py.spec
 ```
 
-Ou utilizando o caminho completo do arquivo `.spec`:
+Ou utilizando o caminho completo:
 
 ```bash
 pyinstaller "caminho/do/hora_do_lesk.py.spec"
 ```
 
-### 3. Localize o executável
-
-Após a compilação, o executável será criado em:
+Após a compilação, o executável será gerado em:
 
 ```text
 dist/Hora_do_Lesk.exe
-```
 ```
